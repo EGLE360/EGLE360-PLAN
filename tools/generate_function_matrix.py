@@ -458,7 +458,7 @@ ADDITIONS = {
 PATCHES = {
     "PDF-DOC-004": {"Referenz-Kürzel": "Umschalt+F2", "Quelle": "Q11"},
     "PDF-DOC-024": {"Anforderung": "Inhalt löschen, ausschneiden, radieren, Text ändern"},
-    "PDF-DOC-018": {"Akzeptanzkriterium / Hinweis": "Lesezeichen sind in Fremdviewern (Acrobat, PDF.js) funktionsfähig. Vorlagen siehe PDF-DOC-037"},
+    "PDF-DOC-018": {"Implementierungsstatus": "Teilweise (Phase 4, Teil 1): Lesezeichen anzeigen und anspringen; Bearbeiten offen", "Akzeptanzkriterium / Hinweis": "Lesezeichen sind in Fremdviewern (Acrobat, PDF.js) funktionsfähig. Vorlagen siehe PDF-DOC-037"},
     "PDF-OCR-006": {"Akzeptanzkriterium / Hinweis": "3D-PDF in Acrobat darstellbar. In 21.11 sind IFC- und U3D-Bibliotheken mitinstalliert (Q11)"},
     "PDF-VIEW-013": {"Verifizierung": "L", "Quelle": "Q5/Q11", "Akzeptanzkriterium / Hinweis": "Layout auf anderem Rechner identisch wiederherstellbar. Referenz: Profile als XML (*.bpx) mit Spalten, Werkzeugleisten, Panels, Werkzeugsätzen, Status-Modellen, Skripten"},
     "MKP-EDIT-009": {"Referenz-Kürzel": "Strg+] / Strg+Umschalt+] / Strg+[ / Strg+Umschalt+[", "Quelle": "Q11"},
@@ -476,6 +476,24 @@ PATCHES = {
     "TOOL-003": {"Akzeptanzkriterium / Hinweis": "Technisch geklärt: BTX ist XML mit zlib-komprimierten, hex-kodierten Feldern und PDF-Annotationswörterbüchern; Import machbar. Rechtliche Zulässigkeit weiterhin offen"},
     "AI-001": {"Akzeptanzkriterium / Hinweis": "Schreibende Aktionen erst nach Benutzerfreigabe. In 21.11 ist ein MCP-Server mitinstalliert (Q11)"},
     "COL-002": {"Akzeptanzkriterium / Hinweis": "Zuordnung von Alt+K zum Projekte-Panel nur vermutet (Q11)"},
+    "PDF-DOC-001": {"Implementierungsstatus": "Umgesetzt (Phase 4, Teil 1)"},
+    "PDF-DOC-002": {"Implementierungsstatus": "Teilweise (Phase 4, Teil 1): leeres Dokument mit wählbarem Format; Erstellung aus Office/CAD offen"},
+    "PDF-DOC-003": {"Implementierungsstatus": "Umgesetzt (Phase 4, Teil 1)"},
+    "PDF-DOC-005": {"Implementierungsstatus": "Teilweise (Phase 4, Teil 1): Seiten aus einer anderen PDF einfügen; Mehrfachauswahl von Dateien offen"},
+    "PDF-DOC-006": {"Implementierungsstatus": "Teilweise (Phase 4, Teil 1): Seitenbereich in neue Datei extrahieren; Aufteilen nach Lesezeichen oder Seitenzahl offen"},
+    "PDF-DOC-007": {"Implementierungsstatus": "Umgesetzt (Phase 4, Teil 1)"},
+    "PDF-DOC-008": {"Implementierungsstatus": "Umgesetzt (Phase 4, Teil 1)"},
+    "PDF-DOC-010": {"Implementierungsstatus": "Umgesetzt (Phase 4, Teil 1)"},
+    "PDF-DOC-011": {"Implementierungsstatus": "Teilweise (Phase 4, Teil 1): Seite vor/zurück per Befehl; Drag & Drop in Miniaturen offen"},
+    "PDF-DOC-012": {"Implementierungsstatus": "Umgesetzt (Phase 4, Teil 1)"},
+    "PDF-DOC-013": {"Implementierungsstatus": "Umgesetzt (Phase 4, Teil 1)"},
+    "PDF-DOC-017": {"Implementierungsstatus": "Teilweise (Phase 4, Teil 1): Seitenlabels werden angezeigt; Bearbeiten offen"},
+    "PDF-DOC-022": {"Implementierungsstatus": "Teilweise (Phase 4, Teil 1): Eigenschaften und Metadaten anzeigen; Bearbeiten offen"},
+    "PDF-VIEW-001": {"Implementierungsstatus": "Umgesetzt (Phase 4, Teil 1)"},
+    "PDF-VIEW-005": {"Implementierungsstatus": "Umgesetzt (Phase 4, Teil 1)"},
+    "PDF-VIEW-006": {"Implementierungsstatus": "Umgesetzt (Phase 4, Teil 1)"},
+    "PDF-VIEW-012": {"Implementierungsstatus": "Teilweise (Phase 4, Teil 1): Seitenleiste mit Miniaturen und Lesezeichen"},
+    "PDF-VIEW-019": {"Implementierungsstatus": "Teilweise (Phase 4, Teil 1): Statusleiste mit Pfad, Seitenformat und Zoom"},
 }
 
 for prefix, bereich, modul, phase, rs in M:

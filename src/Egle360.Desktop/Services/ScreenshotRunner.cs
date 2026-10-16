@@ -42,7 +42,10 @@ internal static class ScreenshotRunner
                     Save(window, Path.Combine(outputDir, name + ".png"));
 
                     // Hoher Zoom: Detaildarstellung des sichtbaren Ausschnitts.
-                    viewer.SetZoom(4.0);
+                    while (viewer.Zoom < 4.0)
+                    {
+                        viewer.ZoomIn(); // um die Fenstermitte, damit Planinhalt im Bild ist
+                    }
                     WaitForDocuments(window);
                     Save(window, Path.Combine(outputDir, name + "-zoom.png"));
                     viewer.FitWidth();
