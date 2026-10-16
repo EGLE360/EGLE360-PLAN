@@ -148,9 +148,21 @@ Entscheidung:
 
 ### ADR-09 Schnittstelle zu EGLE360 AVA
 
-Entscheidung: Die Übergabe läuft über eine versionierte REST-Schnittstelle. Jede Mengenübergabe trägt eine eindeutige Übergabe-ID und einen Prüfwert. Die AVA-Seite lehnt eine bereits verbuchte Übergabe-ID ab (Idempotenz), damit keine Menge doppelt übernommen wird. Zusätzlich werden ÖNORM A 2063 (Österreich) und GAEB DA XML (Deutschland) für den Austausch mit Drittprogrammen vorgesehen.
+Stand der AVA laut Schnittstellenbeschreibung vom 16.10.2026 (`EGLE360_AVA_Schnittstellenbeschreibung_2026-10-16.md`, Teil A und B):
 
-Offen: Eine Spezifikation der bestehenden EGLE360-AVA-Schnittstelle liegt noch nicht vor.
+- EGLE360 AVA hat heute keine Schnittstelle für Fremdprogramme. Es gibt nur die interne Dienstschnittstelle über Electron-IPC (rund 195 Methoden `bereich.aktion`, Zod-Prüfung, Antwort `{ ok, value | error }`).
+- Ein AVA-Server mit HTTPS/JSON und WebSocket (B9) ist geplant, aber nicht begonnen. Eine öffentliche API folgt erst danach.
+- Geplante Austauschwege der Stufe 1: GAEB DA XML 3.3/3.2 einschließlich X31 (Mengenermittlung), JSON nach dem eigenen Austauschmodell `e360-exchange` (versioniert) und das Projektpaket `.e360ava` (ZIP mit JSON, Manifest, Prüfsummen). Jeder Import zeigt eine Vorschau und schreibt erst nach Bestätigung in einer Transaktion.
+- Für X31 fehlt in der AVA noch die REB-Formelnummer. ÖNORM A 2063 ist blockiert, bis Normtext und XML-Schema beschafft sind (Teil C, Nr. 1).
+
+Entscheidung (angepasst am 16.10.2026): Die Mengenübergabe aus EGLE360 PLAN läuft zuerst dateibasiert über `e360-exchange` (JSON). Eine REST-Anbindung folgt, sobald der AVA-Server (B9) existiert, und nutzt dann dieselben Schemas.
+
+- Jede Übergabe trägt eine eindeutige Übergabe-ID, einen Prüfwert über die Mengen und die Herkunft jeder Menge (PDF-Messung, IFC-Menge, IFC-Geometrie, manuell). Die Absicherung gegen doppelte Übernahme liegt beim AVA-Import: Er muss eine bereits verbuchte Übergabe-ID erkennen und ablehnen. Das muss im Austauschmodell und im AVA-Importer vereinbart werden.
+- Für den Austausch mit Drittprogrammen schreibt EGLE360 PLAN zusätzlich GAEB X31. Für Österreich wird geklärt, welcher Teil der ÖNORM A 2063 die Mengenübergabe trägt, sobald die Norm vorliegt.
+- Für 5D braucht PLAN die LV-Positionen aus der AVA. Vorgesehen ist dafür der Export der AVA in `e360-exchange` oder GAEB X81/X83, beides in der AVA noch nicht umgesetzt.
+- Nicht vorgesehen: direkter Zugriff von PLAN auf die AVA-Datenbank. Er würde Prüfung, Berechtigungen und Änderungsprotokoll der AVA umgehen.
+
+Abhängigkeit: Das Schema `e360-exchange` existiert noch nicht. Der Teil für Mengenübergaben sollte gemeinsam für AVA und PLAN festgelegt werden, bevor Phase 9 beginnt.
 
 ### ADR-10 Repository, Build und Tests
 
@@ -215,7 +227,7 @@ Ein Produkt im Umfang des Master-Prompts ist ein mehrjähriges Vorhaben für ein
 
 1. Erledigt am 16.10.2026: Ein kommerzielles PDF-SDK kommt als Rückfalloption infrage (ADR-03).
 2. Hosting-Anbieter und Region in der EU (ADR-05).
-3. Spezifikation der EGLE360-AVA-Schnittstelle (ADR-09).
+3. AVA-Anbindung (ADR-09): Die Schnittstellenbeschreibung liegt seit 16.10.2026 vor. Offen sind (a) das gemeinsame Schema `e360-exchange` für Mengenübergaben und LV-Positionen, (b) wer die Doppelübernahme prüft (Vorschlag: der AVA-Import anhand der Übergabe-ID), (c) ob BIM-Mengen nur aus PLAN kommen oder die AVA ihren geplanten eigenen IFC-Import (B7) behält, damit dieselben Mengen nicht auf zwei Wegen in die AVA gelangen, und (d) der Teil der ÖNORM A 2063 für Mengen in Österreich.
 4. Lizenzmodell des Produkts (proprietär oder teilweise offen), weil davon die Bibliotheksauswahl abhängt.
 5. Vektorfassungen (SVG) der Logos für das Designsystem; die gelieferten Dateien sind Rasterbilder.
 
