@@ -109,8 +109,11 @@ public unsafe class MarkupPdfTests
                 }
                 if (subtype == 7)
                 {
-                    var buffer = stackalloc Pdfium.FS_POINTF[8];
-                    Assert.Equal(3u, (uint)Pdfium.FPDFAnnot_GetVertices(annot, buffer, new CULong(8)).Value);
+                    var buffer = new Pdfium.FS_POINTF[8];
+                    fixed (Pdfium.FS_POINTF* b = buffer)
+                    {
+                        Assert.Equal(3u, (uint)Pdfium.FPDFAnnot_GetVertices(annot, b, new CULong(8)).Value);
+                    }
                     Assert.Equal((250f, 300f), (buffer[2].x, buffer[2].y));
                 }
                 Pdfium.FPDFPage_CloseAnnot(annot);
