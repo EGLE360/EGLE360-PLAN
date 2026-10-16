@@ -1,0 +1,193 @@
+%PDF-1.3
+%‚„œ”
+1 0 obj
+<<
+/Producer (pypdf)
+/Title (Referenzplan EGLE360)
+/Author (EGLE360 Testdaten)
+/Subject (Testdatei f\374r PDF\055Grundfunktionen)
+/CreationDate (D\07220261016120000\05302\04700\047)
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Count 4
+/Kids [ 4 0 R 6 0 R 8 0 R 10 0 R ]
+>>
+endobj
+3 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+/Outlines 14 0 R
+/PageLabels <<
+/Nums [ 0 <<
+/S /D
+/P (GR\055)
+>> 2 <<
+/S /r
+>> ]
+>>
+>>
+endobj
+4 0 obj
+<<
+/Type /Page
+/Resources <<
+>>
+/MediaBox [ 0.0 0.0 2383.93701 3370.3937 ]
+/Parent 2 0 R
+/Contents 5 0 R
+>>
+endobj
+5 0 obj
+<<
+/Length 26
+>>
+stream
+0 0 0 rg 36 36 72 72 re f
+
+endstream
+endobj
+6 0 obj
+<<
+/Type /Page
+/Resources <<
+>>
+/MediaBox [ 0.0 0.0 1683.77953 1190.55118 ]
+/Parent 2 0 R
+/Contents 7 0 R
+>>
+endobj
+7 0 obj
+<<
+/Length 26
+>>
+stream
+0 0 0 rg 36 36 72 72 re f
+
+endstream
+endobj
+8 0 obj
+<<
+/Type /Page
+/Resources <<
+>>
+/MediaBox [ 0.0 0.0 595.275591 841.889764 ]
+/Parent 2 0 R
+/Contents 9 0 R
+/Rotate 90
+>>
+endobj
+9 0 obj
+<<
+/Length 26
+>>
+stream
+0 0 0 rg 36 36 72 72 re f
+
+endstream
+endobj
+10 0 obj
+<<
+/Type /Page
+/Resources <<
+>>
+/MediaBox [ 0.0 0.0 2834.64567 2004.09449 ]
+/Parent 2 0 R
+/Contents 11 0 R
+>>
+endobj
+11 0 obj
+<<
+/Length 26
+>>
+stream
+0 0 0 rg 36 36 72 72 re f
+
+endstream
+endobj
+12 0 obj
+<<
+/D [ 4 0 R /Fit ]
+/S /GoTo
+>>
+endobj
+13 0 obj
+<<
+/A 12 0 R
+/Title (Grundriss)
+/Parent 14 0 R
+/Count 1
+/First 16 0 R
+/Last 16 0 R
+/Next 18 0 R
+>>
+endobj
+14 0 obj
+<<
+/First 13 0 R
+/Count 3
+/Last 18 0 R
+>>
+endobj
+15 0 obj
+<<
+/D [ 6 0 R /Fit ]
+/S /GoTo
+>>
+endobj
+16 0 obj
+<<
+/A 15 0 R
+/Title (Schnitt)
+/Parent 13 0 R
+/Count 0
+>>
+endobj
+17 0 obj
+<<
+/D [ 10 0 R /Fit ]
+/S /GoTo
+>>
+endobj
+18 0 obj
+<<
+/A 17 0 R
+/Title (Details)
+/Prev 13 0 R
+/Parent 14 0 R
+/Count 0
+>>
+endobj
+xref
+0 19
+0000000000 65535 f 
+0000000015 00000 n 
+0000000215 00000 n 
+0000000293 00000 n 
+0000000427 00000 n 
+0000000550 00000 n 
+0000000626 00000 n 
+0000000750 00000 n 
+0000000826 00000 n 
+0000000961 00000 n 
+0000001037 00000 n 
+0000001163 00000 n 
+0000001240 00000 n 
+0000001289 00000 n 
+0000001404 00000 n 
+0000001462 00000 n 
+0000001511 00000 n 
+0000001584 00000 n 
+0000001634 00000 n 
+trailer
+<<
+/Size 19
+/Root 3 0 R
+/Info 1 0 R
+>>
+startxref
+1720
+%%EOF
