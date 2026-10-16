@@ -139,6 +139,8 @@
                     <StackPanel Orientation="Horizontal">
                         <Button Style="{StaticResource ButtonPrimary}" Content="PDF öffnen" Click="OnOpen" />
                         <Button Style="{StaticResource ButtonSecondary}" Content="Neues PDF" Click="OnNew" Margin="8,0,0,0" />
+                        <Button Style="{StaticResource ButtonSecondary}" Content="Beispielplan öffnen" Click="OnOpenSample" Margin="8,0,0,0"
+                                ToolTip="Frei erfundener Grundriss mit Beispielmarkierungen zum Ausprobieren" />
                     </StackPanel>
                     <TextBlock x:Name="RecentTitle" Style="{StaticResource TextSubtitle}" Text="Zuletzt geöffnet" Margin="0,24,0,8" />
                     <ItemsControl x:Name="RecentList">

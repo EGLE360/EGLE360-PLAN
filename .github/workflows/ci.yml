@@ -44,6 +44,34 @@ jobs:
           $count = (Get-ChildItem screenshots -Filter *.png).Count
           if ($count -lt 4) { throw "Nur $count Screenshots erzeugt" }
 
+      # Testversion: eigenständiges Paket mit eingebauter .NET-Laufzeit, startet ohne installierte Entwicklerwerkzeuge.
+      - name: Windows-Paket erstellen
+        shell: pwsh
+        run: |
+          dotnet publish src/Egle360.Desktop/Egle360.Desktop.csproj -c Release -r win-x64 --self-contained true -p:DebugType=None -o publish/EGLE360-PLAN
+          Copy-Item docs/Testanleitung.md publish/EGLE360-PLAN/Testanleitung.md
+          $p = Start-Process -FilePath publish/EGLE360-PLAN/EGLE360.PLAN.exe -ArgumentList "--screenshots", "publish-check" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Veröffentlichtes Paket endete mit Code $($p.ExitCode)" }
+          Compress-Archive -Path publish/EGLE360-PLAN -DestinationPath EGLE360-PLAN-win-x64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EGLE360-PLAN-win-x64
+          path: EGLE360-PLAN-win-x64.zip
+
+      # Feste Download-Adresse für Testende: die Vorabversion "testversion" wird bei jedem Lauf ersetzt.
+      - name: Vorabversion aktualisieren
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete testversion --repo "${{ github.repository }}" --yes --cleanup-tag || true
+          gh release create testversion EGLE360-PLAN-win-x64.zip --repo "${{ github.repository }}" \
+            --target "${{ github.event.pull_request.head.sha }}" --prerelease \
+            --title "Testversion (Entwicklungsstand)" \
+            --notes "Automatisch gebaut aus ${{ github.head_ref }} (${{ github.event.pull_request.head.sha }}). ZIP entpacken und EGLE360.PLAN.exe starten. Anleitung: Testanleitung.md im Ordner."
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:

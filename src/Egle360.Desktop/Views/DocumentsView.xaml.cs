@@ -487,6 +487,21 @@ public partial class DocumentsView : UserControl, IDisposable
         }
     }
 
+    /// <summary>Öffnet eine frisch erzeugte Kopie des Beispielplans aus dem Temp-Ordner, damit ohne eigene Pläne getestet werden kann.</summary>
+    private void OnOpenSample(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var path = Path.Combine(Path.GetTempPath(), $"EGLE360-Beispielplan-{DateTime.Now:yyyyMMdd-HHmmss}.pdf");
+            SamplePlan.Write(path, new WpfTextOutliner());
+            OpenFiles([path]);
+        }
+        catch (Exception ex)
+        {
+            ShowError($"Der Beispielplan konnte nicht erzeugt werden: {ex.Message}");
+        }
+    }
+
     private void OnNew(object sender, RoutedEventArgs e)
     {
         var document = PdfDocument.CreateNew();
