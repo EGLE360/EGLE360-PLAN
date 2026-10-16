@@ -131,6 +131,7 @@ public partial class DocumentsView : UserControl, IDisposable
         viewer.EditTextRequested += (_, args) => OnEditText(open, args.Page, args.Markup);
         viewer.DepthRequested += (_, args) => OnEditDepth(open, args.Page, args.Markup);
         viewer.PriceRequested += (_, args) => OnEditPrice(open, args.Page, args.Markup);
+        viewer.ViewHistoryChanged += (_, _) => { if (open == _active) { RefreshViewHistory(); } };
         AttachMeasure(open);
         viewer.CurrentPageChanged += (_, _) => { if (open == _active) { SyncCurrentPage(); } };
         viewer.ZoomChanged += (_, _) => { if (open == _active) { RefreshZoom(); } };
@@ -463,6 +464,7 @@ public partial class DocumentsView : UserControl, IDisposable
         {
             PageBox.Text = "";
             PageCountText.Text = "";
+            RefreshViewHistory();
             StatusFormat.Text = "";
             StatusPath.Text = _active is null ? "" : "Das Dokument hat keine Seiten.";
             return;
@@ -473,6 +475,7 @@ public partial class DocumentsView : UserControl, IDisposable
         PageCountText.Text = $"von {_active.Viewer.PageCount}";
         StatusFormat.Text = $"Seite {info.DisplayLabel}: {info.Format.Description}";
         StatusPath.Text = _active.Document.FilePath ?? "Noch nicht gespeichert";
+        RefreshViewHistory();
         PrevButton.IsEnabled = page > 0;
         NextButton.IsEnabled = page < _active.Viewer.PageCount - 1;
         DeletePageButton.IsEnabled = _active.Document.CanModify && _active.Viewer.PageCount > 1;
@@ -570,6 +573,16 @@ public partial class DocumentsView : UserControl, IDisposable
     private void OnFitWidth(object sender, RoutedEventArgs e) => _active?.Viewer.FitWidth();
 
     private void OnFitPage(object sender, RoutedEventArgs e) => _active?.Viewer.FitPage();
+
+    private void OnViewBack(object sender, RoutedEventArgs e) => _active?.Viewer.GoBack();
+
+    private void OnViewForward(object sender, RoutedEventArgs e) => _active?.Viewer.GoForward();
+
+    private void RefreshViewHistory()
+    {
+        BackButton.IsEnabled = _active?.Viewer.CanGoBack == true;
+        ForwardButton.IsEnabled = _active?.Viewer.CanGoForward == true;
+    }
 
     private void OnPrevPage(object sender, RoutedEventArgs e) => _active?.Viewer.GoToPage(_active.Viewer.CurrentPage - 1);
 
@@ -799,6 +812,8 @@ public partial class DocumentsView : UserControl, IDisposable
         var viewer = _active?.Viewer;
         if (HandleMarkupShortcut(e)) { }
         else if (KeyGestures.Ctrl(e, Key.F)) { ShowSearch(); }
+        else if (e.Key == Key.System && Keyboard.Modifiers == ModifierKeys.Alt && e.SystemKey == Key.Left) { viewer?.GoBack(); }
+        else if (e.Key == Key.System && Keyboard.Modifiers == ModifierKeys.Alt && e.SystemKey == Key.Right) { viewer?.GoForward(); }
         else if (e.Key == Key.F3 && Keyboard.Modifiers is ModifierKeys.None or ModifierKeys.Shift) { StepSearch(Keyboard.Modifiers == ModifierKeys.Shift ? -1 : 1); }
         else if (KeyGestures.Ctrl(e, Key.O)) { OnOpen(this, e); }
         else if (KeyGestures.Ctrl(e, Key.P)) { OnPrint(this, e); }

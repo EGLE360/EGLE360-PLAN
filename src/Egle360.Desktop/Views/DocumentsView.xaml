@@ -69,6 +69,8 @@
                 <Button x:Name="FitWidthButton" Style="{StaticResource ToolButton}" Content="&#xE9A6;" Click="OnFitWidth" ToolTip="An Breite anpassen (Strg+2)" AutomationProperties.Name="An Breite anpassen" />
                 <Button x:Name="FitPageButton" Style="{StaticResource ToolButton}" Content="&#xE9A8;" Click="OnFitPage" ToolTip="Ganze Seite (Strg+0)" AutomationProperties.Name="Ganze Seite" />
                 <Border Style="{StaticResource ToolSeparator}" />
+                <Button x:Name="BackButton" Style="{StaticResource ToolButton}" Content="&#xE72B;" Click="OnViewBack" ToolTip="Vorherige Ansicht (Alt+Pfeil links)" AutomationProperties.Name="Vorherige Ansicht" />
+                <Button x:Name="ForwardButton" Style="{StaticResource ToolButton}" Content="&#xE72A;" Click="OnViewForward" ToolTip="Nächste Ansicht (Alt+Pfeil rechts)" AutomationProperties.Name="Nächste Ansicht" />
                 <Button x:Name="PrevButton" Style="{StaticResource ToolButton}" Content="&#xE70E;" Click="OnPrevPage" ToolTip="Vorherige Seite (Bild auf)" AutomationProperties.Name="Vorherige Seite" />
                 <TextBox x:Name="PageBox" Style="{StaticResource InputBox}" Width="48" TextAlignment="Right" KeyDown="OnPageBoxKey"
                          ToolTip="Seitenzahl, mit Eingabetaste springen" AutomationProperties.Name="Seitenzahl" />

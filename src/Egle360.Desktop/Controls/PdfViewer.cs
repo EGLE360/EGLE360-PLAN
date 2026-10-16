@@ -189,6 +189,7 @@ public sealed partial class PdfViewer : Grid
             return;
         }
         index = Math.Clamp(index, 0, _layout.PageCount - 1);
+        RememberView();
         var rect = _layout.PageRect(index);
         _scroll.ScrollToVerticalOffset(Math.Max(0, rect.Y - _layout.Gap));
         UpdateCurrentPage(index);
@@ -203,6 +204,7 @@ public sealed partial class PdfViewer : Grid
         {
             return;
         }
+        RememberView();
         var (u, v) = Transform(page).ToDisplay(point);
         var (x, y) = _layout.ToLayout(page, u, v);
         _scroll.ScrollToHorizontalOffset(Math.Max(0, x - _scroll.ViewportWidth / 2));
@@ -526,6 +528,11 @@ public sealed partial class PdfViewer : Grid
 
     private void OnMiddleDown(object sender, MouseButtonEventArgs e)
     {
+        if (HandleHistoryButton(e))
+        {
+            e.Handled = true;
+            return;
+        }
         if (e.ChangedButton == MouseButton.Middle && !IsOverScrollBar(e))
         {
             _scroll.Focus();

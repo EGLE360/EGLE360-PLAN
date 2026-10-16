@@ -511,6 +511,7 @@ for prefix, bereich, modul, phase, rs in M:
 
 # Umsetzungsstand aus Phase 4 (Teil 2) und Phase 5 (Teil 1).
 STATUS = {
+    "PDF-VIEW-007": "Teilweise (Phase 5, Teil 2): vorherige und nächste Ansicht, Seite vor und zurück; erste und letzte Seite über das Seitenfeld",
     "PDF-DOC-031": "Teilweise (Phase 4, Teil 2): Drucken über den Windows-Druckdialog mit Seitenauswahl, eingepasst",
     "PDF-VIEW-015": "Umgesetzt (Phase 4, Teil 2): Suche über alle Seiten, Trefferliste, Hervorhebung, F3",
     "PDF-VIEW-012": "Teilweise (Phase 4, Teil 2): Seitenleiste mit Miniaturen, Lesezeichen und Suche; Markierungsliste unten",

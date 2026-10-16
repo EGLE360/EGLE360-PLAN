@@ -29,6 +29,7 @@ Im Startbildschirm „Beispielplan öffnen“ wählen. Das ist ein frei erfunden
 - Zoomen mit Strg+Mausrad, Strg+Plus und Strg+Minus, Prozentfeld, „An Breite anpassen“ (Strg+2), „Ganze Seite“ (Strg+0).
 - Verschieben mit gedrückter mittlerer Maustaste, mit dem Hand-Werkzeug (H) oder durch Ziehen auf einer leeren Stelle. Umschalt+Mausrad verschiebt waagrecht.
 - Seitenleiste mit Miniaturen, Lesezeichen und Suche.
+- Vorherige und nächste Ansicht: Nach einem Sprung (Seitenwechsel, Fundstelle, Eintrag in der Liste) führt die Pfeiltaste links neben der Seitenzahl, Alt+Pfeil links oder die Zurück-Taste der Maus zur vorigen Stelle zurück.
 - Seiten drehen, verschieben, löschen, leere Seite einfügen, Seiten aus einem anderen PDF einfügen, Seiten als neues PDF speichern (Werkzeugleiste oben oder Rechtsklick auf eine Miniatur).
 - Dokumenteigenschaften ansehen.
 - Speichern (Strg+S), Speichern unter (Strg+Umschalt+S).
