@@ -116,10 +116,16 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <UniformGrid Rows="1" Margin="4,4,4,0">
-                        <RadioButton x:Name="PagesTab" Style="{StaticResource SegmentButton}" Content="Seiten" IsChecked="True" GroupName="Sidebar" Checked="OnSidebarTab" />
-                        <RadioButton x:Name="BookmarksTab" Style="{StaticResource SegmentButton}" Content="Lesezeichen" GroupName="Sidebar" Checked="OnSidebarTab" />
-                        <RadioButton x:Name="SearchTab" Style="{StaticResource SegmentButton}" Content="Suche" GroupName="Sidebar" Checked="OnSidebarTab"
-                                     ToolTip="Text im Dokument suchen (Strg+F)" />
+                        <RadioButton x:Name="PagesTab" Style="{StaticResource SegmentButton}" IsChecked="True" GroupName="Sidebar" Checked="OnSidebarTab">
+                            <Viewbox StretchDirection="DownOnly"><TextBlock Text="Seiten" /></Viewbox>
+                        </RadioButton>
+                        <RadioButton x:Name="BookmarksTab" Style="{StaticResource SegmentButton}" GroupName="Sidebar" Checked="OnSidebarTab">
+                            <Viewbox StretchDirection="DownOnly"><TextBlock Text="Lesezeichen" /></Viewbox>
+                        </RadioButton>
+                        <RadioButton x:Name="SearchTab" Style="{StaticResource SegmentButton}" GroupName="Sidebar" Checked="OnSidebarTab"
+                                     ToolTip="Text im Dokument suchen (Strg+F)">
+                            <Viewbox StretchDirection="DownOnly"><TextBlock Text="Suche" /></Viewbox>
+                        </RadioButton>
                     </UniformGrid>
                     <ListBox x:Name="Thumbnails" Grid.Row="1" Style="{StaticResource PlainList}" SelectionChanged="OnThumbnailSelected"
                              VirtualizingPanel.VirtualizationMode="Standard"
@@ -191,16 +197,17 @@
                 <GridSplitter x:Name="MarkupListSplitter" Grid.Row="1" Height="4" HorizontalAlignment="Stretch" Visibility="Collapsed"
                               Background="{DynamicResource BorderBrush}" ResizeBehavior="PreviousAndNext" />
                 <DockPanel x:Name="MarkupListPanel" Grid.Row="2" Background="{DynamicResource Surface1Brush}" Visibility="Collapsed">
-                    <DockPanel DockPanel.Dock="Top" Margin="8,6">
+                    <DockPanel DockPanel.Dock="Top" Margin="8,6" LastChildFill="False">
                         <Button DockPanel.Dock="Right" Style="{StaticResource ToolButton}" Content="&#xE711;" Click="OnToggleMarkupList" ToolTip="Liste schließen" AutomationProperties.Name="Liste schließen" />
-                        <Button DockPanel.Dock="Right" Style="{StaticResource ButtonSecondary}" Content="Als CSV exportieren" Click="OnExportMarkups" Margin="8,0"
+                        <Button DockPanel.Dock="Right" Style="{StaticResource ButtonSecondary}" Content="Als CSV exportieren" Click="OnExportMarkups" Margin="8,0" VerticalAlignment="Center"
                                 ToolTip="Liste als CSV-Datei mit Semikolon speichern; öffnet sich direkt in Excel" />
                         <CheckBox x:Name="MeasurementsOnly" DockPanel.Dock="Right" Content="Nur Messungen" VerticalAlignment="Center" Margin="8,0"
                                   Foreground="{DynamicResource TextBrush}" Click="OnMarkupListFilter" />
-                        <TextBox x:Name="MarkupFilter" DockPanel.Dock="Left" Style="{StaticResource InputBox}" Width="200" TextChanged="OnMarkupListFilter"
+                        <TextBox x:Name="MarkupFilter" DockPanel.Dock="Left" Style="{StaticResource InputBox}" Width="180" VerticalAlignment="Center" TextChanged="OnMarkupListFilter"
                                  ToolTip="Filtern nach Art, Text oder Autor" AutomationProperties.Name="Markierungen filtern" />
-                        <TextBlock x:Name="MarkupTotals" Style="{StaticResource TextSecondary}" VerticalAlignment="Center" Margin="12,0" TextTrimming="CharacterEllipsis" />
                     </DockPanel>
+                    <TextBlock x:Name="MarkupTotals" DockPanel.Dock="Top" Style="{StaticResource TextSecondary}" Margin="12,0,12,6"
+                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
                     <DataGrid x:Name="MarkupGrid" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
                               SelectionMode="Single" CanUserResizeRows="False" BorderThickness="0,1,0,0" Background="Transparent"
                               BorderBrush="{DynamicResource BorderBrush}" HorizontalGridLinesBrush="{DynamicResource BorderBrush}"

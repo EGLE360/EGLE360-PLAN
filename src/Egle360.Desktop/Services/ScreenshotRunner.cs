@@ -66,7 +66,7 @@ internal static class ScreenshotRunner
                     if (window.Documents.ActiveDocument?.GetMarkups(0).FirstOrDefault(m => m.Kind == Egle360.Pdf.Markups.MarkupKind.Area) is { } area)
                     {
                         window.Documents.SetMarkupListVisible(true);
-                        viewer.SetZoom(0.75);
+                        viewer.SetZoom(0.35);
                         WaitForRender(window);
                         var r = Egle360.Pdf.Markups.MarkupGeometry.HandleRect(area);
                         viewer.CenterOn(0, new Egle360.Pdf.Markups.PdfPoint((r.Left + r.Right) / 2, (r.Bottom + r.Top) / 2));
