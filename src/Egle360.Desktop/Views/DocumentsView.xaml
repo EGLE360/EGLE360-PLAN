@@ -203,11 +203,11 @@
                     <DockPanel DockPanel.Dock="Top" Margin="8,6" LastChildFill="False">
                         <Button DockPanel.Dock="Right" Style="{StaticResource ToolButton}" Content="&#xE711;" Click="OnToggleMarkupList" ToolTip="Liste schließen" AutomationProperties.Name="Liste schließen" />
                         <Button DockPanel.Dock="Right" Style="{StaticResource ButtonSecondary}" Content="Exportieren (Excel) …" Click="OnExportMarkups" Margin="8,0" VerticalAlignment="Center"
-                                ToolTip="Liste als CSV-Datei mit Semikolon speichern; öffnet sich direkt in Excel" />
+                                ToolTip="Liste als Excel-Arbeitsmappe (XLSX) mit Summenblatt speichern, wahlweise als CSV" />
                         <CheckBox x:Name="MeasurementsOnly" DockPanel.Dock="Right" Content="Nur Messungen" VerticalAlignment="Center" Margin="8,0"
                                   Foreground="{DynamicResource TextBrush}" Click="OnMarkupListFilter" />
                         <TextBox x:Name="MarkupFilter" DockPanel.Dock="Left" Style="{StaticResource InputBox}" Width="180" VerticalAlignment="Center" TextChanged="OnMarkupListFilter"
-                                 ToolTip="Filtern nach Art, Text oder Autor" AutomationProperties.Name="Markierungen filtern" />
+                                 ToolTip="Filtern nach Art, Text, Status oder Autor" AutomationProperties.Name="Markierungen filtern" />
                     </DockPanel>
                     <TextBlock x:Name="MarkupTotals" DockPanel.Dock="Top" Style="{StaticResource TextSecondary}" Margin="12,0,12,6"
                                TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
@@ -218,15 +218,15 @@
                               ColumnHeaderStyle="{StaticResource ListHeader}" CellStyle="{StaticResource ListCell}" RowStyle="{StaticResource ListRow}"
                               SelectionChanged="OnMarkupRowSelected" AutomationProperties.Name="Markierungsliste">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Seite" Binding="{Binding Page}" Width="58" />
-                            <DataGridTextColumn Header="Art" Binding="{Binding Kind}" Width="100" />
-                            <DataGridTextColumn Header="Wert" Binding="{Binding Value}" Width="160" SortMemberPath="Number" />
-                            <DataGridTextColumn Header="Preis" Binding="{Binding CostText}" Width="100" SortMemberPath="Cost" />
-                            <DataGridTextColumn Header="Status" Binding="{Binding StatusText}" Width="120" SortMemberPath="Status" />
+                            <DataGridTextColumn Header="Seite" Binding="{Binding Page}" Width="58" MinWidth="58" />
+                            <DataGridTextColumn Header="Art" Binding="{Binding Kind}" Width="100" MinWidth="100" />
+                            <DataGridTextColumn Header="Wert" Binding="{Binding Value}" Width="160" MinWidth="160" SortMemberPath="Number" />
+                            <DataGridTextColumn Header="Preis" Binding="{Binding CostText}" Width="100" MinWidth="100" SortMemberPath="Cost" />
+                            <DataGridTextColumn Header="Status" Binding="{Binding StatusText}" Width="120" MinWidth="120" SortMemberPath="Status" />
                             <DataGridTextColumn Header="Text oder Kommentar" Binding="{Binding Text}" Width="*" MinWidth="160" />
-                            <DataGridTextColumn Header="Maßstab" Binding="{Binding Scale}" Width="110" />
-                            <DataGridTextColumn Header="Autor" Binding="{Binding Author}" Width="110" />
-                            <DataGridTextColumn Header="Geändert" Binding="{Binding Modified}" Width="120" SortMemberPath="ModifiedValue" />
+                            <DataGridTextColumn Header="Maßstab" Binding="{Binding Scale}" Width="110" MinWidth="110" />
+                            <DataGridTextColumn Header="Autor" Binding="{Binding Author}" Width="110" MinWidth="110" />
+                            <DataGridTextColumn Header="Geändert" Binding="{Binding Modified}" Width="120" MinWidth="120" SortMemberPath="ModifiedValue" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </DockPanel>
@@ -281,7 +281,7 @@
                 <TextBlock x:Name="StatusZoom" DockPanel.Dock="Right" Style="{StaticResource TextCaption}" Margin="16,0,0,0" />
                 <TextBlock x:Name="StatusMarkup" DockPanel.Dock="Right" Style="{StaticResource TextCaption}" Margin="16,0,0,0" />
                 <TextBlock x:Name="StatusFormat" DockPanel.Dock="Right" Style="{StaticResource TextCaption}" Margin="16,0,0,0" />
-                <TextBlock x:Name="StatusPath" Style="{StaticResource TextCaption}" TextTrimming="CharacterEllipsis" />
+                <TextBlock x:Name="StatusPath" Style="{StaticResource TextCaption}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
             </DockPanel>
         </Border>
     </Grid>
