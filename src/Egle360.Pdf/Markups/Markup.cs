@@ -30,6 +30,8 @@ public enum MarkupKind
     Diameter,
     Callout,
     Typewriter,
+    Underline,
+    StrikeOut,
 }
 
 /// <summary>Punkt im PDF-Benutzerkoordinatensystem (Punkt, y nach oben, ohne Seitendrehung).</summary>
@@ -183,11 +185,14 @@ public static class MarkupKinds
         MarkupKind.Diameter => "Durchmesser",
         MarkupKind.Callout => "Sprechblase",
         MarkupKind.Typewriter => "Schreibmaschine",
+        MarkupKind.Underline => "Unterstreichung",
+        MarkupKind.StrikeOut => "Durchstreichung",
         _ => kind.ToString(),
     };
 
     /// <summary>Arten, die durch Aufziehen eines Rechtecks entstehen.</summary>
-    public static bool IsBox(MarkupKind kind) => kind is MarkupKind.Rectangle or MarkupKind.Ellipse or MarkupKind.TextBox or MarkupKind.Highlight or MarkupKind.Stamp or MarkupKind.Typewriter;
+    public static bool IsBox(MarkupKind kind) => kind is MarkupKind.Rectangle or MarkupKind.Ellipse or MarkupKind.TextBox or MarkupKind.Highlight or MarkupKind.Stamp or MarkupKind.Typewriter
+            or MarkupKind.Underline or MarkupKind.StrikeOut;
 
     /// <summary>Arten mit beliebig vielen Eckpunkten, die per Klick gesetzt werden.</summary>
     public static bool IsMultiPoint(MarkupKind kind) =>
@@ -219,6 +224,9 @@ public static class MarkupKinds
     };
 
     public static bool HasText(MarkupKind kind) => kind is MarkupKind.TextBox or MarkupKind.Note or MarkupKind.Stamp or MarkupKind.Callout or MarkupKind.Typewriter;
+
+    /// <summary>Arten, die sich an Textzeilen des Plans ausrichten (eine Rechteck je Zeile in <see cref="Markup.Paths"/>).</summary>
+    public static bool IsTextMarkup(MarkupKind kind) => kind is MarkupKind.Highlight or MarkupKind.Underline or MarkupKind.StrikeOut;
 
     /// <summary>Arten mit Textrahmen, der beim Bearbeiten des Textes nach unten mitwächst.</summary>
     public static bool HasTextFrame(MarkupKind kind) => kind is MarkupKind.TextBox or MarkupKind.Callout or MarkupKind.Typewriter;

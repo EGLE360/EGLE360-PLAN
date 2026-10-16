@@ -59,7 +59,9 @@ Im Startbildschirm „Beispielplan öffnen“ wählen. Das ist ein frei erfunden
 | Schreibmaschine | W | Klicken und Text eingeben; der Text steht ohne Rahmen direkt auf dem Plan |
 | Sprechblase | B | Von der Stelle, auf die der Pfeil zeigen soll, zum Textfeld ziehen (oder nur klicken), dann Text eingeben. Rahmen und Pfeilspitze lassen sich danach an den Griffen verschieben |
 | Notiz | K | Klicken, dann Text eingeben |
-| Hervorhebung | M | Bereich aufziehen |
+| Hervorhebung | M | Über Text ziehen: Die Markierung folgt den Textzeilen. Ohne Text im Bereich entsteht ein Rechteck |
+| Unterstreichen | U | Über Text ziehen; jede Zeile wird unterstrichen. Funktioniert nur bei echtem Text im PDF, nicht bei gescannten Plänen |
+| Durchstreichen | X | wie Unterstreichen |
 | Stempel | S | Aufschrift im Menü der Schaltfläche wählen (GEPRÜFT, FREIGEGEBEN, ABGELEHNT und andere oder eine eigene), dann klicken oder aufziehen. Darunter stehen automatisch Autor und Datum |
 | Bemaßung | D | Maßlinie aufziehen; braucht wie die Messungen einen Maßstab. Die Zahl steht über der Linie |
 
@@ -109,7 +111,7 @@ Zum Ausprobieren im Beispielplan: Die Küche ist 10 m × 10 m, die Fläche muss 
 Diese Punkte sind geplant, aber noch nicht enthalten:
 
 - Drucken in Originalgröße oder gekachelt, geteilte und synchronisierte Ansichten, Metadaten bearbeiten.
-- Stempel aus eigenen Bilddateien, Unterschriften, Unterstreichen und Durchstreichen von Text, Drehen von Markierungen.
+- Stempel aus eigenen Bilddateien, Unterschriften, Drehen von Markierungen.
 - Messungen: Gefälle, Schnittpunktfang, Preislisten je Werkzeug und die Übernahme in EGLE360 AVA.
 - Ob Bluebeam die gespeicherten Messungen als Messungen (mit Wert in der Markups-Liste) erkennt, ist noch nicht geprüft. Die Datei enthält dafür die genormten PDF-Messangaben; im Plan sind die Messungen in jedem Fall sichtbar.
 - BIM, 4D/5D, KI-Funktionen und die AVA-Anbindung folgen in späteren Phasen.

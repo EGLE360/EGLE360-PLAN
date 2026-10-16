@@ -792,6 +792,21 @@ public sealed partial class PdfViewer
             }
             return;
         }
+        if (MarkupKinds.IsTextMarkup(markup.Kind) && _document is not null)
+        {
+            // Hervorheben, Unterstreichen und Durchstreichen folgen dem Text im aufgezogenen Bereich. Ohne Text
+            // bleibt die Hervorhebung ein Rechteck; Unter- und Durchstreichen ohne Text ergeben nichts.
+            var rects = _document.GetTextRects(page, PdfRect.FromPoints(markup.Points[0], markup.Points[1]));
+            if (rects.Count > 0)
+            {
+                markup = markup.WithPaths([.. rects.Select(r => (IReadOnlyList<PdfPoint>)[new PdfPoint(r.Left, r.Bottom), new PdfPoint(r.Right, r.Top)])]);
+            }
+            else if (markup.Kind != MarkupKind.Highlight)
+            {
+                SetTool(ViewerTool.Select);
+                return;
+            }
+        }
         if (!Run(() => _history.Add(page, markup)))
         {
             return;

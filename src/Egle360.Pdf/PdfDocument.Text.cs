@@ -32,6 +32,68 @@ public sealed unsafe partial class PdfDocument
     }
 
     /// <summary>
+    /// Zeilenrechtecke des Textes, dessen Zeichen mit der Mitte im Bereich <paramref name="area"/> liegen, in
+    /// Lesereihenfolge. Grundlage für Hervorheben, Unterstreichen und Durchstreichen von Text. Leer, wenn dort kein Text ist.
+    /// </summary>
+    public IReadOnlyList<PdfRect> GetTextRects(int pageIndex, PdfRect area)
+    {
+        lock (PdfiumLibrary.Sync)
+        {
+            CheckIndex(pageIndex);
+            var text = Pdfium.FPDFText_LoadPage(GetPage(pageIndex));
+            if (text == 0)
+            {
+                return [];
+            }
+            try
+            {
+                var count = Pdfium.FPDFText_CountChars(text);
+                var result = new List<PdfRect>();
+                var runStart = -1;
+                for (var i = 0; i <= count; i++)
+                {
+                    var inside = false;
+                    if (i < count)
+                    {
+                        double l, r, b, t;
+                        if (Pdfium.FPDFText_GetCharBox(text, i, &l, &r, &b, &t) != 0 && r > l && t > b)
+                        {
+                            inside = area.Contains(new PdfPoint((l + r) / 2, (b + t) / 2));
+                        }
+                    }
+                    if (inside && runStart < 0)
+                    {
+                        runStart = i;
+                    }
+                    else if (!inside && runStart >= 0)
+                    {
+                        AddRects(text, runStart, i - runStart, result);
+                        runStart = -1;
+                    }
+                }
+                return result;
+            }
+            finally
+            {
+                Pdfium.FPDFText_ClosePage(text);
+            }
+        }
+    }
+
+    private static void AddRects(nint text, int start, int count, List<PdfRect> result)
+    {
+        var n = Pdfium.FPDFText_CountRects(text, start, count);
+        for (var k = 0; k < n; k++)
+        {
+            double l, t, r, b;
+            if (Pdfium.FPDFText_GetRect(text, k, &l, &t, &r, &b) != 0 && r - l > 0.1 && Math.Abs(t - b) > 0.1)
+            {
+                result.Add(new PdfRect(Math.Min(l, r), Math.Min(b, t), Math.Max(l, r), Math.Max(b, t)));
+            }
+        }
+    }
+
+    /// <summary>
     /// Sucht den Begriff auf einer Seite, ohne Groß- und Kleinschreibung zu unterscheiden. Leerräume aller Art (auch
     /// Zeilenumbrüche) gelten als gleich, damit Begriffe über Zeilenenden hinweg gefunden werden.
     /// </summary>

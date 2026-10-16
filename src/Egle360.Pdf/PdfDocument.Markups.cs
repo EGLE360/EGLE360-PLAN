@@ -203,6 +203,8 @@ public sealed unsafe partial class PdfDocument
             MarkupKind.Note => Pdfium.FPDF_ANNOT_TEXT,
             MarkupKind.Highlight => Pdfium.FPDF_ANNOT_HIGHLIGHT,
             MarkupKind.Stamp => Pdfium.FPDF_ANNOT_STAMP,
+            MarkupKind.Underline => Pdfium.FPDF_ANNOT_UNDERLINE,
+            MarkupKind.StrikeOut => Pdfium.FPDF_ANNOT_STRIKEOUT,
             _ => Pdfium.FPDF_ANNOT_INK,
         };
         var annot = Pdfium.FPDFPage_CreateAnnot(page, subtype);
@@ -250,14 +252,16 @@ public sealed unsafe partial class PdfDocument
                         AddInk(annot, [p, p + new PdfPoint(0.01, 0)]);
                     }
                     break;
-                case MarkupKind.Highlight:
-                    var r = PdfRect.FromPoints(m.Points[0], m.Points[1]);
-                    var quad = new Pdfium.FS_QUADPOINTSF
+                case MarkupKind.Highlight or MarkupKind.Underline or MarkupKind.StrikeOut:
+                    foreach (var r in MarkupGeometry.TextRects(m))
                     {
-                        x1 = (float)r.Left, y1 = (float)r.Top, x2 = (float)r.Right, y2 = (float)r.Top,
-                        x3 = (float)r.Left, y3 = (float)r.Bottom, x4 = (float)r.Right, y4 = (float)r.Bottom,
-                    };
-                    Pdfium.FPDFAnnot_AppendAttachmentPoints(annot, &quad);
+                        var quad = new Pdfium.FS_QUADPOINTSF
+                        {
+                            x1 = (float)r.Left, y1 = (float)r.Top, x2 = (float)r.Right, y2 = (float)r.Top,
+                            x3 = (float)r.Left, y3 = (float)r.Bottom, x4 = (float)r.Right, y4 = (float)r.Bottom,
+                        };
+                        Pdfium.FPDFAnnot_AppendAttachmentPoints(annot, &quad);
+                    }
                     break;
                 case MarkupKind.TextBox or MarkupKind.Callout or MarkupKind.Typewriter:
                     WriteString(annot, "DA", MarkupSerializer.DefaultAppearance(m));

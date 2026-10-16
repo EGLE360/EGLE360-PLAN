@@ -34,6 +34,8 @@ internal static unsafe class Pdfium
     public const int FPDF_ANNOT_SQUARE = 5;
     public const int FPDF_ANNOT_CIRCLE = 6;
     public const int FPDF_ANNOT_HIGHLIGHT = 9;
+    public const int FPDF_ANNOT_UNDERLINE = 10;
+    public const int FPDF_ANNOT_STRIKEOUT = 12;
     public const int FPDF_ANNOT_STAMP = 13;
     public const int FPDF_ANNOT_INK = 15;
     public const int FPDF_ANNOT_FLAG_HIDDEN = 1 << 1;
@@ -209,6 +211,7 @@ internal static unsafe class Pdfium
     [DllImport(Lib, ExactSpelling = true)] public static extern void FPDFText_ClosePage(nint textPage);
     [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFText_CountChars(nint textPage);
     [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFText_GetText(nint textPage, int startIndex, int count, char* result);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFText_GetCharBox(nint textPage, int index, double* left, double* right, double* bottom, double* top);
     [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFText_CountRects(nint textPage, int startIndex, int count);
     [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFText_GetRect(nint textPage, int rectIndex, double* left, double* top, double* right, double* bottom);
 }

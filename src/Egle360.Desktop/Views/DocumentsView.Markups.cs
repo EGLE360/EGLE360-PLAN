@@ -46,7 +46,9 @@ public partial class DocumentsView
         (nameof(MarkupKind.Typewriter), "Schreibmaschine (Text ohne Rahmen, klicken und schreiben)", "M3,3 H13 M8,3 V13 M6,13 H10", Key.W),
         (nameof(MarkupKind.Callout), "Sprechblase (von der Pfeilspitze zum Textfeld ziehen)", "M6.5,1.5 H14.5 V8 H6.5 Z M8.5,4.75 H12.5 M6.5,6.5 L1.5,14.5 M1.5,11 V14.5 H5", Key.B),
         (nameof(MarkupKind.Note), "Notiz", "M2,2.5 H14 V10.5 H7 L4,13.5 L4.5,10.5 H2 Z M4.5,5 H11.5 M4.5,7.5 H9.5", Key.K),
-        (nameof(MarkupKind.Highlight), "Hervorhebung", "M2.5,14 H13.5 M5,11 L10.5,2.5 L13,4 L7.5,12.5 Z", Key.M),
+        (nameof(MarkupKind.Highlight), "Hervorhebung (folgt dem Text, sonst Rechteck)", "M2.5,14 H13.5 M5,11 L10.5,2.5 L13,4 L7.5,12.5 Z", Key.M),
+        (nameof(MarkupKind.Underline), "Text unterstreichen (über den Text ziehen)", "M4,2 V8 A4,4 0 0 0 12,8 V2 M2.5,14.5 H13.5", Key.U),
+        (nameof(MarkupKind.StrikeOut), "Text durchstreichen (über den Text ziehen)", "M11.5,3.5 C10,2 6,2 5,4 C4,6 6,7 8,7.5 M8,10 C10,10.5 12,11.5 11,13 C10,14.5 6,14.5 4.5,12.5 M2,8.5 H14", Key.X),
         (nameof(MarkupKind.Stamp), "Stempel (Klick setzt, Aufziehen bestimmt die Größe)", "M1.5,4 H14.5 V12 H1.5 Z M3,5.5 H13 V10.5 H3 Z M5,8 H11", Key.S),
         (nameof(MarkupKind.Dimension), "Bemaßung", "M1.5,10 H14.5 M1.5,7 V13 M14.5,7 V13 M4.5,8.5 L1.5,10 L4.5,11.5 M11.5,8.5 L14.5,10 L11.5,11.5 M6,5 H10", Key.D),
         (nameof(MarkupKind.Length), "Länge messen", "M2,10 H14 M2,7 V13 M14,7 V13 M5,10 V8.5 M8,10 V7.5 M11,10 V8.5", null),
@@ -227,6 +229,7 @@ public partial class DocumentsView
             MarkupKind.TextBox => d with { Stroke = _color, LineWidth = _width, Opacity = _opacity, Fill = _fill ? PdfColor.White : null },
             MarkupKind.Callout => d with { Stroke = _color, LineWidth = _width, Opacity = _opacity },
             MarkupKind.Typewriter => d with { Stroke = _color, Opacity = _opacity },
+            MarkupKind.Underline or MarkupKind.StrikeOut => d with { Stroke = _color, Opacity = _opacity },
             MarkupKind.Stamp => d with { Stroke = _stamp.Color, Opacity = _opacity < 1 ? _opacity : d.Opacity, Fill = _fill ? PdfColor.White : null },
             _ => d with { Stroke = _color, LineWidth = _width, Opacity = _opacity, Fill = _fill && MarkupKinds.CanFill(kind) ? Tint(_color) : null },
         };

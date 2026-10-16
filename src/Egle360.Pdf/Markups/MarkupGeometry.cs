@@ -79,7 +79,37 @@ public static class MarkupGeometry
                 layers.AddRange(NoteIcon(pts[0], m.TextRotation, s));
                 break;
             case MarkupKind.Highlight when pts.Count >= 2:
-                layers.Add(new ShapeLayer(new PathData().Rectangle(PdfRect.FromPoints(pts[0], pts[1])), null, 0, s.Fill ?? s.Stroke));
+                var marked = new PathData();
+                foreach (var tr in TextRects(m))
+                {
+                    marked.Rectangle(tr);
+                }
+                layers.Add(new ShapeLayer(marked, null, 0, s.Fill ?? s.Stroke));
+                break;
+            case MarkupKind.Underline or MarkupKind.StrikeOut when pts.Count >= 2:
+                var lines = new PathData();
+                var area = new PathData();
+                var width = w;
+                foreach (var tr in TextRects(m))
+                {
+                    area.Rectangle(tr);
+                    // Zeilen höher als breit gelten als senkrechter Text; die Linie läuft dann längs.
+                    var vertical = tr.Height > tr.Width * 1.5;
+                    var size = vertical ? tr.Width : tr.Height;
+                    width = Math.Max(w, size / 14);
+                    var at = m.Kind == MarkupKind.Underline ? size * 0.12 : size * 0.5;
+                    if (vertical)
+                    {
+                        lines.MoveTo(new(tr.Right - at, tr.Bottom)).LineTo(new(tr.Right - at, tr.Top));
+                    }
+                    else
+                    {
+                        lines.MoveTo(new(tr.Left, tr.Bottom + at)).LineTo(new(tr.Right, tr.Bottom + at));
+                    }
+                }
+                // Unsichtbare Fläche, damit ein Klick auf den Text die Markierung trifft.
+                layers.Add(new ShapeLayer(area, null, 0, null));
+                layers.Add(new ShapeLayer(lines, s.Stroke, width, null));
                 break;
             case MarkupKind.Length or MarkupKind.Polylength when pts.Count >= 2:
                 var run = new PathData().Polyline(pts, false);
@@ -319,6 +349,10 @@ public static class MarkupGeometry
         layers.Add(new ShapeLayer(path, null, 0, m.Style.Stroke, IsText: true, Clip: rect));
     }
 
+    /// <summary>Rechtecke einer Textmarkierung: je Pfad zwei Ecken.</summary>
+    public static IEnumerable<PdfRect> TextRects(Markup m) =>
+        m.Paths.Where(p => p.Count >= 2).Select(p => PdfRect.FromPoints(p[0], p[1]));
+
     /// <summary>Punkt am Textrahmen der Sprechblase, an dem die Pfeillinie ansetzt: die nächstgelegene Seitenmitte.</summary>
     public static PdfPoint CalloutAnchor(Markup m)
     {
@@ -505,7 +539,8 @@ public static class MarkupGeometry
         {
             return false;
         }
-        var areaCounts = m.Kind is MarkupKind.TextBox or MarkupKind.Note or MarkupKind.Highlight or MarkupKind.Count or MarkupKind.Stamp or MarkupKind.Callout or MarkupKind.Typewriter;
+        var areaCounts = m.Kind is MarkupKind.TextBox or MarkupKind.Note or MarkupKind.Highlight or MarkupKind.Count or MarkupKind.Stamp or MarkupKind.Callout or MarkupKind.Typewriter
+            or MarkupKind.Underline or MarkupKind.StrikeOut;
         foreach (var layer in shape.Layers)
         {
             var figures = layer.Path.Flatten().ToList();
@@ -604,7 +639,8 @@ public static class MarkupGeometry
     /// <summary>Griffpunkte zum Bearbeiten. Rahmenarten und Freihand: acht Rahmengriffe; Linienarten: Eckpunkte; Notiz: keine.</summary>
     public static IReadOnlyList<PdfPoint> Handles(Markup m)
     {
-        if (m.Kind == MarkupKind.Note)
+        // Notizen und Textmarkierungen über mehrere Zeilen haben keine Griffe; sie folgen dem Text.
+        if (m.Kind == MarkupKind.Note || (MarkupKinds.IsTextMarkup(m.Kind) && m.Paths.Count > 1))
         {
             return [];
         }
