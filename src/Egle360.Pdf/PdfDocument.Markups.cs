@@ -237,7 +237,7 @@ public sealed unsafe partial class PdfDocument
                         AddInk(annot, path);
                     }
                     break;
-                case MarkupKind.Line or MarkupKind.Arrow or MarkupKind.Polyline or MarkupKind.Length or MarkupKind.Polylength:
+                case MarkupKind.Line or MarkupKind.Arrow or MarkupKind.Polyline or MarkupKind.Length or MarkupKind.Polylength or MarkupKind.Angle:
                     AddInk(annot, m.Points);
                     break;
                 case MarkupKind.Polygon or MarkupKind.Cloud or MarkupKind.Perimeter or MarkupKind.Area:

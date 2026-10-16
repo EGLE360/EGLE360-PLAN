@@ -209,7 +209,7 @@ public sealed partial class PdfViewer
             Author = Author,
             Created = now,
             Modified = now,
-            Scale = MarkupKinds.IsMeasurement(m.Kind) && m.Kind != MarkupKind.Count ? scale ?? m.Scale : m.Scale,
+            Scale = MarkupKinds.NeedsScale(m.Kind) ? scale ?? m.Scale : m.Scale,
         }).ToList();
         if (!Run(() => _history!.Apply(page, [.. _document.GetMarkups(page), .. copies], description)))
         {
@@ -406,7 +406,7 @@ public sealed partial class PdfViewer
         if (_drawing is null || !_drawing.IsActive)
         {
             MeasureScale? scale = null;
-            if (_tool == ViewerTool.Draw && MarkupKinds.IsMeasurement(kind) && kind != MarkupKind.Count)
+            if (_tool == ViewerTool.Draw && MarkupKinds.NeedsScale(kind))
             {
                 scale = ScaleProvider(h.Page);
                 if (scale is null)

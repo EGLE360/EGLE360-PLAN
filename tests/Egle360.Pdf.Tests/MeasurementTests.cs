@@ -223,4 +223,24 @@ public class MeasurementTests
         Assert.Equal(2, read.Paths.Count);
         Assert.Equal(96.0, Measurement.Compute(read)!.Value.Value, 3);
     }
+
+    [Fact]
+    public void Winkel_mit_drei_Punkten()
+    {
+        var drawing = new MarkupDrawing(MarkupKind.Angle, MarkupStyle.DefaultFor(MarkupKind.Angle), "Prüfer", 0, 1, MeasureScale.FromRatio(50));
+        drawing.Press(new PdfPoint(100, 0));
+        Assert.Null(drawing.Release(new PdfPoint(100, 0)));
+        Assert.Equal(MarkupKind.Polyline, drawing.Preview!.Kind);
+        drawing.Press(new PdfPoint(0, 0));
+        Assert.Null(drawing.Release(new PdfPoint(0, 0)));
+        drawing.Press(new PdfPoint(50, 50));
+        var angle = drawing.Release(new PdfPoint(50, 50));
+        Assert.NotNull(angle);
+        Assert.Equal(3, angle.Points.Count);
+        Assert.Null(angle.Scale);
+        Assert.Equal("45,0°", Measurement.Label(angle));
+        Assert.Equal(90.0, Measurement.AngleDegrees(new(1, 0), new(0, 0), new(0, 5)), 9);
+        Assert.Equal(180.0, Measurement.AngleDegrees(new(1, 0), new(0, 0), new(-3, 0)), 9);
+        Assert.True(MarkupGeometry.BuildShape(angle, Text).Layers.Count >= 3);
+    }
 }

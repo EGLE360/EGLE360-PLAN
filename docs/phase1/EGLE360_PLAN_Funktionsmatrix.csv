@@ -190,7 +190,7 @@ QTO-011;2D-Mengenermittlung;Messwerkzeuge;Öffnungsabzüge nach Regelwerk;Abzugs
 QTO-012;2D-Mengenermittlung;Messwerkzeuge;Anzahl (Stückzählung);Nummerierte Zählmarken mit laufender Summe;Messung;Core;Umschalt+Alt+C;Q4/Q5;Verifiziert (offizielle Bluebeam-Quelle);MVP;5;;;Umgesetzt (Phase 5, Teil 1)
 QTO-013;2D-Mengenermittlung;Messwerkzeuge;Durchmesser;Kreisdurchmesser;Messung;Core;Umschalt+Alt+D;Q4/Q5;Verifiziert (offizielle Bluebeam-Quelle);Hoch;5;;;Offen
 QTO-014;2D-Mengenermittlung;Messwerkzeuge;Radius;Radius aus Mittelpunkt oder drei Punkten;Messung;Core;Umschalt+Alt+U;Q4/Q5;Verifiziert (offizielle Bluebeam-Quelle);Hoch;5;;;Offen
-QTO-015;2D-Mengenermittlung;Messwerkzeuge;Winkel;Winkel aus drei Punkten;Messung;Core;Umschalt+Alt+G;Q4/Q5;Verifiziert (offizielle Bluebeam-Quelle);Hoch;5;;Genauigkeit 0,01°;Offen
+QTO-015;2D-Mengenermittlung;Messwerkzeuge;Winkel;Winkel aus drei Punkten;Messung;Core;Umschalt+Alt+G;Q4/Q5;Verifiziert (offizielle Bluebeam-Quelle);Hoch;5;;Genauigkeit 0,01°;Umgesetzt (Phase 5, Teil 1)
 QTO-016;2D-Mengenermittlung;Messwerkzeuge;Dynamische Füllung;Flächen, Messungen und Bereiche automatisch aus geschlossenen Linien des Inhalts erzeugen;Messung;Complete;J;Q1/Q4/Q5;Verifiziert (offizielle Bluebeam-Quelle);Hoch;5;;Füllung stoppt an Lücken unter definierter Toleranz;Offen
 QTO-017;2D-Mengenermittlung;Messwerkzeuge;Live-Vorschau;Messwerte während des Zeichnens anzeigen;UI;Basics;;Q6;Verifiziert (offizielle Bluebeam-Quelle);MVP;5;;;Umgesetzt (Phase 5, Teil 1)
 QTO-018;2D-Mengenermittlung;Messwerkzeuge;Alle Messwerte anzeigen;Umfang, Fläche, Wandfläche, Volumen eines Markups gemeinsam;UI;Core;;Q6;Verifiziert (offizielle Bluebeam-Quelle);Hoch;5;;;Offen

@@ -44,7 +44,7 @@ public partial class DocumentsView
     /// <summary>Summen für mehrere ausgewählte Messungen derselben Art und Einheit.</summary>
     private static string SelectionTotals(IReadOnlyList<Markup> selected)
     {
-        var values = selected.Select(m => (m, v: Measurement.Compute(m))).Where(x => x.v is not null).ToList();
+        var values = selected.Select(m => (m, v: Measurement.Compute(m))).Where(x => x.v is { Unit: not "°" }).ToList();
         if (values.Count < 2 || values.Count != selected.Count || values.Select(x => x.v!.Value.Unit).Distinct().Count() != 1)
         {
             return "";
@@ -117,7 +117,7 @@ public partial class DocumentsView
                     continue;
                 }
                 var changed = open.Document.GetMarkups(page)
-                    .Where(m => MarkupKinds.IsMeasurement(m.Kind) && m.Kind != MarkupKind.Count && m.Scale != scale)
+                    .Where(m => MarkupKinds.NeedsScale(m.Kind) && m.Scale != scale)
                     .Select(m => m.WithScale(scale))
                     .ToList();
                 if (changed.Count > 0)

@@ -546,6 +546,7 @@ STATUS = {
     "QTO-005": "Umgesetzt (Phase 5, Teil 1): Fläche mit Umfang",
     "QTO-009": "Umgesetzt (Phase 5, Teil 1): Ausschnitte per Rechtsklick auf eine Fläche",
     "QTO-012": "Umgesetzt (Phase 5, Teil 1)",
+    "QTO-015": "Umgesetzt (Phase 5, Teil 1)",
     "QTO-017": "Umgesetzt (Phase 5, Teil 1)",
     "QTO-019": "Teilweise (Phase 5, Teil 1): Summen in der Liste und für ausgewählte Messungen",
     "QTO-SCL-001": "Umgesetzt (Phase 5, Teil 1): übliche Maßstäbe 1:1 bis 1:2000 je Seite",

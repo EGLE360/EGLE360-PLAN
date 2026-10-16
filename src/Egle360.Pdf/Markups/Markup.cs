@@ -21,6 +21,7 @@ public enum MarkupKind
     Perimeter,
     Area,
     Count,
+    Angle,
 }
 
 /// <summary>Punkt im PDF-Benutzerkoordinatensystem (Punkt, y nach oben, ohne Seitendrehung).</summary>
@@ -153,6 +154,7 @@ public static class MarkupKinds
         MarkupKind.Perimeter => "Umfang",
         MarkupKind.Area => "Fläche",
         MarkupKind.Count => "Anzahl",
+        MarkupKind.Angle => "Winkel",
         _ => kind.ToString(),
     };
 
@@ -162,7 +164,7 @@ public static class MarkupKinds
     /// <summary>Arten mit beliebig vielen Eckpunkten, die per Klick gesetzt werden.</summary>
     public static bool IsMultiPoint(MarkupKind kind) =>
         kind is MarkupKind.Polyline or MarkupKind.Polygon or MarkupKind.Cloud
-            or MarkupKind.Polylength or MarkupKind.Perimeter or MarkupKind.Area or MarkupKind.Count;
+            or MarkupKind.Polylength or MarkupKind.Perimeter or MarkupKind.Area or MarkupKind.Count or MarkupKind.Angle;
 
     public static bool IsClosed(MarkupKind kind) => kind is MarkupKind.Polygon or MarkupKind.Cloud or MarkupKind.Perimeter or MarkupKind.Area;
 
@@ -170,10 +172,18 @@ public static class MarkupKinds
         kind is MarkupKind.Rectangle or MarkupKind.Ellipse or MarkupKind.Polygon or MarkupKind.Cloud or MarkupKind.TextBox or MarkupKind.Area;
 
     /// <summary>Messwerkzeuge der Mengenermittlung.</summary>
-    public static bool IsMeasurement(MarkupKind kind) => kind is >= MarkupKind.Length and <= MarkupKind.Count;
+    public static bool IsMeasurement(MarkupKind kind) => kind is >= MarkupKind.Length and <= MarkupKind.Angle;
+
+    /// <summary>Messungen, deren Wert vom Maßstab abhängt (nicht Anzahl und Winkel).</summary>
+    public static bool NeedsScale(MarkupKind kind) => IsMeasurement(kind) && kind is not (MarkupKind.Count or MarkupKind.Angle);
 
     /// <summary>Mindestzahl an Punkten einer fertigen Markierung mit Einzelklicks.</summary>
-    public static int MinimumPoints(MarkupKind kind) => kind == MarkupKind.Count ? 1 : IsClosed(kind) ? 3 : 2;
+    public static int MinimumPoints(MarkupKind kind) => kind switch
+    {
+        MarkupKind.Count => 1,
+        MarkupKind.Angle => 3,
+        _ => IsClosed(kind) ? 3 : 2,
+    };
 
     public static bool HasText(MarkupKind kind) => kind is MarkupKind.TextBox or MarkupKind.Note;
 

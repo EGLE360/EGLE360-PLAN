@@ -91,6 +91,10 @@ public static class Measurement
         {
             return new MeasureValue(pts.Count, "Stk.");
         }
+        if (m.Kind == MarkupKind.Angle)
+        {
+            return pts.Count >= 3 ? new MeasureValue(AngleDegrees(pts[0], pts[1], pts[2]), "°") : null;
+        }
         if (m.Scale is not { } scale)
         {
             return null;
@@ -104,6 +108,19 @@ public static class Measurement
             MarkupKind.Area => new MeasureValue(NetArea(m) * f * f, sym + "²", PathLength(pts, closed: true) * f, sym),
             _ => null,
         };
+    }
+
+    /// <summary>Winkel am Scheitel <paramref name="vertex"/> zwischen den Schenkeln zu <paramref name="a"/> und <paramref name="b"/>, 0 bis 180 Grad.</summary>
+    public static double AngleDegrees(PdfPoint a, PdfPoint vertex, PdfPoint b)
+    {
+        var u = a - vertex;
+        var v = b - vertex;
+        if (u.Length < 1e-9 || v.Length < 1e-9)
+        {
+            return 0;
+        }
+        var cos = Math.Clamp((u.X * v.X + u.Y * v.Y) / (u.Length * v.Length), -1, 1);
+        return Math.Acos(cos) * 180 / Math.PI;
     }
 
     /// <summary>Fläche in Punkt² ohne die Ausschnitte (weitere Pfade der Markierung).</summary>
@@ -141,6 +158,10 @@ public static class Measurement
         if (m.Kind == MarkupKind.Count)
         {
             return $"{v.Value:0} Stk.";
+        }
+        if (m.Kind == MarkupKind.Angle)
+        {
+            return $"{Number(v.Value, 1)}°";
         }
         var d = Decimals(m.Scale!.Unit);
         return $"{Number(v.Value, d)} {v.Unit}";

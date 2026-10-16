@@ -74,6 +74,7 @@ Rechts in der Markierungsleiste sitzen die Messwerkzeuge und die Schaltfläche f
    - Umfang und Fläche: Eckpunkte klicken, beenden wie bei der Polylänge. Die Fläche zeigt zusätzlich den Umfang in der Statuszeile.
    - Ausschnitt: Rechtsklick auf den Rand oder die Beschriftung einer Fläche, „Ausschnitt hinzufügen“, dann das abzuziehende Polygon zeichnen (zum Beispiel einen Schacht). Der Wert wird um den Ausschnitt verringert.
    - Anzahl: jedes Objekt anklicken, mit Eingabetaste beenden. Braucht keinen Maßstab.
+   - Winkel: erst einen Punkt auf dem ersten Schenkel, dann den Scheitel, dann einen Punkt auf dem zweiten Schenkel klicken. Braucht keinen Maßstab.
 3. Der Wert steht als Beschriftung im Plan und ändert sich live beim Ziehen an den Eckpunkten.
 4. Wird der Maßstab einer Seite geändert, übernehmen die vorhandenen Messungen auf dieser Seite ihn. Rückgängig nimmt das zurück.
 
@@ -92,7 +93,7 @@ Diese Punkte sind geplant, aber noch nicht enthalten:
 
 - Drucken in Originalgröße oder gekachelt, geteilte und synchronisierte Ansichten, Metadaten bearbeiten.
 - Stempel, Unterschriften, Unterstreichen und Durchstreichen von Text, Bemaßungslinien, Drehen von Markierungen.
-- Messungen: Volumen, Wandflächen, Winkel, Radius, Objektfang, Kostenansätze, Excel als XLSX und die Übernahme in EGLE360 AVA.
+- Messungen: Volumen, Wandflächen, Radius, Objektfang, Kostenansätze, Excel als XLSX und die Übernahme in EGLE360 AVA.
 - Ob Bluebeam die gespeicherten Messungen als Messungen (mit Wert in der Markups-Liste) erkennt, ist noch nicht geprüft. Die Datei enthält dafür die genormten PDF-Messangaben; im Plan sind die Messungen in jedem Fall sichtbar.
 - BIM, 4D/5D, KI-Funktionen und die AVA-Anbindung folgen in späteren Phasen.
 - Programmsymbol, digitale Signatur und Installationsprogramm.

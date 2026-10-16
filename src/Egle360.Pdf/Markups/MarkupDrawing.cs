@@ -105,7 +105,8 @@ public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string aut
         if (MarkupKinds.IsMultiPoint(Kind))
         {
             _points[^1] = p;
-            return null;
+            // Der Winkel ist mit dem dritten Punkt fertig (zwei Schenkel, Scheitel in der Mitte).
+            return Kind == MarkupKind.Angle && _points.Count >= 4 ? Finish() : null;
         }
         if (Kind == MarkupKind.Freehand)
         {
@@ -174,6 +175,7 @@ public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string aut
             var previewKind = Kind switch
             {
                 MarkupKind.Count => Kind,
+                MarkupKind.Angle when pts.Count < 3 => MarkupKind.Polyline,
                 MarkupKind.Perimeter or MarkupKind.Area when pts.Count < 3 => MarkupKind.Polylength,
                 _ when MarkupKinds.IsMultiPoint(Kind) && pts.Count < 3 => MarkupKinds.IsMeasurement(Kind) ? MarkupKind.Polylength : MarkupKind.Polyline,
                 _ => Kind,
@@ -185,6 +187,6 @@ public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string aut
     private Markup? Complete(IReadOnlyList<IReadOnlyList<PdfPoint>>? paths)
     {
         Cancel();
-        return paths is null ? null : Markup.Create(Kind, paths, style, author, pageRotation) with { Scale = MarkupKinds.IsMeasurement(Kind) ? scale : null };
+        return paths is null ? null : Markup.Create(Kind, paths, style, author, pageRotation) with { Scale = MarkupKinds.NeedsScale(Kind) ? scale : null };
     }
 }

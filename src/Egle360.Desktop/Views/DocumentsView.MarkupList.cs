@@ -106,7 +106,7 @@ public partial class DocumentsView
     /// <summary>Summen je Messart und Einheit, z. B. „Fläche 112,50 m² (3)“.</summary>
     internal static string Totals(IReadOnlyList<MarkupRow> rows)
     {
-        var parts = rows.Where(r => r.Number is not null)
+        var parts = rows.Where(r => r.Number is not null && r.Unit != "°")
             .GroupBy(r => (r.Kind, r.Unit))
             .Select(g =>
             {

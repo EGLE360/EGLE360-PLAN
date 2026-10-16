@@ -110,7 +110,7 @@ public static class MarkupSerializer
     /// <summary>PDFium kann diese Anmerkungsarten nicht anlegen; sie entstehen als Ink und werden beim Speichern umgeschrieben.</summary>
     public static bool NeedsStandardPatch(MarkupKind kind) =>
         kind is MarkupKind.Line or MarkupKind.Arrow or MarkupKind.Polyline or MarkupKind.Polygon or MarkupKind.Cloud
-            or MarkupKind.Length or MarkupKind.Polylength or MarkupKind.Perimeter or MarkupKind.Area;
+            or MarkupKind.Length or MarkupKind.Polylength or MarkupKind.Perimeter or MarkupKind.Area or MarkupKind.Angle;
 
     /// <summary>Einträge, die beim Speichern in die Anmerkung geschrieben werden; null, wenn keine nötig sind.</summary>
     public static string? StandardEntries(Markup m)
@@ -126,6 +126,7 @@ public static class MarkupSerializer
             MarkupKind.Cloud => $"<</Subtype /Polygon /Vertices {Vertices()} /BE <</S /C /I 1>>>>",
             MarkupKind.Length when pts.Count >= 2 =>
                 $"<</Subtype /Line /L [{N(pts[0].X)} {N(pts[0].Y)} {N(pts[1].X)} {N(pts[1].Y)}] /IT /LineDimension{MeasureEntry(m)}>>",
+            MarkupKind.Angle => $"<</Subtype /PolyLine /Vertices {Vertices()}>>",
             MarkupKind.Polylength => $"<</Subtype /PolyLine /Vertices {Vertices()} /IT /PolyLineDimension{MeasureEntry(m)}>>",
             MarkupKind.Perimeter => $"<</Subtype /Polygon /Vertices {Vertices()} /IT /PolygonDimension{MeasureEntry(m)}>>",
             MarkupKind.Area => $"<</Subtype /Polygon /Vertices {Vertices()} /IT /PolygonDimension{MeasureEntry(m)}>>",

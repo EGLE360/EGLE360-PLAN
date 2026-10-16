@@ -153,7 +153,7 @@ internal static class SamplePlan
         var created = new DateTimeOffset(2026, 10, 16, 9, 45, 0, TimeSpan.FromHours(2));
         Markup Make(MarkupKind kind, string text, params PdfPoint[] pts) =>
             new($"e360-beispiel-{kind.ToString().ToLowerInvariant()}", kind, [pts], MarkupStyle.DefaultFor(kind), text, "Mengenermittlung", created, created,
-                Scale: kind == MarkupKind.Count ? null : scale);
+                Scale: MarkupKinds.NeedsScale(kind) ? scale : null);
         return
         [
             Make(MarkupKind.Area, "0.02 Küche", new(ox + 10 * M, oy + 6 * M), new(ox + 20 * M, oy + 6 * M), new(ox + 20 * M, oy + 16 * M), new(ox + 10 * M, oy + 16 * M)),

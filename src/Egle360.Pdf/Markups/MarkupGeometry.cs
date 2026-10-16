@@ -89,6 +89,16 @@ public static class MarkupGeometry
                 layers.Add(new ShapeLayer(contour, stroke, w, fill, EvenOdd: true));
                 AddLabel(layers, m, pts.Count >= 3 ? Centroid(pts) : PointAlong(pts, Measurement.PathLength(pts, false) / 2), outliner);
                 break;
+            case MarkupKind.Angle when pts.Count >= 3:
+                var legs = new PathData().Polyline([pts[0], pts[1], pts[2]], false);
+                var r = Math.Min(24, 0.4 * Math.Min(pts[0].DistanceTo(pts[1]), pts[2].DistanceTo(pts[1])));
+                legs.Append(AngleArc(pts[0], pts[1], pts[2], r));
+                layers.Add(new ShapeLayer(legs, s.Stroke, w, null));
+                AddLabel(layers, m, Bisector(pts[0], pts[1], pts[2], r + 4 + LabelSize(Measurement.Label(m), s.FontSize).Width / 2), outliner);
+                break;
+            case MarkupKind.Angle when pts.Count == 2:
+                layers.Add(new ShapeLayer(new PathData().Polyline(pts, false), s.Stroke, w, null));
+                break;
             case MarkupKind.Count when pts.Count >= 1:
                 var marker = CountMarkerRadius(w);
                 var dots = new PathData();
@@ -138,6 +148,53 @@ public static class MarkupGeometry
 
     /// <summary>Halbmesser der Zählpunkte in Punkt.</summary>
     public static double CountMarkerRadius(double lineWidth) => 3 + lineWidth;
+
+    /// <summary>Kreisbogen um den Scheitel zwischen den beiden Schenkeln (über den kleineren Winkel).</summary>
+    private static PathData AngleArc(PdfPoint a, PdfPoint vertex, PdfPoint b, double radius)
+    {
+        var path = new PathData();
+        if (radius <= 0)
+        {
+            return path;
+        }
+        var start = Math.Atan2(a.Y - vertex.Y, a.X - vertex.X);
+        var end = Math.Atan2(b.Y - vertex.Y, b.X - vertex.X);
+        var sweep = end - start;
+        while (sweep > Math.PI) sweep -= 2 * Math.PI;
+        while (sweep < -Math.PI) sweep += 2 * Math.PI;
+        const int steps = 16;
+        for (var i = 0; i <= steps; i++)
+        {
+            var t = start + sweep * i / steps;
+            var p = vertex + new PdfPoint(Math.Cos(t), Math.Sin(t)) * radius;
+            if (i == 0)
+            {
+                path.MoveTo(p);
+            }
+            else
+            {
+                path.LineTo(p);
+            }
+        }
+        return path;
+    }
+
+    /// <summary>Punkt auf der Winkelhalbierenden im Abstand <paramref name="distance"/> vom Scheitel.</summary>
+    private static PdfPoint Bisector(PdfPoint a, PdfPoint vertex, PdfPoint b, double distance)
+    {
+        var u = a - vertex;
+        var v = b - vertex;
+        if (u.Length < 1e-9 || v.Length < 1e-9)
+        {
+            return vertex;
+        }
+        var dir = u * (1 / u.Length) + v * (1 / v.Length);
+        if (dir.Length < 1e-9)
+        {
+            dir = new PdfPoint(-u.Y, u.X); // gestreckter Winkel: senkrecht zum Schenkel
+        }
+        return vertex + dir * (distance / dir.Length);
+    }
 
     /// <summary>Senkrechter Endstrich einer Messlinie am Punkt <paramref name="at"/>.</summary>
     private static PathData EndTick(PdfPoint from, PdfPoint at, double lineWidth)
