@@ -64,6 +64,8 @@ public partial class DocumentsView
     private readonly List<RadioButton> _swatches = [];
     private Button _widthButton = null!;
     private Button _scaleButton = null!;
+    private ToggleButton _snapButton = null!;
+    private bool _snap = true;
     private Button _opacityButton = null!;
     private ToggleButton _fillButton = null!;
     private Button _undoButton = null!;
@@ -107,6 +109,23 @@ public partial class DocumentsView
         }
         _scaleButton = TextButton("Maßstab der Seite", OnScaleMenu);
         MarkupBar.Children.Add(_scaleButton);
+        _snapButton = new ToggleButton
+        {
+            Style = (Style)FindResource("ToolToggle"),
+            Content = new Path { Style = (Style)FindResource("ToolIcon"), Data = Geometry.Parse("M5,5 H11 V11 H5 Z M8,1 V5 M8,11 V15 M1,8 H5 M11,8 H15") },
+            ToolTip = "Objektfang: Punkte rasten beim Zeichnen an Linienenden und -mitten des Plans und an Eckpunkten von Markierungen ein",
+            IsChecked = _snap,
+        };
+        AutomationPropertiesHelper.SetName(_snapButton, "Objektfang");
+        _snapButton.Click += (_, _) =>
+        {
+            _snap = _snapButton.IsChecked == true;
+            foreach (var open in _documents)
+            {
+                open.Viewer.SnapEnabled = _snap;
+            }
+        };
+        MarkupBar.Children.Add(_snapButton);
         _toolButtons["select"].IsChecked = true;
 
         MarkupBar.Children.Add(Separator());

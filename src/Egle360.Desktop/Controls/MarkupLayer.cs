@@ -67,6 +67,19 @@ public sealed class MarkupLayer : FrameworkElement
         InvalidateVisual();
     }
 
+    private PdfPoint? _snapMarker;
+
+    /// <summary>Fangmarke: kleines Quadrat an dem Punkt, an dem der nächste Klick einrastet.</summary>
+    public void SetSnapMarker(PdfPoint? point)
+    {
+        if (_snapMarker == point)
+        {
+            return;
+        }
+        _snapMarker = point;
+        InvalidateVisual();
+    }
+
     public void SetPreview(Markup? preview)
     {
         _preview = preview;
@@ -108,7 +121,20 @@ public sealed class MarkupLayer : FrameworkElement
         {
             DrawSelection(dc, Current(m));
         }
+        if (_snapMarker is { } snap)
+        {
+            var c = ToLocal(snap);
+            dc.DrawRectangle(null, SnapPen, new Rect(c.X - 5, c.Y - 5, 10, 10));
+        }
         dc.Pop();
+    }
+
+    private static readonly Pen SnapPen = FrozenPen(new Pen(new SolidColorBrush(Color.FromRgb(30, 140, 60)), 2));
+
+    private static Pen FrozenPen(Pen p)
+    {
+        p.Freeze();
+        return p;
     }
 
     private static readonly Brush HitBrush = Frozen(new SolidColorBrush(Color.FromArgb(90, 255, 214, 0)));

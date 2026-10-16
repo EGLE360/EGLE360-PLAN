@@ -146,6 +146,8 @@ public sealed partial class PdfViewer : Grid
         CancelDrawing();
         ClearVisuals();
         _transforms.Clear();
+        _snapIndexes.Clear();
+        _snapMarkerPage = -1;
         PruneSelection();
         _layout.SetPages(_document.GetPages().Select(p => (p.WidthPt, p.HeightPt)));
         _layout.SetViewportWidth(_scroll.ViewportWidth);

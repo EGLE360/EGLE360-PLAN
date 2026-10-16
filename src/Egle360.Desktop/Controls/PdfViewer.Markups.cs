@@ -34,6 +34,15 @@ public sealed partial class PdfViewer
     /// <summary>Darstellung für neue Markierungen einer Art.</summary>
     public Func<MarkupKind, MarkupStyle> StyleProvider { get; set; } = MarkupStyle.DefaultFor;
 
+    /// <summary>Objektfang beim Zeichnen und beim Ziehen von Eckpunkten.</summary>
+    public bool SnapEnabled { get; set; } = true;
+
+    /// <summary>Fangradius in DIP auf dem Bildschirm.</summary>
+    private const double SnapTolerance = 10;
+
+    /// <summary>Fangpunkte des Planinhalts je Seite, beim ersten Gebrauch berechnet.</summary>
+    private readonly Dictionary<int, SnapIndex> _snapIndexes = new();
+
     /// <summary>Anfangstext neuer Markierungen einer Art (Aufschrift des Stempels).</summary>
     public Func<MarkupKind, string> TextProvider { get; set; } = _ => "";
 
@@ -94,6 +103,7 @@ public sealed partial class PdfViewer
     public void SetTool(ViewerTool tool, MarkupKind? kind = null)
     {
         CancelDrawing();
+        ShowSnapMarker(-1, null);
         _cutout = null;
         _tool = tool;
         if (kind is { } k)
@@ -446,7 +456,7 @@ public sealed partial class PdfViewer
             _drawing = new MarkupDrawing(kind, style, Author, rotation, minSize, scale, _tool == ViewerTool.Draw ? TextProvider(kind) : "");
             _drawingPage = h.Page;
         }
-        _drawing.Press(Snap(h.User));
+        _drawing.Press(Snap(h.Page, h.User));
         _scroll.CaptureMouse();
         _visuals[_drawingPage].Layer.SetPreview(_drawing.Preview);
     }
@@ -515,9 +525,21 @@ public sealed partial class PdfViewer
         }
         if (_drawing is { IsActive: true } && PageAt(e, clampTo: true, page: _drawingPage) is { } h)
         {
-            _drawing.Move(Snap(h.User));
+            _drawing.Move(Snap(h.Page, h.User));
             _visuals.GetValueOrDefault(_drawingPage)?.Layer.SetPreview(_drawing.Preview);
             return;
+        }
+        if (_tool is ViewerTool.Draw or ViewerTool.Calibrate && _drawing is not { IsActive: true })
+        {
+            // Vor dem ersten Klick zeigt die Fangmarke, wo der Punkt landen würde.
+            if (PageAt(e) is { } hover)
+            {
+                Snap(hover.Page, hover.User);
+            }
+            else
+            {
+                ShowSnapMarker(-1, null);
+            }
         }
         if (_drag is { } drag && e.LeftButton == MouseButtonState.Pressed && _visuals.TryGetValue(drag.Page, out var visual))
         {
@@ -529,7 +551,7 @@ public sealed partial class PdfViewer
             drag.Moved = true;
             var start = visual.Layer.ToUser(drag.StartLocal);
             var overrides = drag.Handle >= 0
-                ? drag.Originals.ToDictionary(m => m.Id, m => MarkupGeometry.DragHandle(m, drag.Handle, pos.User))
+                ? drag.Originals.ToDictionary(m => m.Id, m => MarkupGeometry.DragHandle(m, drag.Handle, SnapHandle(drag.Page, pos.User, m)))
                 : drag.Originals.ToDictionary(m => m.Id, m => MarkupGeometry.Translate(m, pos.User.X - start.X, pos.User.Y - start.Y));
             visual.Layer.SetOverrides(overrides);
             return;
@@ -547,7 +569,8 @@ public sealed partial class PdfViewer
         if (_drawing is { IsActive: true } drawing && PageAt(e, clampTo: true, page: _drawingPage) is { } h)
         {
             var page = _drawingPage;
-            var markup = drawing.Release(Snap(h.User));
+            var markup = drawing.Release(Snap(h.Page, h.User));
+            ShowSnapMarker(-1, null);
             // Erst nach dem Auswerten freigeben: Der Verlust der Mauserfassung bricht sonst das Zeichnen ab.
             if (!MarkupKinds.IsMultiPoint(drawing.Kind) || markup is not null)
             {
@@ -571,6 +594,7 @@ public sealed partial class PdfViewer
         if (_drag is { } drag)
         {
             _drag = null;
+            ShowSnapMarker(-1, null);
             _scroll.ReleaseMouseCapture();
             if (drag.Moved && _visuals.TryGetValue(drag.Page, out var visual))
             {
@@ -583,9 +607,88 @@ public sealed partial class PdfViewer
         }
     }
 
-    /// <summary>Mit gedrückter Umschalttaste rastet der Punkt ein (waagrecht, senkrecht, 45 Grad, Quadrat).</summary>
-    private PdfPoint Snap(PdfPoint p) =>
-        _drawing?.Anchor is { } anchor && Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) ? MarkupDrawing.Constrain(_drawing.Kind, anchor, p) : p;
+    /// <summary>
+    /// Mit gedrückter Umschalttaste rastet der Punkt ein (waagrecht, senkrecht, 45 Grad, Quadrat). Sonst fängt der
+    /// Objektfang ihn an Linienenden und -mitten des Plans oder an Eckpunkten anderer Markierungen, wenn er nahe genug ist.
+    /// </summary>
+    private PdfPoint Snap(int page, PdfPoint p)
+    {
+        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+        {
+            ShowSnapMarker(-1, null);
+            return _drawing?.Anchor is { } anchor ? MarkupDrawing.Constrain(_drawing.Kind, anchor, p) : p;
+        }
+        var snapped = FindSnap(page, p, null);
+        ShowSnapMarker(page, snapped);
+        return snapped ?? p;
+    }
+
+    /// <summary>Objektfang beim Ziehen eines Eckpunkts; die bearbeitete Markierung fängt sich nicht selbst.</summary>
+    private PdfPoint SnapHandle(int page, PdfPoint p, Markup editing)
+    {
+        if (!MarkupGeometry.UsesVertexHandles(editing.Kind) && editing.Kind != MarkupKind.Callout || Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+        {
+            return p;
+        }
+        var snapped = FindSnap(page, p, editing.Id);
+        ShowSnapMarker(page, snapped);
+        return snapped ?? p;
+    }
+
+    private PdfPoint? FindSnap(int page, PdfPoint p, string? excludeId)
+    {
+        if (!SnapEnabled || _document is null || page < 0 || page >= _layout.PageCount)
+        {
+            return null;
+        }
+        var tolerance = SnapTolerance / (_layout.Zoom * PageLayoutDipPerPoint);
+        if (!_snapIndexes.TryGetValue(page, out var content))
+        {
+            try
+            {
+                content = _document.GetSnapIndex(page);
+            }
+            catch (PdfException)
+            {
+                content = SnapIndex.Empty;
+            }
+            _snapIndexes[page] = content;
+        }
+        PdfPoint? best = content.Nearest(p, tolerance);
+        var bestDistance = best is { } b ? b.DistanceTo(p) : tolerance;
+        foreach (var m in _document.GetMarkups(page))
+        {
+            if (m.Id == excludeId || m.Kind is MarkupKind.Freehand or MarkupKind.Note)
+            {
+                continue;
+            }
+            foreach (var q in m.Paths.SelectMany(path => path))
+            {
+                var d = q.DistanceTo(p);
+                if (d <= bestDistance)
+                {
+                    bestDistance = d;
+                    best = q;
+                }
+            }
+        }
+        return best;
+    }
+
+    private int _snapMarkerPage = -1;
+
+    private void ShowSnapMarker(int page, PdfPoint? point)
+    {
+        if (_snapMarkerPage >= 0 && _snapMarkerPage != page)
+        {
+            _visuals.GetValueOrDefault(_snapMarkerPage)?.Layer.SetSnapMarker(null);
+        }
+        _snapMarkerPage = point is null ? -1 : page;
+        if (page >= 0)
+        {
+            _visuals.GetValueOrDefault(page)?.Layer.SetSnapMarker(point);
+        }
+    }
 
     private void Commit(Markup? markup, int page)
     {

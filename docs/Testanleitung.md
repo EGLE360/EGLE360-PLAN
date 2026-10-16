@@ -64,6 +64,7 @@ Im Startbildschirm „Beispielplan öffnen“ wählen. Das ist ein frei erfunden
 | Bemaßung | D | Maßlinie aufziehen; braucht wie die Messungen einen Maßstab. Die Zahl steht über der Linie |
 
 - Mit gedrückter Umschalttaste rasten Linien waagrecht, senkrecht oder unter 45 Grad ein, Rechtecke werden quadratisch.
+- Objektfang (Schaltfläche mit dem Fadenkreuz neben dem Maßstab, standardmäßig an): Beim Zeichnen und beim Ziehen von Eckpunkten rastet der Punkt an Linienenden und Linienmitten des Plans und an Eckpunkten anderer Markierungen ein. Ein grünes Quadrat zeigt den Fangpunkt. Das funktioniert nur bei Vektorplänen (aus CAD exportiert), nicht bei gescannten. Die Umschalttaste schaltet den Fang vorübergehend ab.
 - Farbe, Linienbreite, Deckkraft und Füllung gelten für neue Markierungen und für die Auswahl.
 - Doppelklick bearbeitet Text oder Kommentar. Rechtsklick öffnet ein Menü (Text, Kopieren, Duplizieren, Vordergrund, Hintergrund, Löschen).
 - Strg+C, Strg+V, Strg+D (Duplizieren), Strg+A (alle auf der Seite), Entf, Esc, Strg+Z, Strg+Y.
@@ -106,7 +107,7 @@ Diese Punkte sind geplant, aber noch nicht enthalten:
 
 - Drucken in Originalgröße oder gekachelt, geteilte und synchronisierte Ansichten, Metadaten bearbeiten.
 - Stempel aus eigenen Bilddateien, Unterschriften, Unterstreichen und Durchstreichen von Text, Drehen von Markierungen.
-- Messungen: Objektfang, Gefälle, Kostenansätze und die Übernahme in EGLE360 AVA.
+- Messungen: Gefälle, Schnittpunktfang, Preislisten je Werkzeug und die Übernahme in EGLE360 AVA.
 - Ob Bluebeam die gespeicherten Messungen als Messungen (mit Wert in der Markups-Liste) erkennt, ist noch nicht geprüft. Die Datei enthält dafür die genormten PDF-Messangaben; im Plan sind die Messungen in jedem Fall sichtbar.
 - BIM, 4D/5D, KI-Funktionen und die AVA-Anbindung folgen in späteren Phasen.
 - Programmsymbol, digitale Signatur und Installationsprogramm.

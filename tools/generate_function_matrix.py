@@ -539,6 +539,7 @@ STATUS = {
     "MKP-EDIT-011": "Teilweise (Phase 4, Teil 2): Farbe, Linienbreite, Deckkraft, Füllung, Text, Kommentar",
     "MKP-EDIT-012": "Umgesetzt (Phase 5, Teil 2): Sperren und Entsperren, im PDF zusätzlich mit Locked-Flag",
     "MKP-EDIT-013": "Umgesetzt (Phase 4, Teil 2)",
+    "MKP-EDIT-016": "Teilweise (Phase 5, Teil 2): Fang an End- und Mittelpunkten des Planinhalts und an Eckpunkten von Markierungen; Schnittpunkte und Raster offen",
     "MKP-EDIT-017": "Umgesetzt (Phase 4, Teil 2): Umschalttaste beim Zeichnen",
     "MKP-EDIT-027": "Umgesetzt (Phase 4, Teil 2): Eckpunkte von Linien, Polygonen und Messungen ziehen",
     "MKP-LIST-001": "Teilweise (Phase 5, Teil 1): Liste aller Markierungen des Dokuments",

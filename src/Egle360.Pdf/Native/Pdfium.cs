@@ -87,6 +87,18 @@ internal static unsafe class Pdfium
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    public struct FS_MATRIX
+    {
+        public float a, b, c, d, e, f;
+    }
+
+    public const int FPDF_PAGEOBJ_PATH = 2;
+    public const int FPDF_PAGEOBJ_FORM = 5;
+    public const int FPDF_SEGMENT_LINETO = 0;
+    public const int FPDF_SEGMENT_BEZIERTO = 1;
+    public const int FPDF_SEGMENT_MOVETO = 2;
+
+    [StructLayout(LayoutKind.Sequential)]
     public struct FS_SIZEF
     {
         public float width;
@@ -180,6 +192,19 @@ internal static unsafe class Pdfium
     [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPage_GenerateContent(nint page);
 
     // Text lesen
+    // Seitenobjekte lesen (Objektfang)
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPage_CountObjects(nint page);
+    [DllImport(Lib, ExactSpelling = true)] public static extern nint FPDFPage_GetObject(nint page, int index);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPageObj_GetType(nint pageObject);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPageObj_GetMatrix(nint pageObject, FS_MATRIX* matrix);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPath_CountSegments(nint path);
+    [DllImport(Lib, ExactSpelling = true)] public static extern nint FPDFPath_GetPathSegment(nint path, int index);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPathSegment_GetPoint(nint segment, float* x, float* y);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPathSegment_GetType(nint segment);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPathSegment_GetClose(nint segment);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFFormObj_CountObjects(nint formObject);
+    [DllImport(Lib, ExactSpelling = true)] public static extern nint FPDFFormObj_GetObject(nint formObject, CULong index);
+
     [DllImport(Lib, ExactSpelling = true)] public static extern nint FPDFText_LoadPage(nint page);
     [DllImport(Lib, ExactSpelling = true)] public static extern void FPDFText_ClosePage(nint textPage);
     [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFText_CountChars(nint textPage);

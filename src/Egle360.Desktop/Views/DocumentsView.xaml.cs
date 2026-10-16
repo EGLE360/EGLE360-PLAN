@@ -110,7 +110,7 @@ public partial class DocumentsView : UserControl, IDisposable
 
     private OpenDocument AddDocument(PdfDocument document, string title)
     {
-        var viewer = new PdfViewer { Outliner = _outliner, StyleProvider = CurrentStyle, TextProvider = kind => kind == MarkupKind.Stamp ? _stamp.Title : "", Author = Environment.UserName };
+        var viewer = new PdfViewer { Outliner = _outliner, StyleProvider = CurrentStyle, TextProvider = kind => kind == MarkupKind.Stamp ? _stamp.Title : "", Author = Environment.UserName, SnapEnabled = _snap };
         var history = new MarkupHistory(document, _outliner);
         var open = new OpenDocument(document, viewer, history, title);
         open.Tab = CreateTab(open);
