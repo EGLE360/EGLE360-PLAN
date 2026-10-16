@@ -1,0 +1,565 @@
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using Egle360.Pdf;
+using Egle360.Pdf.Markups;
+
+namespace Egle360.Desktop.Controls;
+
+/// <summary>Zeichnen, Auswählen und Bearbeiten von Markierungen in der Ansicht.</summary>
+public sealed partial class PdfViewer
+{
+    /// <summary>Fangbereich für Linien und Griffe in DIP.</summary>
+    private const double HitTolerance = 5;
+
+    /// <summary>Mindestweg in DIP, ab dem Ziehen als Ziehen gilt.</summary>
+    private const double DragThreshold = 3;
+
+    private MarkupHistory? _history;
+    private ViewerTool _tool = ViewerTool.Select;
+    private MarkupDrawing? _drawing;
+    private int _drawingPage = -1;
+    private int _selectedPage = -1;
+    private readonly HashSet<string> _selected = [];
+    private EditDrag? _drag;
+
+    /// <summary>Laufendes Verschieben oder Ziehen an einem Griff.</summary>
+    private sealed record EditDrag(int Page, Point StartLocal, IReadOnlyList<Markup> Originals, int Handle)
+    {
+        public bool Moved { get; set; }
+    }
+
+    public ITextOutliner Outliner { get; set; } = new BlockTextOutliner();
+
+    /// <summary>Darstellung für neue Markierungen einer Art.</summary>
+    public Func<MarkupKind, MarkupStyle> StyleProvider { get; set; } = MarkupStyle.DefaultFor;
+
+    /// <summary>Autor neuer Markierungen (PDF-Schlüssel T).</summary>
+    public string Author { get; set; } = Environment.UserName;
+
+    public MarkupKind DrawKind { get; private set; } = MarkupKind.Rectangle;
+
+    public ViewerTool Tool => _tool;
+
+    /// <summary>Ausgelöst, wenn sich Auswahl oder Werkzeug ändern.</summary>
+    public event EventHandler? SelectionChanged;
+
+    public event EventHandler? ToolChanged;
+
+    /// <summary>Text einer Markierung soll bearbeitet werden (Doppelklick, neues Textfeld, Kontextmenü).</summary>
+    public event EventHandler<(int Page, Markup Markup)>? EditTextRequested;
+
+    public int SelectedPage => _selected.Count > 0 ? _selectedPage : -1;
+
+    public IReadOnlyList<Markup> SelectedMarkups =>
+        _document is null || _selected.Count == 0 || _selectedPage < 0 || _selectedPage >= _layout.PageCount
+            ? []
+            : _document.GetMarkups(_selectedPage).Where(m => _selected.Contains(m.Id)).ToList();
+
+    private bool CanAnnotate => _document is { CanAnnotate: true } && _history is not null;
+
+    public void SetTool(ViewerTool tool, MarkupKind? kind = null)
+    {
+        CancelDrawing();
+        _tool = tool;
+        if (kind is { } k)
+        {
+            DrawKind = k;
+        }
+        if (tool == ViewerTool.Draw)
+        {
+            ClearSelection();
+        }
+        UpdateCursor(null);
+        ToolChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void Select(int page, string id)
+    {
+        ClearSelection(raise: false);
+        _selectedPage = page;
+        _selected.Add(id);
+        RefreshSelection();
+    }
+
+    public void ClearSelection() => ClearSelection(raise: true);
+
+    private void ClearSelection(bool raise)
+    {
+        if (_selected.Count == 0)
+        {
+            return;
+        }
+        _selected.Clear();
+        RefreshSelection(raise);
+    }
+
+    public void DeleteSelection()
+    {
+        if (!CanAnnotate || _selected.Count == 0)
+        {
+            return;
+        }
+        var page = _selectedPage;
+        var ids = _selected.ToList();
+        ClearSelection(raise: false);
+        Run(() => _history!.Remove(page, ids));
+        SelectionChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Ändert alle ausgewählten Markierungen in einem Schritt (z. B. Farbe oder Linienbreite).</summary>
+    public void ApplyToSelection(Func<Markup, Markup> change, string description)
+    {
+        if (!CanAnnotate || _selected.Count == 0)
+        {
+            return;
+        }
+        var changed = SelectedMarkups.Select(change).ToList();
+        Run(() => _history!.ReplaceMany(_selectedPage, changed, description));
+    }
+
+    public void CancelDrawing()
+    {
+        _drawing?.Cancel();
+        _drawing = null;
+        if (_drawingPage >= 0 && _visuals.TryGetValue(_drawingPage, out var v))
+        {
+            v.Layer.SetPreview(null);
+        }
+        _drawingPage = -1;
+    }
+
+    // ---------- Anzeige ----------
+
+    private void OnMarkupsChanged(object? sender, int page)
+    {
+        if (_visuals.TryGetValue(page, out var visual))
+        {
+            RefreshLayer(visual);
+        }
+        PruneSelection();
+    }
+
+    private void RefreshLayer(PageVisual visual)
+    {
+        if (_document is null)
+        {
+            return;
+        }
+        visual.Layer.SetMarkups(_document.GetMarkups(visual.Index));
+        visual.Layer.SetOverrides(new Dictionary<string, Markup>());
+        visual.Layer.SetSelection(visual.Index == _selectedPage ? _selected : new HashSet<string>());
+    }
+
+    private void RefreshSelection(bool raise = true)
+    {
+        foreach (var (index, visual) in _visuals)
+        {
+            visual.Layer.SetSelection(index == _selectedPage ? new HashSet<string>(_selected) : new HashSet<string>());
+        }
+        if (raise)
+        {
+            SelectionChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>Entfernt Markierungen aus der Auswahl, die es nicht mehr gibt (z. B. nach Rückgängig).</summary>
+    private void PruneSelection()
+    {
+        if (_selected.Count == 0)
+        {
+            return;
+        }
+        if (_document is null || _selectedPage >= _layout.PageCount || _selectedPage >= _document.PageCount)
+        {
+            ClearSelection();
+            return;
+        }
+        var existing = _document.GetMarkups(_selectedPage).Select(m => m.Id).ToHashSet();
+        if (_selected.RemoveWhere(id => !existing.Contains(id)) > 0)
+        {
+            RefreshSelection();
+        }
+        else
+        {
+            RefreshSelection(raise: false);
+        }
+    }
+
+    private void UpdateCursor(MouseEventArgs? e)
+    {
+        if (_panStart is not null)
+        {
+            return;
+        }
+        Cursor = _tool switch
+        {
+            ViewerTool.Pan => Cursors.Hand,
+            ViewerTool.Draw => CanAnnotate ? Cursors.Cross : Cursors.No,
+            _ => e is not null && MarkupAt(e, out _, out _) is not null ? Cursors.SizeAll : Cursors.Arrow,
+        };
+    }
+
+    // ---------- Treffer ----------
+
+    /// <summary>Seite unter dem Mauszeiger mit Position in der Seite (DIP) und in Benutzerkoordinaten.</summary>
+    private (int Page, Point Local, PdfPoint User)? PageAt(MouseEventArgs e, bool clampTo = false, int page = -1)
+    {
+        if (_document is null || _layout.PageCount == 0)
+        {
+            return null;
+        }
+        var pos = e.GetPosition(_canvas);
+        int index;
+        if (page >= 0)
+        {
+            index = page;
+        }
+        else if (_layout.HitTest(pos.X, pos.Y) is { } hit)
+        {
+            index = hit.Page;
+        }
+        else
+        {
+            return null;
+        }
+        var rect = _layout.PageRect(index);
+        var local = new Point(pos.X - rect.X, pos.Y - rect.Y);
+        var inside = local.X >= 0 && local.Y >= 0 && local.X <= rect.Width && local.Y <= rect.Height;
+        if (!inside && !clampTo)
+        {
+            return null;
+        }
+        local = new Point(Math.Clamp(local.X, 0, rect.Width), Math.Clamp(local.Y, 0, rect.Height));
+        if (!_visuals.TryGetValue(index, out var visual))
+        {
+            return null;
+        }
+        return (index, local, visual.Layer.ToUser(local));
+    }
+
+    private Markup? MarkupAt(MouseEventArgs e, out int page, out Point local)
+    {
+        page = -1;
+        local = default;
+        if (PageAt(e) is not { } hit || !_visuals.TryGetValue(hit.Page, out var visual))
+        {
+            return null;
+        }
+        page = hit.Page;
+        local = hit.Local;
+        var tolerance = HitTolerance / Math.Max(1e-9, _layout.Zoom * PageLayoutDipPerPoint);
+        var current = visual.Layer.Markups.Select(visual.Layer.Current).ToList();
+        return MarkupGeometry.HitTestTopmost(current, hit.User, tolerance);
+    }
+
+    private const double PageLayoutDipPerPoint = Egle360.Pdf.Viewing.PageLayout.DipPerPoint;
+
+    // ---------- Maus ----------
+
+    private void OnLeftDown(object sender, MouseButtonEventArgs e)
+    {
+        if (IsOverScrollBar(e))
+        {
+            return;
+        }
+        _scroll.Focus();
+        e.Handled = true;
+        switch (_tool)
+        {
+            case ViewerTool.Pan:
+                StartPan(e);
+                break;
+            case ViewerTool.Draw when CanAnnotate:
+                DrawDown(e);
+                break;
+            case ViewerTool.Draw:
+                StartPan(e);
+                break;
+            default:
+                SelectDown(e);
+                break;
+        }
+    }
+
+    private void DrawDown(MouseButtonEventArgs e)
+    {
+        var multi = MarkupKinds.IsMultiPoint(DrawKind);
+        var hit = _drawing is { IsActive: true } && multi ? PageAt(e, clampTo: true, page: _drawingPage) : PageAt(e);
+        if (hit is not { } h)
+        {
+            return;
+        }
+        if (multi && e.ClickCount >= 2 && _drawing is not null)
+        {
+            Commit(_drawing.Finish(), _drawingPage);
+            return;
+        }
+        if (_drawing is null || !_drawing.IsActive)
+        {
+            var rotation = Transform(h.Page).Rotation;
+            var minSize = DragThreshold / (_layout.Zoom * PageLayoutDipPerPoint);
+            _drawing = new MarkupDrawing(DrawKind, StyleProvider(DrawKind), Author, rotation, minSize);
+            _drawingPage = h.Page;
+        }
+        _drawing.Press(h.User);
+        _scroll.CaptureMouse();
+        _visuals[_drawingPage].Layer.SetPreview(_drawing.Preview);
+    }
+
+    private void SelectDown(MouseButtonEventArgs e)
+    {
+        if (PageAt(e) is not { } hit || !_visuals.TryGetValue(hit.Page, out var visual))
+        {
+            ClearSelection();
+            StartPan(e);
+            return;
+        }
+        // Zuerst die Griffe der einzeln ausgewählten Markierung.
+        if (CanAnnotate && hit.Page == _selectedPage && _selected.Count == 1)
+        {
+            var selected = visual.Layer.Markups.FirstOrDefault(m => _selected.Contains(m.Id));
+            if (selected is not null && visual.Layer.HandleAt(selected, hit.Local) is var handle and >= 0)
+            {
+                _drag = new EditDrag(hit.Page, hit.Local, [selected], handle);
+                _scroll.CaptureMouse();
+                return;
+            }
+        }
+        var markup = MarkupAt(e, out _, out _);
+        if (markup is null)
+        {
+            ClearSelection();
+            StartPan(e);
+            return;
+        }
+        if (e.ClickCount >= 2)
+        {
+            Select(hit.Page, markup.Id);
+            EditTextRequested?.Invoke(this, (hit.Page, markup));
+            return;
+        }
+        var ctrl = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
+        if (ctrl && hit.Page == _selectedPage)
+        {
+            if (!_selected.Remove(markup.Id))
+            {
+                _selected.Add(markup.Id);
+            }
+            RefreshSelection();
+        }
+        else if (!(_selected.Contains(markup.Id) && hit.Page == _selectedPage))
+        {
+            Select(hit.Page, markup.Id);
+        }
+        if (CanAnnotate && _selected.Count > 0)
+        {
+            var originals = visual.Layer.Markups.Where(m => _selected.Contains(m.Id)).ToList();
+            _drag = new EditDrag(hit.Page, hit.Local, originals, -1);
+            _scroll.CaptureMouse();
+        }
+    }
+
+    private void OnMouseMove(object sender, MouseEventArgs e)
+    {
+        if (PanMove(e))
+        {
+            return;
+        }
+        if (_drawing is { IsActive: true } && PageAt(e, clampTo: true, page: _drawingPage) is { } h)
+        {
+            _drawing.Move(h.User);
+            _visuals.GetValueOrDefault(_drawingPage)?.Layer.SetPreview(_drawing.Preview);
+            return;
+        }
+        if (_drag is { } drag && e.LeftButton == MouseButtonState.Pressed && _visuals.TryGetValue(drag.Page, out var visual))
+        {
+            var pos = PageAt(e, clampTo: true, page: drag.Page)!.Value;
+            if (!drag.Moved && (pos.Local - drag.StartLocal).Length < DragThreshold)
+            {
+                return;
+            }
+            drag.Moved = true;
+            var start = visual.Layer.ToUser(drag.StartLocal);
+            var overrides = drag.Handle >= 0
+                ? drag.Originals.ToDictionary(m => m.Id, m => MarkupGeometry.DragHandle(m, drag.Handle, pos.User))
+                : drag.Originals.ToDictionary(m => m.Id, m => MarkupGeometry.Translate(m, pos.User.X - start.X, pos.User.Y - start.Y));
+            visual.Layer.SetOverrides(overrides);
+            return;
+        }
+        UpdateCursor(e);
+    }
+
+    private void OnLeftUp(object sender, MouseButtonEventArgs e)
+    {
+        if (EndPan())
+        {
+            UpdateCursor(e);
+            return;
+        }
+        if (_drawing is { IsActive: true } drawing && PageAt(e, clampTo: true, page: _drawingPage) is { } h)
+        {
+            var page = _drawingPage;
+            var markup = drawing.Release(h.User);
+            // Erst nach dem Auswerten freigeben: Der Verlust der Mauserfassung bricht sonst das Zeichnen ab.
+            if (!MarkupKinds.IsMultiPoint(drawing.Kind) || markup is not null)
+            {
+                _scroll.ReleaseMouseCapture();
+            }
+            if (markup is not null)
+            {
+                Commit(markup, page);
+            }
+            else
+            {
+                _scroll.ReleaseMouseCapture();
+                _visuals.GetValueOrDefault(page)?.Layer.SetPreview(drawing.Preview);
+                if (!drawing.IsActive)
+                {
+                    CancelDrawing();
+                }
+            }
+            return;
+        }
+        if (_drag is { } drag)
+        {
+            _drag = null;
+            _scroll.ReleaseMouseCapture();
+            if (drag.Moved && _visuals.TryGetValue(drag.Page, out var visual))
+            {
+                var changed = drag.Originals.Select(visual.Layer.Current).ToList();
+                var description = drag.Handle >= 0 ? $"{MarkupKinds.DisplayName(changed[0].Kind)} ändern"
+                    : changed.Count == 1 ? $"{MarkupKinds.DisplayName(changed[0].Kind)} verschieben" : $"{changed.Count} Markierungen verschieben";
+                Run(() => _history!.ReplaceMany(drag.Page, changed, description));
+                visual.Layer.SetOverrides(new Dictionary<string, Markup>());
+            }
+        }
+    }
+
+    private void Commit(Markup? markup, int page)
+    {
+        CancelDrawing();
+        _scroll.ReleaseMouseCapture();
+        if (markup is null || _history is null)
+        {
+            return;
+        }
+        if (!Run(() => _history.Add(page, markup)))
+        {
+            return;
+        }
+        // Nach dem Zeichnen zurück zur Auswahl, die neue Markierung ist ausgewählt.
+        SetTool(ViewerTool.Select);
+        Select(page, markup.Id);
+        if (MarkupKinds.HasText(markup.Kind))
+        {
+            EditTextRequested?.Invoke(this, (page, markup));
+        }
+    }
+
+    /// <summary>Bricht Ziehen ab, wenn die Maus unerwartet freigegeben wird (z. B. durch einen Dialog).</summary>
+    private void AbortPointerAction()
+    {
+        _panStart = null;
+        if (_drag is { } drag)
+        {
+            _drag = null;
+            _visuals.GetValueOrDefault(drag.Page)?.Layer.SetOverrides(new Dictionary<string, Markup>());
+        }
+        if (_drawing is { } d && !MarkupKinds.IsMultiPoint(d.Kind))
+        {
+            CancelDrawing();
+        }
+    }
+
+    private void OnRightUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_drawing is { IsActive: true })
+        {
+            // Rechtsklick schließt Polylinie, Polygon und Wolke ab, wie die Eingabetaste.
+            Commit(_drawing.Finish(), _drawingPage);
+            e.Handled = true;
+            return;
+        }
+        var markup = MarkupAt(e, out var page, out _);
+        if (markup is null)
+        {
+            return;
+        }
+        if (!_selected.Contains(markup.Id) || page != _selectedPage)
+        {
+            Select(page, markup.Id);
+        }
+        var menu = new ContextMenu { PlacementTarget = _scroll };
+        var editable = CanAnnotate;
+        void Add(string header, Action action, bool enabled = true)
+        {
+            var item = new MenuItem { Header = header, IsEnabled = enabled };
+            item.Click += (_, _) => action();
+            menu.Items.Add(item);
+        }
+        Add(MarkupKinds.HasText(markup.Kind) ? "Text bearbeiten …" : "Kommentar bearbeiten …", () => EditTextRequested?.Invoke(this, (page, markup)), editable);
+        menu.Items.Add(new Separator());
+        Add("In den Vordergrund", () => Reorder(page, markup.Id, toFront: true), editable);
+        Add("In den Hintergrund", () => Reorder(page, markup.Id, toFront: false), editable);
+        menu.Items.Add(new Separator());
+        Add("Löschen", DeleteSelection, editable);
+        menu.IsOpen = true;
+        e.Handled = true;
+    }
+
+    private void Reorder(int page, string id, bool toFront)
+    {
+        var list = _document!.GetMarkups(page).ToList();
+        var m = list.First(x => x.Id == id);
+        list.Remove(m);
+        if (toFront)
+        {
+            list.Add(m);
+        }
+        else
+        {
+            list.Insert(0, m);
+        }
+        Run(() => _history!.Apply(page, list, toFront ? "In den Vordergrund" : "In den Hintergrund"));
+    }
+
+    private bool HandleMarkupKey(Key key)
+    {
+        switch (key)
+        {
+            case Key.Escape when _drawing is { IsActive: true }:
+                CancelDrawing();
+                return true;
+            case Key.Escape when _selected.Count > 0:
+                ClearSelection();
+                return true;
+            case Key.Escape when _tool != ViewerTool.Select:
+                SetTool(ViewerTool.Select);
+                return true;
+            case Key.Enter when _drawing is { IsActive: true }:
+                Commit(_drawing.Finish(), _drawingPage);
+                return true;
+            case Key.Delete or Key.Back when _selected.Count > 0:
+                DeleteSelection();
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>Führt eine Änderung aus und zeigt Fehler (z. B. fehlende Berechtigung) als Meldung.</summary>
+    private bool Run(Action action)
+    {
+        try
+        {
+            action();
+            return true;
+        }
+        catch (PdfException ex)
+        {
+            MessageBox.Show(Window.GetWindow(this)!, ex.Message, "EGLE360 PLAN", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
+        }
+    }
+}

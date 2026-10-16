@@ -26,6 +26,26 @@ internal static class Dialogs
         return Show(owner, title, hint, box, "Weiter", () => box.Text, () => { box.Focus(); box.SelectAll(); });
     }
 
+    /// <summary>Mehrzeilige Texteingabe (Markierungstext, Kommentar). Strg+Eingabe übernimmt.</summary>
+    public static string? AskMultilineText(Window owner, string title, string hint, string initial)
+    {
+        var box = new TextBox
+        {
+            Style = (Style)owner.FindResource("InputBox"),
+            Text = initial,
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.Wrap,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            MinHeight = 110,
+            MaxHeight = 320,
+            Width = 460,
+            VerticalContentAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, 12, 0, 0),
+        };
+        return Show(owner, title, hint + " Übernehmen mit Strg+Eingabe.", box, "Übernehmen", () => box.Text, () => { box.Focus(); box.CaretIndex = box.Text.Length; },
+            submitOnCtrlEnter: box);
+    }
+
     public static void ShowProperties(Window owner, PdfDocument doc, string title)
     {
         var meta = doc.GetMetadata();
@@ -85,7 +105,7 @@ internal static class Dialogs
     };
 
     /// <summary>Allgemeiner Dialog mit Titel, Hinweis, Inhalt und Schaltflächen. Liefert null bei Abbruch.</summary>
-    private static string? Show(Window owner, string title, string hint, UIElement content, string? okText, Func<string> result, Action focus)
+    private static string? Show(Window owner, string title, string hint, UIElement content, string? okText, Func<string> result, Action focus, UIElement? submitOnCtrlEnter = null)
     {
         var window = new Window
         {
@@ -124,6 +144,18 @@ internal static class Dialogs
         panel.Children.Add(buttons);
         window.Content = panel;
         window.Loaded += (_, _) => focus();
+        if (submitOnCtrlEnter is not null)
+        {
+            submitOnCtrlEnter.PreviewKeyDown += (_, e) =>
+            {
+                if (e.Key == Key.Enter && Keyboard.Modifiers == ModifierKeys.Control)
+                {
+                    answer = result();
+                    window.DialogResult = true;
+                    e.Handled = true;
+                }
+            };
+        }
         return window.ShowDialog() == true ? answer : null;
     }
 }

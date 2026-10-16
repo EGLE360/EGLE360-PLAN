@@ -1,0 +1,394 @@
+using System.Globalization;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Shapes;
+using Egle360.Desktop.Controls;
+using Egle360.Desktop.Services;
+using Egle360.Pdf;
+using Egle360.Pdf.Markups;
+
+namespace Egle360.Desktop.Views;
+
+/// <summary>Markierungsleiste: Werkzeuge, Farbe, Linienbreite, Deckkraft, Füllung, Rückgängig und Wiederholen.</summary>
+public partial class DocumentsView
+{
+    private static readonly (string Name, PdfColor Color)[] Palette =
+    [
+        ("Rot", new PdfColor(200, 30, 30)),
+        ("Blau", new PdfColor(22, 119, 210)),
+        ("Grün", new PdfColor(30, 140, 60)),
+        ("Orange", new PdfColor(230, 120, 0)),
+        ("Violett", new PdfColor(150, 60, 190)),
+        ("Gelb", new PdfColor(255, 214, 10)),
+        ("Schwarz", new PdfColor(30, 30, 30)),
+    ];
+
+    private static readonly double[] Widths = [0.5, 1, 1.5, 2, 3, 5];
+    private static readonly double[] Opacities = [1, 0.75, 0.5, 0.25];
+
+    /// <summary>Werkzeuge mit Symbol (16 × 16, Strichzeichnung) und Tastenkürzel.</summary>
+    private static readonly (string Key, string Name, string Icon, Key? Shortcut)[] Tools =
+    [
+        ("select", "Auswählen", "M3.5,1.5 L3.5,13.5 L6.8,10.4 L9,15 L11,14 L8.8,9.5 L13,9.5 Z", Key.V),
+        ("pan", "Ansicht verschieben", "M5,8 V3.5 M7.5,7.5 V2 M10,7.5 V2.5 M12.5,8.5 V4.5 M5,8 C4,7 2.5,7.5 3,9 L5.5,13 C6.5,14.5 8,15 9.5,15 C11.5,15 12.5,13.5 12.5,11.5 V8.5", Key.H),
+        (nameof(MarkupKind.Rectangle), "Rechteck", "M2,3.5 H14 V12.5 H2 Z", Key.R),
+        (nameof(MarkupKind.Ellipse), "Ellipse", "M2,8 A6,4.5 0 1 0 14,8 A6,4.5 0 1 0 2,8 Z", Key.E),
+        (nameof(MarkupKind.Line), "Linie", "M2,14 L14,2", Key.L),
+        (nameof(MarkupKind.Arrow), "Pfeil", "M2,14 L14,2 M8,2 H14 V8", Key.A),
+        (nameof(MarkupKind.Polyline), "Polylinie (Abschluss mit Doppelklick oder Eingabetaste)", "M1.5,13 L5,4 L10,11 L14.5,3", Key.N),
+        (nameof(MarkupKind.Polygon), "Polygon (Abschluss mit Doppelklick oder Eingabetaste)", "M8,1.5 L14.5,6.5 L12,14.5 H4 L1.5,6.5 Z", Key.P),
+        (nameof(MarkupKind.Cloud), "Wolke (Abschluss mit Doppelklick oder Eingabetaste)", "M3.5,11 A2.5,2.5 0 0 1 2.5,6 A3,3 0 0 1 7.5,3.5 A3,3 0 0 1 12.5,5 A2.5,2.5 0 0 1 13,10.5 A3,3 0 0 1 8,12.5 A3,3 0 0 1 3.5,11 Z", Key.C),
+        (nameof(MarkupKind.Freehand), "Freihand", "M1.5,11 C4,3 6,3 7,8 C8,13 10,13 14.5,4", Key.F),
+        (nameof(MarkupKind.TextBox), "Textfeld", "M1.5,2.5 H14.5 V13.5 H1.5 Z M5,5.5 H11 M8,5.5 V11", Key.T),
+        (nameof(MarkupKind.Note), "Notiz", "M2,2.5 H14 V10.5 H7 L4,13.5 L4.5,10.5 H2 Z M4.5,5 H11.5 M4.5,7.5 H9.5", Key.K),
+        (nameof(MarkupKind.Highlight), "Hervorhebung", "M2.5,14 H13.5 M5,11 L10.5,2.5 L13,4 L7.5,12.5 Z", Key.M),
+    ];
+
+    private readonly WpfTextOutliner _outliner = new();
+    private readonly Dictionary<string, RadioButton> _toolButtons = new();
+    private readonly List<RadioButton> _swatches = [];
+    private Button _widthButton = null!;
+    private Button _opacityButton = null!;
+    private ToggleButton _fillButton = null!;
+    private Button _undoButton = null!;
+    private Button _redoButton = null!;
+    private Button _deleteMarkupButton = null!;
+    private PdfColor _color = Palette[0].Color;
+    private double _width = 1.5;
+    private double _opacity = 1;
+    private bool _fill;
+    private bool _syncingTools;
+
+    private void BuildMarkupBar()
+    {
+        foreach (var (key, name, icon, shortcut) in Tools)
+        {
+            var button = new RadioButton
+            {
+                Style = (Style)FindResource("ToolToggle"),
+                GroupName = "MarkupTools",
+                Content = new Path { Style = (Style)FindResource("ToolIcon"), Data = Geometry.Parse(icon) },
+                ToolTip = shortcut is { } k ? $"{name} ({k})" : name,
+                Tag = key,
+            };
+            AutomationPropertiesHelper.SetName(button, name);
+            button.Checked += OnToolChecked;
+            _toolButtons[key] = button;
+            MarkupBar.Children.Add(button);
+            if (key == "pan")
+            {
+                MarkupBar.Children.Add(Separator());
+            }
+        }
+        _toolButtons["select"].IsChecked = true;
+
+        MarkupBar.Children.Add(Separator());
+        foreach (var (name, color) in Palette)
+        {
+            var swatch = new RadioButton
+            {
+                Style = (Style)FindResource("ColorSwatch"),
+                GroupName = "MarkupColor",
+                Background = new SolidColorBrush(Color.FromRgb(color.R, color.G, color.B)),
+                ToolTip = $"Farbe {name}",
+                Tag = color,
+                IsChecked = color == _color,
+            };
+            AutomationPropertiesHelper.SetName(swatch, $"Farbe {name}");
+            swatch.Checked += (_, _) => OnColorChosen(color);
+            _swatches.Add(swatch);
+            MarkupBar.Children.Add(swatch);
+        }
+
+        MarkupBar.Children.Add(Separator());
+        _widthButton = TextButton("Linienbreite", OnWidthMenu);
+        _opacityButton = TextButton("Deckkraft", OnOpacityMenu);
+        _fillButton = new ToggleButton
+        {
+            Style = (Style)FindResource("ToolToggle"),
+            Content = new Path { Style = (Style)FindResource("ToolIcon"), Data = Geometry.Parse("M2,3.5 H14 V12.5 H2 Z M2,7 L5.5,3.5 M2,11 L9.5,3.5 M4.5,12.5 L13.5,3.5 M8.5,12.5 L14,7"), },
+            ToolTip = "Fläche füllen",
+        };
+        AutomationPropertiesHelper.SetName(_fillButton, "Fläche füllen");
+        _fillButton.Click += (_, _) => OnFillToggled(_fillButton.IsChecked == true);
+        MarkupBar.Children.Add(_widthButton);
+        MarkupBar.Children.Add(_opacityButton);
+        MarkupBar.Children.Add(_fillButton);
+
+        MarkupBar.Children.Add(Separator());
+        _undoButton = GlyphButton("", "Rückgängig (Strg+Z)", (_, _) => Undo());
+        _redoButton = GlyphButton("", "Wiederholen (Strg+Y)", (_, _) => Redo());
+        _deleteMarkupButton = GlyphButton("", "Markierung löschen (Entf)", (_, _) => _active?.Viewer.DeleteSelection());
+        MarkupBar.Children.Add(_undoButton);
+        MarkupBar.Children.Add(_redoButton);
+        MarkupBar.Children.Add(_deleteMarkupButton);
+        RefreshStyleButtons();
+    }
+
+    private Border Separator() => new() { Style = (Style)FindResource("ToolSeparator") };
+
+    private Button GlyphButton(string glyph, string tooltip, RoutedEventHandler click)
+    {
+        var b = new Button { Style = (Style)FindResource("ToolButton"), Content = glyph, ToolTip = tooltip };
+        AutomationPropertiesHelper.SetName(b, tooltip);
+        b.Click += click;
+        return b;
+    }
+
+    private Button TextButton(string name, RoutedEventHandler click)
+    {
+        var b = new Button
+        {
+            Style = (Style)FindResource("ToolButton"),
+            FontFamily = (FontFamily)FindResource("FontFamilyUi"),
+            FontSize = 12,
+            Width = double.NaN,
+            Padding = new Thickness(8, 0, 8, 0),
+            MinWidth = 58,
+            ToolTip = name,
+        };
+        AutomationPropertiesHelper.SetName(b, name);
+        b.Click += click;
+        return b;
+    }
+
+    // ---------- Darstellung neuer und ausgewählter Markierungen ----------
+
+    /// <summary>Darstellung für neue Markierungen aus den Einstellungen der Leiste.</summary>
+    private MarkupStyle CurrentStyle(MarkupKind kind)
+    {
+        var d = MarkupStyle.DefaultFor(kind);
+        return kind switch
+        {
+            MarkupKind.Highlight => d with { Stroke = _color, Fill = _color, Opacity = _opacity < 1 ? _opacity : 0.4 },
+            MarkupKind.Note => d with { Fill = _color == Palette[0].Color ? d.Fill : _color, Opacity = _opacity },
+            MarkupKind.TextBox => d with { Stroke = _color, LineWidth = _width, Opacity = _opacity, Fill = _fill ? PdfColor.White : null },
+            _ => d with { Stroke = _color, LineWidth = _width, Opacity = _opacity, Fill = _fill && MarkupKinds.CanFill(kind) ? Tint(_color) : null },
+        };
+    }
+
+    /// <summary>Helle Füllfarbe zur Linienfarbe (20 % Farbe, 80 % Weiß).</summary>
+    private static PdfColor Tint(PdfColor c) => new((byte)(c.R * 0.2 + 204), (byte)(c.G * 0.2 + 204), (byte)(c.B * 0.2 + 204));
+
+    private void OnColorChosen(PdfColor color)
+    {
+        _color = color;
+        _active?.Viewer.ApplyToSelection(m => m.Kind switch
+        {
+            MarkupKind.Highlight => m.WithStyle(m.Style with { Stroke = color, Fill = color }),
+            MarkupKind.Note => m.WithStyle(m.Style with { Fill = color }),
+            MarkupKind.TextBox => m.WithStyle(m.Style with { Stroke = color }),
+            _ => m.WithStyle(m.Style with { Stroke = color, Fill = m.Style.Fill is null ? null : Tint(color) }),
+        }, "Farbe ändern");
+    }
+
+    private void OnWidthMenu(object sender, RoutedEventArgs e) =>
+        ShowChoiceMenu(_widthButton, Widths, _width, w => $"{w.ToString("0.#", CultureInfo.CurrentCulture)} pt", w =>
+        {
+            _width = w;
+            _active?.Viewer.ApplyToSelection(m => m.Kind is MarkupKind.Highlight or MarkupKind.Note ? m : m.WithStyle(m.Style with { LineWidth = w }), "Linienbreite ändern");
+            RefreshStyleButtons();
+        });
+
+    private void OnOpacityMenu(object sender, RoutedEventArgs e) =>
+        ShowChoiceMenu(_opacityButton, Opacities, _opacity, o => $"{o * 100:0} %", o =>
+        {
+            _opacity = o;
+            _active?.Viewer.ApplyToSelection(m => m.WithStyle(m.Style with { Opacity = o }), "Deckkraft ändern");
+            RefreshStyleButtons();
+        });
+
+    private void OnFillToggled(bool fill)
+    {
+        _fill = fill;
+        _active?.Viewer.ApplyToSelection(m => !MarkupKinds.CanFill(m.Kind) ? m
+            : m.WithStyle(m.Style with { Fill = fill ? (m.Kind == MarkupKind.TextBox ? PdfColor.White : Tint(m.Style.Stroke)) : null }), fill ? "Füllung hinzufügen" : "Füllung entfernen");
+    }
+
+    private void ShowChoiceMenu(Button target, double[] values, double current, Func<double, string> label, Action<double> choose)
+    {
+        var menu = new ContextMenu { PlacementTarget = target, Placement = PlacementMode.Bottom };
+        foreach (var v in values)
+        {
+            var item = new MenuItem { Header = label(v), IsCheckable = true, IsChecked = Math.Abs(v - current) < 1e-9 };
+            item.Click += (_, _) => choose(v);
+            menu.Items.Add(item);
+        }
+        menu.IsOpen = true;
+    }
+
+    private void RefreshStyleButtons()
+    {
+        _widthButton.Content = $"{_width.ToString("0.#", CultureInfo.CurrentCulture)} pt";
+        _opacityButton.Content = $"{_opacity * 100:0} %";
+        _fillButton.IsChecked = _fill;
+    }
+
+    // ---------- Werkzeuge ----------
+
+    private void OnToolChecked(object sender, RoutedEventArgs e)
+    {
+        if (_syncingTools || sender is not RadioButton { Tag: string key } || _active is null)
+        {
+            return;
+        }
+        ApplyTool(_active.Viewer, key);
+        _active.Viewer.FocusView();
+    }
+
+    private static void ApplyTool(PdfViewer viewer, string key)
+    {
+        switch (key)
+        {
+            case "select":
+                viewer.SetTool(ViewerTool.Select);
+                break;
+            case "pan":
+                viewer.SetTool(ViewerTool.Pan);
+                break;
+            default:
+                viewer.SetTool(ViewerTool.Draw, Enum.Parse<MarkupKind>(key));
+                break;
+        }
+    }
+
+    private string CheckedToolKey => _toolButtons.FirstOrDefault(t => t.Value.IsChecked == true).Key ?? "select";
+
+    /// <summary>Werkzeugleiste an das Werkzeug der Ansicht angleichen (z. B. nach dem Zeichnen zurück zur Auswahl).</summary>
+    private void SyncToolButtons(PdfViewer viewer)
+    {
+        var key = viewer.Tool switch
+        {
+            ViewerTool.Pan => "pan",
+            ViewerTool.Draw => viewer.DrawKind.ToString(),
+            _ => "select",
+        };
+        _syncingTools = true;
+        _toolButtons[key].IsChecked = true;
+        _syncingTools = false;
+    }
+
+    private void RefreshMarkupBar()
+    {
+        var doc = _active?.Document;
+        var canAnnotate = doc is { CanAnnotate: true };
+        MarkupBarBorder.Visibility = _active is null ? Visibility.Collapsed : Visibility.Visible;
+        foreach (var (key, button) in _toolButtons)
+        {
+            button.IsEnabled = key is "select" or "pan" || canAnnotate;
+        }
+        foreach (var swatch in _swatches)
+        {
+            swatch.IsEnabled = canAnnotate;
+        }
+        _widthButton.IsEnabled = _opacityButton.IsEnabled = _fillButton.IsEnabled = canAnnotate;
+        var history = _active?.History;
+        _undoButton.IsEnabled = history?.CanUndo == true;
+        _redoButton.IsEnabled = history?.CanRedo == true;
+        _undoButton.ToolTip = history?.UndoDescription is { } u ? $"Rückgängig: {u} (Strg+Z)" : "Rückgängig (Strg+Z)";
+        _redoButton.ToolTip = history?.RedoDescription is { } r ? $"Wiederholen: {r} (Strg+Y)" : "Wiederholen (Strg+Y)";
+        var selected = _active?.Viewer.SelectedMarkups ?? [];
+        _deleteMarkupButton.IsEnabled = canAnnotate && selected.Count > 0;
+        StatusMarkup.Text = selected.Count switch
+        {
+            0 => "",
+            1 => $"{MarkupKinds.DisplayName(selected[0].Kind)} ausgewählt, {selected[0].Author}, {selected[0].Modified.LocalDateTime:g}",
+            _ => $"{selected.Count} Markierungen ausgewählt",
+        };
+        if (_active is not null && !canAnnotate)
+        {
+            StatusMarkup.Text = "Markierungen sind laut Berechtigungen des Dokuments nicht erlaubt.";
+        }
+    }
+
+    private void Undo()
+    {
+        if (_active?.History.Undo() is { } page)
+        {
+            _active.Viewer.GoToPageIfHidden(page);
+        }
+    }
+
+    private void Redo()
+    {
+        if (_active?.History.Redo() is { } page)
+        {
+            _active.Viewer.GoToPageIfHidden(page);
+        }
+    }
+
+    private bool HandleMarkupShortcut(KeyEventArgs e)
+    {
+        if (Keyboard.FocusedElement is TextBox or PasswordBox)
+        {
+            return false;
+        }
+        if (KeyGestures.Ctrl(e, Key.Z)) { Undo(); return true; }
+        if (KeyGestures.Ctrl(e, Key.Y) || KeyGestures.Ctrl(e, Key.Z, shift: true)) { Redo(); return true; }
+        if (Keyboard.Modifiers == ModifierKeys.None && _active is not null)
+        {
+            var tool = Tools.FirstOrDefault(t => t.Shortcut == e.Key);
+            if (tool.Key is not null && _toolButtons[tool.Key].IsEnabled)
+            {
+                _toolButtons[tool.Key].IsChecked = true;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // ---------- Text bearbeiten ----------
+
+    private void OnEditText(OpenDocument open, int page, Markup markup)
+    {
+        if (!open.Document.CanAnnotate)
+        {
+            return;
+        }
+        var isText = MarkupKinds.HasText(markup.Kind);
+        var text = Dialogs.AskMultilineText(Owner,
+            isText ? $"{MarkupKinds.DisplayName(markup.Kind)} bearbeiten" : "Kommentar bearbeiten",
+            isText ? "Text der Markierung. Zeilenumbrüche mit der Eingabetaste." : "Kommentar zur Markierung, wird im PDF als Inhalt gespeichert.",
+            markup.Text);
+        if (text is null || text == markup.Text)
+        {
+            return;
+        }
+        var current = open.Document.GetMarkups(page).FirstOrDefault(m => m.Id == markup.Id);
+        if (current is null)
+        {
+            return;
+        }
+        var changed = current.WithText(text);
+        if (changed.Kind == MarkupKind.TextBox)
+        {
+            changed = GrowToFitText(changed);
+        }
+        try
+        {
+            open.History.Replace(page, changed, isText ? "Text ändern" : "Kommentar ändern");
+        }
+        catch (PdfException ex)
+        {
+            ShowError(ex.Message);
+        }
+    }
+
+    /// <summary>Vergrößert ein Textfeld nach unten (auf dem Bildschirm), bis der Text hineinpasst.</summary>
+    private Markup GrowToFitText(Markup m)
+    {
+        var box = MarkupGeometry.HandleRect(m);
+        var frame = TextFrame.ForBox(box, m.TextRotation);
+        var outline = _outliner.Layout(m.Text, m.Style.FontSize, Math.Max(1, frame.Width - 2 * MarkupGeometry.TextPadding));
+        var needed = outline.Height + 2 * MarkupGeometry.TextPadding;
+        if (needed <= frame.Height)
+        {
+            return m;
+        }
+        var corner = frame.ToUser(new PdfPoint(frame.Width, needed));
+        return MarkupGeometry.ResizeTo(m, PdfRect.FromPoints(frame.Origin, corner));
+    }
+}

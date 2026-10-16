@@ -6,6 +6,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Egle360.Desktop.Services;
 using Egle360.Pdf;
+using Egle360.Pdf.Markups;
 using Egle360.Pdf.Viewing;
 
 namespace Egle360.Desktop.Controls;
@@ -17,12 +18,26 @@ public enum FitMode
     Page,
 }
 
+/// <summary>Was die linke Maustaste in der Ansicht tut.</summary>
+public enum ViewerTool
+{
+    /// <summary>Markierungen auswählen, verschieben und an Griffen ändern; auf leerer Fläche verschieben.</summary>
+    Select,
+
+    /// <summary>Nur die Ansicht verschieben.</summary>
+    Pan,
+
+    /// <summary>Neue Markierung der Art <see cref="PdfViewer.DrawKind"/> zeichnen.</summary>
+    Draw,
+}
+
 /// <summary>
 /// Fortlaufende Seitenansicht mit Zoom, Verschieben und Seitennavigation. Nur sichtbare Seiten (und je eine
 /// Bildschirmhöhe davor und danach) werden gerendert. Bei hohem Zoom wird zusätzlich nur der sichtbare Ausschnitt
-/// scharf gerendert (siehe <see cref="RenderPlanner"/>).
+/// scharf gerendert (siehe <see cref="RenderPlanner"/>). Markierungen zeichnet die Ansicht selbst als Vektorgrafik
+/// über dem Seitenbild (siehe <see cref="MarkupLayer"/>); dort werden sie auch gezeichnet und bearbeitet.
 /// </summary>
-public sealed class PdfViewer : Grid
+public sealed partial class PdfViewer : Grid
 {
     private readonly ScrollViewer _scroll;
     private readonly Canvas _canvas;
@@ -35,6 +50,7 @@ public sealed class PdfViewer : Grid
     private Point _panOffset;
     private int _currentPage = -1;
     private int _busy;
+    private readonly Dictionary<int, PageTransform> _transforms = new();
 
     public PdfViewer()
     {
@@ -67,11 +83,15 @@ public sealed class PdfViewer : Grid
             UpdateVisuals();
         };
         _scroll.PreviewMouseWheel += OnMouseWheel;
-        _scroll.PreviewMouseLeftButtonDown += OnPanStart;
-        _scroll.PreviewMouseMove += OnPanMove;
-        _scroll.PreviewMouseLeftButtonUp += OnPanEnd;
+        _scroll.PreviewMouseLeftButtonDown += OnLeftDown;
+        _scroll.PreviewMouseMove += OnMouseMove;
+        _scroll.PreviewMouseLeftButtonUp += OnLeftUp;
+        _scroll.PreviewMouseDown += OnMiddleDown;
+        _scroll.PreviewMouseUp += OnMiddleUp;
+        _scroll.PreviewMouseRightButtonUp += OnRightUp;
         _scroll.PreviewKeyDown += OnKeyDown;
-        Cursor = Cursors.Hand;
+        _scroll.LostMouseCapture += (_, _) => AbortPointerAction();
+        UpdateCursor(null);
         Focusable = false;
         AutomationPropertiesHelper.SetName(_scroll, "Dokumentansicht");
     }
@@ -91,17 +111,25 @@ public sealed class PdfViewer : Grid
     /// <summary>True, solange Darstellungsaufträge offen sind (für den Screenshot-Modus).</summary>
     public bool IsBusy => _busy > 0 || _detailTimer.IsEnabled;
 
-    public void Attach(PdfDocument document, PageRenderService renderer)
+    public void Attach(PdfDocument document, PageRenderService renderer, MarkupHistory history)
     {
         _document = document;
         _renderer = renderer;
+        _history = history;
+        document.MarkupsChanged += OnMarkupsChanged;
         Reload();
     }
 
     public void Detach()
     {
+        if (_document is not null)
+        {
+            _document.MarkupsChanged -= OnMarkupsChanged;
+        }
+        CancelDrawing();
         ClearVisuals();
         _document = null;
+        _history = null;
     }
 
     /// <summary>Liest die Seitengrößen neu ein, z. B. nach dem Drehen, Löschen oder Einfügen von Seiten.</summary>
@@ -112,7 +140,10 @@ public sealed class PdfViewer : Grid
             return;
         }
         var keepPage = Math.Max(0, _currentPage);
+        CancelDrawing();
         ClearVisuals();
+        _transforms.Clear();
+        PruneSelection();
         _layout.SetPages(_document.GetPages().Select(p => (p.WidthPt, p.HeightPt)));
         _layout.SetViewportWidth(_scroll.ViewportWidth);
         ApplyFit();
@@ -161,6 +192,29 @@ public sealed class PdfViewer : Grid
     }
 
     public void FocusView() => _scroll.Focus();
+
+    /// <summary>Stellt einen Punkt einer Seite (Benutzerkoordinaten) in die Mitte des Fensters.</summary>
+    public void CenterOn(int page, PdfPoint point)
+    {
+        if (_document is null || page < 0 || page >= _layout.PageCount)
+        {
+            return;
+        }
+        var (u, v) = Transform(page).ToDisplay(point);
+        var (x, y) = _layout.ToLayout(page, u, v);
+        _scroll.ScrollToHorizontalOffset(Math.Max(0, x - _scroll.ViewportWidth / 2));
+        _scroll.ScrollToVerticalOffset(Math.Max(0, y - _scroll.ViewportHeight / 2));
+        UpdateCurrentPage(page);
+    }
+
+    /// <summary>Springt zur Seite, wenn sie gerade nicht sichtbar ist (z. B. nach Rückgängig auf einer anderen Seite).</summary>
+    public void GoToPageIfHidden(int index)
+    {
+        if (index >= 0 && index < _layout.PageCount && !_layout.VisiblePages(Viewport).Contains(index))
+        {
+            GoToPage(index);
+        }
+    }
 
     private Point ViewportCenter => new(_scroll.ViewportWidth / 2, _scroll.ViewportHeight / 2);
 
@@ -262,10 +316,11 @@ public sealed class PdfViewer : Grid
         {
             if (!_visuals.TryGetValue(index, out var visual))
             {
-                visual = new PageVisual(index, _canvas);
+                visual = new PageVisual(index, _canvas, new MarkupLayer(Outliner));
                 _visuals[index] = visual;
+                RefreshLayer(visual);
             }
-            visual.Position(_layout.PageRect(index));
+            Place(visual, index);
             var (w, h) = _layout.PageSize(index);
             var baseScale = RenderPlanner.BaseScale(w, h, required);
             if (visual.BaseScale is not { } existing || !RenderPlanner.BaseIsGoodEnough(existing, baseScale))
@@ -286,8 +341,26 @@ public sealed class PdfViewer : Grid
     {
         foreach (var (index, visual) in _visuals)
         {
-            visual.Position(_layout.PageRect(index));
+            Place(visual, index);
         }
+    }
+
+    private void Place(PageVisual visual, int index)
+    {
+        var rect = _layout.PageRect(index);
+        visual.Position(rect);
+        var transform = Transform(index);
+        visual.Layer.SetPage(transform, rect.Width / Math.Max(1e-9, transform.DisplayWidth));
+    }
+
+    private PageTransform Transform(int index)
+    {
+        if (!_transforms.TryGetValue(index, out var t))
+        {
+            t = _document!.GetPageTransform(index);
+            _transforms[index] = t;
+        }
+        return t;
     }
 
     private async void RequestBase(PageVisual visual, double scale, RenderPriority priority)
@@ -302,7 +375,7 @@ public sealed class PdfViewer : Grid
         _busy++;
         try
         {
-            var bitmap = await _renderer!.RenderAsync(document, visual.Index, scale, region, priority, cts.Token);
+            var bitmap = await _renderer!.RenderAsync(document, visual.Index, scale, region, priority, cts.Token, hideMarkups: true);
             if (bitmap is not null && !cts.IsCancellationRequested && ReferenceEquals(document, _document) && _visuals.ContainsValue(visual))
             {
                 visual.SetBase(bitmap, scale);
@@ -365,7 +438,7 @@ public sealed class PdfViewer : Grid
         _busy++;
         try
         {
-            var bitmap = await _renderer!.RenderAsync(document, visual.Index, scale, region, RenderPriority.View, cts.Token);
+            var bitmap = await _renderer!.RenderAsync(document, visual.Index, scale, region, RenderPriority.View, cts.Token, hideMarkups: true);
             if (bitmap is not null && !cts.IsCancellationRequested && ReferenceEquals(document, _document) && _visuals.ContainsValue(visual)
                 && Math.Abs(RenderPlanner.RequiredScale(_layout.Zoom, PixelsPerDip) - scale) < 1e-9)
             {
@@ -414,47 +487,68 @@ public sealed class PdfViewer : Grid
         }
     }
 
-    private void OnPanStart(object sender, MouseButtonEventArgs e)
+    private bool IsOverScrollBar(MouseEventArgs e) =>
+        e.OriginalSource is DependencyObject d && FindAncestor<System.Windows.Controls.Primitives.ScrollBar>(d) is not null;
+
+    private void StartPan(MouseEventArgs e)
     {
-        // Nicht über den Bildlaufleisten verschieben.
-        if (e.OriginalSource is DependencyObject d && FindAncestor<System.Windows.Controls.Primitives.ScrollBar>(d) is not null)
-        {
-            return;
-        }
-        _scroll.Focus();
         _panStart = e.GetPosition(_scroll);
         _panOffset = new Point(_scroll.HorizontalOffset, _scroll.VerticalOffset);
         _scroll.CaptureMouse();
         Cursor = Cursors.SizeAll;
-        e.Handled = true;
     }
 
-    private void OnPanMove(object sender, MouseEventArgs e)
+    private bool PanMove(MouseEventArgs e)
     {
         if (_panStart is not { } start)
         {
-            return;
+            return false;
         }
         var p = e.GetPosition(_scroll);
         _scroll.ScrollToHorizontalOffset(_panOffset.X - (p.X - start.X));
         _scroll.ScrollToVerticalOffset(_panOffset.Y - (p.Y - start.Y));
+        return true;
     }
 
-    private void OnPanEnd(object sender, MouseButtonEventArgs e)
+    private bool EndPan()
     {
         if (_panStart is null)
         {
-            return;
+            return false;
         }
         _panStart = null;
         _scroll.ReleaseMouseCapture();
-        Cursor = Cursors.Hand;
+        return true;
+    }
+
+    private void OnMiddleDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton == MouseButton.Middle && !IsOverScrollBar(e))
+        {
+            _scroll.Focus();
+            StartPan(e);
+            e.Handled = true;
+        }
+    }
+
+    private void OnMiddleUp(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton == MouseButton.Middle && EndPan())
+        {
+            UpdateCursor(e);
+            e.Handled = true;
+        }
     }
 
     private void OnKeyDown(object sender, KeyEventArgs e)
     {
         if (Keyboard.Modifiers != ModifierKeys.None)
         {
+            return;
+        }
+        if (HandleMarkupKey(e.Key))
+        {
+            e.Handled = true;
             return;
         }
         switch (e.Key)
@@ -499,18 +593,22 @@ public sealed class PdfViewer : Grid
         private LayoutRect _detailPt;
         private double _detailScale;
 
-        public PageVisual(int index, Canvas canvas)
+        public PageVisual(int index, Canvas canvas, MarkupLayer layer)
         {
             Index = index;
+            Layer = layer;
             _frame = new Border { Background = Brushes.White, BorderThickness = new Thickness(1) };
             _frame.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
             _base = new Image { Stretch = Stretch.Fill, IsHitTestVisible = false };
             RenderOptions.SetBitmapScalingMode(_base, BitmapScalingMode.HighQuality);
             canvas.Children.Add(_frame);
             canvas.Children.Add(_base);
+            canvas.Children.Add(Layer);
         }
 
         public int Index { get; }
+
+        public MarkupLayer Layer { get; }
 
         public double? BaseScale { get; private set; }
 
@@ -527,6 +625,7 @@ public sealed class PdfViewer : Grid
             _rect = rect;
             Place(_frame, new LayoutRect(rect.X - 1, rect.Y - 1, rect.Width + 2, rect.Height + 2));
             Place(_base, rect);
+            Place(Layer, rect);
             if (_detail is not null)
             {
                 var s = rect.Width / Math.Max(1e-9, _pageWidthPt);
@@ -553,7 +652,9 @@ public sealed class PdfViewer : Grid
             {
                 _detail = new Image { Stretch = Stretch.Fill, IsHitTestVisible = false };
                 RenderOptions.SetBitmapScalingMode(_detail, BitmapScalingMode.NearestNeighbor);
-                ((Canvas)_base.Parent).Children.Add(_detail);
+                // Unter den Markierungen einfügen.
+                var children = ((Canvas)_base.Parent).Children;
+                children.Insert(children.IndexOf(_base) + 1, _detail);
             }
             _detail.Source = bitmap;
             _detailScale = scale;
@@ -578,6 +679,7 @@ public sealed class PdfViewer : Grid
             ClearDetail();
             canvas.Children.Remove(_frame);
             canvas.Children.Remove(_base);
+            canvas.Children.Remove(Layer);
         }
 
         private static void Place(FrameworkElement element, LayoutRect rect)

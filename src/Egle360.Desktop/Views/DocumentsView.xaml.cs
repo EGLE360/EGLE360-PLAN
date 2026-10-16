@@ -9,6 +9,7 @@ using Egle360.Desktop.Controls;
 using Egle360.Desktop.Services;
 using Egle360.Design;
 using Egle360.Pdf;
+using Egle360.Pdf.Markups;
 using Microsoft.Win32;
 
 namespace Egle360.Desktop.Views;
@@ -31,6 +32,7 @@ public partial class DocumentsView : UserControl, IDisposable
     public DocumentsView()
     {
         InitializeComponent();
+        BuildMarkupBar();
         SidebarColumn.Width = new GridLength(Math.Clamp(App.Theme.Settings.DocumentSidebarWidth, 140, 480));
         PreviewKeyDown += OnPreviewKeyDown;
         RefreshRecent();
@@ -39,6 +41,8 @@ public partial class DocumentsView : UserControl, IDisposable
 
     /// <summary>Das aktive Dokument, für den Screenshot-Modus.</summary>
     internal PdfViewer? ActiveViewer => _active?.Viewer;
+
+    internal PdfDocument? ActiveDocument => _active?.Document;
 
     internal bool IsBusy => _renderer.Pending > 0 || _documents.Any(d => d.Viewer.IsBusy);
 
@@ -106,10 +110,24 @@ public partial class DocumentsView : UserControl, IDisposable
 
     private OpenDocument AddDocument(PdfDocument document, string title)
     {
-        var viewer = new PdfViewer();
-        var open = new OpenDocument(document, viewer, title);
+        var viewer = new PdfViewer { Outliner = _outliner, StyleProvider = CurrentStyle, Author = Environment.UserName };
+        var history = new MarkupHistory(document, _outliner);
+        var open = new OpenDocument(document, viewer, history, title);
         open.Tab = CreateTab(open);
-        viewer.Attach(document, _renderer);
+        viewer.Attach(document, _renderer, history);
+        ApplyTool(viewer, CheckedToolKey);
+        history.Changed += (_, page) =>
+        {
+            UpdateTab(open);
+            RefreshThumbnail(open, page);
+            if (open == _active)
+            {
+                RefreshMarkupBar();
+            }
+        };
+        viewer.SelectionChanged += (_, _) => { if (open == _active) { RefreshMarkupBar(); } };
+        viewer.ToolChanged += (_, _) => { if (open == _active) { SyncToolButtons(viewer); } };
+        viewer.EditTextRequested += (_, args) => OnEditText(open, args.Page, args.Markup);
         viewer.CurrentPageChanged += (_, _) => { if (open == _active) { SyncCurrentPage(); } };
         viewer.ZoomChanged += (_, _) => { if (open == _active) { RefreshZoom(); } };
         document.PagesChanged += (_, _) =>
@@ -131,8 +149,10 @@ public partial class DocumentsView : UserControl, IDisposable
 
     private void Activate(OpenDocument document)
     {
+        _active?.Viewer.CancelDrawing();
         _active = document;
         document.Tab.IsChecked = true;
+        ApplyTool(document.Viewer, CheckedToolKey);
         ViewerHost.Content = document.Viewer;
         BuildThumbnails();
         BuildBookmarks();
@@ -283,14 +303,26 @@ public partial class DocumentsView : UserControl, IDisposable
         SyncCurrentPage();
     }
 
-    private async void OnThumbnailLoaded(object sender, RoutedEventArgs e)
+    private void OnThumbnailLoaded(object sender, RoutedEventArgs e)
     {
-        if (sender is not FrameworkElement { DataContext: ThumbnailItem item } || item.Requested || _active is null)
+        if (sender is FrameworkElement { DataContext: ThumbnailItem item } && !item.Requested && _active is not null)
         {
-            return;
+            RenderThumbnail(_active.Document, item);
         }
+    }
+
+    /// <summary>Miniatur nach einer Änderung der Markierungen neu zeichnen (sie enthält die Markierungen).</summary>
+    private void RefreshThumbnail(OpenDocument open, int page)
+    {
+        if (open == _active && page >= 0 && page < open.Thumbnails.Count && open.Thumbnails[page].Requested)
+        {
+            RenderThumbnail(open.Document, open.Thumbnails[page]);
+        }
+    }
+
+    private async void RenderThumbnail(PdfDocument document, ThumbnailItem item)
+    {
         item.Requested = true;
-        var document = _active.Document;
         var dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
         var info = document.GetPageInfo(item.Index);
         var scale = item.Width / info.WidthPt * dpi;
@@ -395,6 +427,7 @@ public partial class DocumentsView : UserControl, IDisposable
         }
         RefreshZoom();
         RefreshPageInfo();
+        RefreshMarkupBar();
     }
 
     private void RefreshZoom()
@@ -712,7 +745,8 @@ public partial class DocumentsView : UserControl, IDisposable
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
         var viewer = _active?.Viewer;
-        if (KeyGestures.Ctrl(e, Key.O)) { OnOpen(this, e); }
+        if (HandleMarkupShortcut(e)) { }
+        else if (KeyGestures.Ctrl(e, Key.O)) { OnOpen(this, e); }
         else if (KeyGestures.Ctrl(e, Key.N)) { OnNew(this, e); }
         else if (KeyGestures.Ctrl(e, Key.S)) { OnSave(this, e); }
         else if (KeyGestures.Ctrl(e, Key.S, shift: true)) { OnSaveAs(this, e); }
@@ -737,11 +771,13 @@ public partial class DocumentsView : UserControl, IDisposable
         Activate(_documents[i]);
     }
 
-    private sealed class OpenDocument(PdfDocument document, PdfViewer viewer, string title)
+    private sealed class OpenDocument(PdfDocument document, PdfViewer viewer, MarkupHistory history, string title)
     {
         public PdfDocument Document { get; } = document;
 
         public PdfViewer Viewer { get; } = viewer;
+
+        public MarkupHistory History { get; } = history;
 
         public string Title { get; set; } = title;
 

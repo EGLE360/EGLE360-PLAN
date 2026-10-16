@@ -1,4 +1,5 @@
 using Egle360.Pdf;
+using Egle360.Pdf.Markups;
 
 namespace Egle360.Desktop.Services;
 
@@ -14,7 +15,7 @@ internal static class SamplePlan
     private static readonly PdfColor Grid = new(150, 150, 150);
     private static readonly PdfColor Dimension = new(22, 119, 210);
 
-    public static void Write(string path)
+    public static void Write(string path, ITextOutliner? outliner = null)
     {
         using var doc = PdfDocument.CreateNew();
         var (a1Short, a1Long) = PaperFormat.IsoSizePoints("A1");
@@ -31,6 +32,10 @@ internal static class SamplePlan
         {
             Section(c, a3Long, a3Short);
             c.Commit();
+        }
+        if (outliner is not null)
+        {
+            doc.SetMarkups(0, Markups(a1Long), outliner);
         }
         doc.SaveAs(path);
     }
@@ -109,6 +114,33 @@ internal static class SamplePlan
         c.Text(bx + 312, by + 62, "Index A", 14, Wall);
         c.Text(bx + 12, by + 17, "Maßstab 1:50", 14, Wall);
         c.Text(bx + 312, by + 17, "Format A1", 14, Wall);
+    }
+
+    /// <summary>Prüfvermerke auf dem Grundriss, wie sie bei einer Planprüfung entstehen (erfundene Inhalte).</summary>
+    private static List<Markup> Markups(double pageW)
+    {
+        const double ox = 220, oy = 360;
+        var red = new PdfColor(200, 30, 30);
+        var blue = new PdfColor(22, 119, 210);
+        var created = new DateTimeOffset(2026, 10, 16, 9, 30, 0, TimeSpan.FromHours(2));
+        Markup Make(MarkupKind kind, MarkupStyle style, string text, params PdfPoint[] pts) =>
+            new($"e360-beispiel-{kind.ToString().ToLowerInvariant()}", kind, [pts], style, text, "Planprüfung", created, created);
+
+        var bx = pageW - 28 - 560;
+        return
+        [
+            Make(MarkupKind.Cloud, new MarkupStyle(red, null, 1, 2), "Lüftung Bad fehlt",
+                new(ox + 20.4 * M, oy + 11.4 * M), new(ox + 29.6 * M, oy + 11.4 * M), new(ox + 29.6 * M, oy + 15.6 * M), new(ox + 20.4 * M, oy + 15.6 * M)),
+            Make(MarkupKind.Arrow, new MarkupStyle(red, null, 1, 2), "", new(2030, 1195), new(ox + 29.9 * M, oy + 14 * M)),
+            Make(MarkupKind.TextBox, new MarkupStyle(red, PdfColor.White, 1, 1.5, 16), "Lüftung Bad fehlt.\nAbluft nach DIN 18017-3 ergänzen.",
+                new(2030, 1120), new(2340, 1230)),
+            Make(MarkupKind.Rectangle, new MarkupStyle(blue, new PdfColor(209, 228, 246), 0.75, 1.5), "Türbreite prüfen",
+                new(ox + 13.7 * M, oy + 5.5 * M), new(ox + 15.3 * M, oy + 7.5 * M)),
+            Make(MarkupKind.Note, MarkupStyle.DefaultFor(MarkupKind.Note), "Türbreite 1,01 m lichte Breite bestätigen.", new PdfPoint(ox + 15.5 * M, oy + 8.2 * M)),
+            Make(MarkupKind.Highlight, MarkupStyle.DefaultFor(MarkupKind.Highlight), "", new(bx + 8, 28 + 56), new(bx + 200, 28 + 82)),
+            Make(MarkupKind.Polyline, new MarkupStyle(new PdfColor(30, 140, 60), null, 1, 2), "Fluchtweg",
+                new(ox + 5 * M, oy + 3 * M), new(ox + 5 * M, oy + 6.5 * M), new(ox + 25 * M, oy + 6.5 * M), new(ox + 25 * M, oy + 9 * M)),
+        ];
     }
 
     private static void Door(PdfContentWriter c, double x, double y)

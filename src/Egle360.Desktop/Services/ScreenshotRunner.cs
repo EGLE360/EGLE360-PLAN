@@ -24,7 +24,7 @@ internal static class ScreenshotRunner
 
         // Beispielplan für die Dokumentansicht (frei erfundene Testdaten).
         var sample = Path.Combine(Path.GetTempPath(), $"EGLE360-Beispielplan-{Environment.ProcessId}.pdf");
-        SamplePlan.Write(sample);
+        SamplePlan.Write(sample, new WpfTextOutliner());
         window.OpenDocuments([sample]);
 
         foreach (var theme in new[] { ThemePreference.Light, ThemePreference.Dark })
@@ -48,6 +48,20 @@ internal static class ScreenshotRunner
                     }
                     WaitForDocuments(window);
                     Save(window, Path.Combine(outputDir, name + "-zoom.png"));
+
+                    // Markierungen bei 100 %, eine davon ausgewählt (Griffe sichtbar).
+                    if (window.Documents.ActiveDocument?.GetMarkups(0) is { Count: > 0 } markups)
+                    {
+                        var cloud = markups[0];
+                        viewer.SetZoom(1.0);
+                        WaitForRender(window);
+                        var r = Egle360.Pdf.Markups.MarkupGeometry.HandleRect(cloud);
+                        viewer.CenterOn(0, new Egle360.Pdf.Markups.PdfPoint(r.Right + 120, (r.Bottom + r.Top) / 2));
+                        viewer.Select(0, cloud.Id);
+                        WaitForDocuments(window);
+                        Save(window, Path.Combine(outputDir, name + "-markierungen.png"));
+                        viewer.ClearSelection();
+                    }
                     viewer.FitWidth();
                     continue;
                 }

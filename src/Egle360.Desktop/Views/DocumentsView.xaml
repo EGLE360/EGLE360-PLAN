@@ -12,6 +12,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -52,8 +53,13 @@
             </WrapPanel>
         </Border>
 
+        <!-- Markierungen -->
+        <Border Grid.Row="1" x:Name="MarkupBarBorder" Background="{DynamicResource Surface1Brush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="8,2">
+            <WrapPanel x:Name="MarkupBar" VerticalAlignment="Center" />
+        </Border>
+
         <!-- Registerkarten -->
-        <Border Grid.Row="1" Background="{DynamicResource Surface1Brush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1"
+        <Border Grid.Row="2" Background="{DynamicResource Surface1Brush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1"
                 x:Name="TabStripBorder">
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Focusable="False">
                 <StackPanel x:Name="TabStrip" Orientation="Horizontal" />
@@ -61,7 +67,7 @@
         </Border>
 
         <!-- Arbeitsbereich -->
-        <Grid Grid.Row="2" x:Name="WorkArea">
+        <Grid Grid.Row="3" x:Name="WorkArea">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition x:Name="SidebarColumn" Width="220" MinWidth="140" MaxWidth="480" />
                 <ColumnDefinition Width="Auto" />
@@ -124,7 +130,7 @@
         </Grid>
 
         <!-- Leerer Zustand -->
-        <Grid x:Name="EmptyState" Grid.Row="1" Grid.RowSpan="2" Background="{DynamicResource CanvasBrush}">
+        <Grid x:Name="EmptyState" Grid.Row="1" Grid.RowSpan="3" Background="{DynamicResource CanvasBrush}">
             <Border Style="{StaticResource Card}" HorizontalAlignment="Center" VerticalAlignment="Center" Width="520">
                 <StackPanel>
                     <TextBlock Style="{StaticResource TextTitle}" Text="Kein Dokument geöffnet" />
@@ -164,9 +170,10 @@
         </Grid>
 
         <!-- Statuszeile -->
-        <Border Grid.Row="3" Background="{DynamicResource Surface1Brush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="12,4">
+        <Border Grid.Row="4" Background="{DynamicResource Surface1Brush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="12,4">
             <DockPanel>
                 <TextBlock x:Name="StatusZoom" DockPanel.Dock="Right" Style="{StaticResource TextCaption}" Margin="16,0,0,0" />
+                <TextBlock x:Name="StatusMarkup" DockPanel.Dock="Right" Style="{StaticResource TextCaption}" Margin="16,0,0,0" />
                 <TextBlock x:Name="StatusFormat" DockPanel.Dock="Right" Style="{StaticResource TextCaption}" Margin="16,0,0,0" />
                 <TextBlock x:Name="StatusPath" Style="{StaticResource TextCaption}" TextTrimming="CharacterEllipsis" />
             </DockPanel>

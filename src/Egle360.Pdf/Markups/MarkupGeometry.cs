@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Egle360.Pdf.Markups;
 
 /// <summary>
@@ -74,8 +76,13 @@ public static class MarkupGeometry
         return new MarkupShape(layers, Math.Clamp(s.Opacity, 0, 1));
     }
 
+    /// <summary>Zeichnung ohne Text, je unveränderlicher Markierung nur einmal berechnet (Trefferprüfung bei jeder Mausbewegung).</summary>
+    private static readonly ConditionalWeakTable<Markup, MarkupShape> PlainShapes = new();
+
+    private static MarkupShape PlainShape(Markup m) => PlainShapes.GetValue(m, key => BuildShape(key, null));
+
     /// <summary>Rahmen der Anmerkung (PDF-Schlüssel Rect).</summary>
-    public static PdfRect Bounds(Markup m) => BuildShape(m, null).Bounds();
+    public static PdfRect Bounds(Markup m) => PlainShape(m).Bounds();
 
     // ---------- Formen ----------
 
@@ -165,7 +172,7 @@ public static class MarkupGeometry
     /// </summary>
     public static bool HitTest(Markup m, PdfPoint p, double tolerance)
     {
-        var shape = BuildShape(m, null);
+        var shape = PlainShape(m);
         if (!shape.Bounds().Inflate(tolerance).Contains(p))
         {
             return false;
