@@ -11,7 +11,8 @@ namespace Egle360.Pdf.Export;
 public sealed record MarkupReportRow(
     int PageIndex, string Id, int Page, string Kind, string Value, double? Number, string Unit, double? Perimeter,
     double? Depth, double? Derived, string DerivedUnit, string DerivedName,
-    string Text, string Scale, string Author, string Modified, DateTimeOffset ModifiedValue, DateTimeOffset Created, bool IsMeasurement);
+    string Text, string Scale, string Author, string Modified, DateTimeOffset ModifiedValue, DateTimeOffset Created, bool IsMeasurement,
+    bool Summable = true);
 
 /// <summary>Aufbereitung der Markierungen für Liste, Summen und Export (CSV, XLSX).</summary>
 public static class MarkupReport
@@ -26,16 +27,14 @@ public static class MarkupReport
         return new MarkupReportRow(page, m.Id, page + 1, MarkupKinds.DisplayName(m.Kind), isMeasure ? Measurement.Describe(m) : "",
             v?.Value, v?.Unit ?? "", v?.Perimeter, derived is null ? null : m.Depth, derived?.Value, derived?.Unit ?? "", derived?.Name ?? "",
             m.Text.ReplaceLineEndings(" "), m.Scale?.Label ?? "", m.Author, m.Modified.LocalDateTime.ToString("g", German),
-            m.Modified, m.Created, isMeasure);
+            m.Modified, m.Created, isMeasure, MarkupKinds.IsSummable(m.Kind));
     }
 
     /// <summary>Summe je Messart und Einheit, dazu Volumen und Wandflächen. Winkel werden nicht summiert.</summary>
     public static IReadOnlyList<(string Name, double Sum, string Unit, int Count)> Sums(IEnumerable<MarkupReportRow> rows)
     {
         var list = rows.ToList();
-        // Winkel und Bemaßungen ergeben keine sinnvolle Summe.
-        var dimension = MarkupKinds.DisplayName(MarkupKind.Dimension);
-        var main = list.Where(r => r.Number is not null && r.Unit != "°" && r.Kind != dimension)
+        var main = list.Where(r => r.Number is not null && r.Summable)
             .GroupBy(r => (r.Kind, r.Unit))
             .Select(g => (g.Key.Kind, g.Sum(r => r.Number!.Value), g.Key.Unit, g.Count()));
         var derived = list.Where(r => r.Derived is not null)

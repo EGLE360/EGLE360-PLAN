@@ -550,6 +550,8 @@ STATUS = {
     "QTO-007": "Umgesetzt (Phase 5, Teil 2): Höhe je Länge, Polylänge oder Umfang, Wandfläche in m²",
     "QTO-009": "Umgesetzt (Phase 5, Teil 1): Ausschnitte per Rechtsklick auf eine Fläche",
     "QTO-012": "Umgesetzt (Phase 5, Teil 1)",
+    "QTO-013": "Umgesetzt (Phase 5, Teil 2): mit Kreisfläche in der Liste",
+    "QTO-014": "Umgesetzt (Phase 5, Teil 2): mit Kreisfläche in der Liste",
     "QTO-015": "Umgesetzt (Phase 5, Teil 1)",
     "QTO-017": "Umgesetzt (Phase 5, Teil 1)",
     "QTO-019": "Teilweise (Phase 5, Teil 1): Summen in der Liste und für ausgewählte Messungen",

@@ -52,6 +52,8 @@ public partial class DocumentsView
         (nameof(MarkupKind.Perimeter), "Umfang messen (Abschluss mit Doppelklick oder Eingabetaste)", "M3.5,3.5 H12.5 V12.5 H3.5 Z M1.5,1.5 L5.5,5.5 M10.5,10.5 L14.5,14.5", null),
         (nameof(MarkupKind.Area), "Fläche messen (Abschluss mit Doppelklick oder Eingabetaste)", "M2.5,2.5 H13.5 V13.5 H2.5 Z M2.5,8 L8,2.5 M2.5,13.5 L13.5,2.5 M8,13.5 L13.5,8", null),
         (nameof(MarkupKind.Angle), "Winkel messen (drei Punkte: Schenkel, Scheitel, Schenkel)", "M14,13.5 H2.5 L11,3 M7,13.5 A4.5,4.5 0 0 0 5.5,10", null),
+        (nameof(MarkupKind.Radius), "Radius messen (erst Mittelpunkt, dann Punkt auf dem Kreis)", "M8,8 m-6,0 a6,6 0 1 0 12,0 a6,6 0 1 0 -12,0 M8,8 L12.2,3.8 M6.5,8 H9.5 M8,6.5 V9.5", null),
+        (nameof(MarkupKind.Diameter), "Durchmesser messen (zwei gegenüberliegende Punkte)", "M8,8 m-6,0 a6,6 0 1 0 12,0 a6,6 0 1 0 -12,0 M3.8,12.2 L12.2,3.8", null),
         (nameof(MarkupKind.Count), "Anzahl zählen (Abschluss mit Eingabetaste)", "M2.5,5 A1.5,1.5 0 1 0 5.5,5 A1.5,1.5 0 1 0 2.5,5 Z M10.5,5 A1.5,1.5 0 1 0 13.5,5 A1.5,1.5 0 1 0 10.5,5 Z M6.5,11.5 A1.5,1.5 0 1 0 9.5,11.5 A1.5,1.5 0 1 0 6.5,11.5 Z", null),
     ];
 

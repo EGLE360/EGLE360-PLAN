@@ -105,6 +105,28 @@ public static class MarkupGeometry
                 layers.Add(new ShapeLayer(dim, s.Stroke, w, null));
                 AddLabel(layers, m, DimensionLabelCenter(m, pts[0], pts[1]), outliner);
                 break;
+            case MarkupKind.Radius or MarkupKind.Diameter when pts.Count >= 2:
+                // Radius: Mittelpunkt und Punkt auf dem Kreis. Durchmesser: zwei gegenüberliegende Punkte.
+                var center = m.Kind == MarkupKind.Radius ? pts[0] : pts[0] + (pts[1] - pts[0]) * 0.5;
+                var radius = center.DistanceTo(pts[1]);
+                var circle = new PathData().Polyline([pts[0], pts[1]], false);
+                if (radius > 1e-6)
+                {
+                    circle.Ellipse(new PdfRect(center.X - radius, center.Y - radius, center.X + radius, center.Y + radius));
+                }
+                circle.Append(ArrowHead(center, pts[1], w));
+                if (m.Kind == MarkupKind.Diameter)
+                {
+                    circle.Append(ArrowHead(center, pts[0], w));
+                }
+                else
+                {
+                    var c = 3 + w;
+                    circle.MoveTo(center - new PdfPoint(c, 0)).LineTo(center + new PdfPoint(c, 0)).MoveTo(center - new PdfPoint(0, c)).LineTo(center + new PdfPoint(0, c));
+                }
+                layers.Add(new ShapeLayer(circle, s.Stroke, w, null));
+                AddLabel(layers, m, DimensionLabelCenter(m, pts[0], pts[1]), outliner);
+                break;
             case MarkupKind.Stamp when pts.Count >= 2:
                 AddStamp(layers, m, PdfRect.FromPoints(pts[0], pts[1]), outliner);
                 break;

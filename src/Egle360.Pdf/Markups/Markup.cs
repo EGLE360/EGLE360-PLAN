@@ -26,6 +26,8 @@ public enum MarkupKind
     // Später ergänzt; neue Arten immer am Ende anfügen, die Zahlenwerte stehen in gespeicherten PDFs.
     Dimension,
     Stamp,
+    Radius,
+    Diameter,
 }
 
 /// <summary>Punkt im PDF-Benutzerkoordinatensystem (Punkt, y nach oben, ohne Seitendrehung).</summary>
@@ -164,6 +166,8 @@ public static class MarkupKinds
         MarkupKind.Angle => "Winkel",
         MarkupKind.Dimension => "Bemaßung",
         MarkupKind.Stamp => "Stempel",
+        MarkupKind.Radius => "Radius",
+        MarkupKind.Diameter => "Durchmesser",
         _ => kind.ToString(),
     };
 
@@ -181,7 +185,12 @@ public static class MarkupKinds
         kind is MarkupKind.Rectangle or MarkupKind.Ellipse or MarkupKind.Polygon or MarkupKind.Cloud or MarkupKind.TextBox or MarkupKind.Area;
 
     /// <summary>Messwerkzeuge der Mengenermittlung, dazu die Bemaßung (eine Länge mit Maßpfeilen).</summary>
-    public static bool IsMeasurement(MarkupKind kind) => kind is >= MarkupKind.Length and <= MarkupKind.Angle or MarkupKind.Dimension;
+    public static bool IsMeasurement(MarkupKind kind) =>
+        kind is >= MarkupKind.Length and <= MarkupKind.Angle or MarkupKind.Dimension or MarkupKind.Radius or MarkupKind.Diameter;
+
+    /// <summary>Messungen, deren Werte sich sinnvoll addieren lassen (nicht Winkel, Bemaßung, Radius, Durchmesser).</summary>
+    public static bool IsSummable(MarkupKind kind) =>
+        IsMeasurement(kind) && kind is not (MarkupKind.Angle or MarkupKind.Dimension or MarkupKind.Radius or MarkupKind.Diameter);
 
     /// <summary>Messungen, deren Wert vom Maßstab abhängt (nicht Anzahl und Winkel).</summary>
     public static bool NeedsScale(MarkupKind kind) => IsMeasurement(kind) && kind is not (MarkupKind.Count or MarkupKind.Angle);

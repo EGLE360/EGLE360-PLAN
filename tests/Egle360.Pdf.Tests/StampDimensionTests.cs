@@ -79,3 +79,27 @@ public class StampDimensionTests
         Assert.Contains("/Measure", std);
     }
 }
+
+/// <summary>Radius und Durchmesser.</summary>
+public class CircleMeasureTests
+{
+    private const double MeterAt50 = 72 / 25.4 * 1000 / 50;
+
+    [Fact]
+    public void Radius_und_Durchmesser_mit_Kreisflaeche()
+    {
+        var s = MeasureScale.FromRatio(50);
+        var radius = Markup.Create(MarkupKind.Radius, [[new(200, 200), new(200 + 2 * MeterAt50, 200)]], MarkupStyle.DefaultFor(MarkupKind.Radius), "Prüfer") with { Scale = s };
+        Assert.Equal("R 2,00 m", Measurement.Label(radius));
+        Assert.Equal("R 2,00 m, Kreisfläche 12,57 m²", Measurement.Describe(radius));
+        // Der Kreis reicht um den Mittelpunkt herum.
+        var bounds = MarkupGeometry.Bounds(radius);
+        Assert.True(bounds.Left < 200 - 2 * MeterAt50 + 1);
+
+        var diameter = radius with { Kind = MarkupKind.Diameter };
+        Assert.Equal("Ø 2,00 m", Measurement.Label(diameter));
+        Assert.Equal(Math.PI, Measurement.CircleArea(diameter)!.Value, 6);
+        Assert.False(MarkupKinds.IsSummable(MarkupKind.Diameter));
+        Assert.Contains("/IT /LineDimension", MarkupSerializer.StandardEntries(diameter));
+    }
+}

@@ -44,7 +44,7 @@ public partial class DocumentsView
     /// <summary>Summen für mehrere ausgewählte Messungen derselben Art und Einheit.</summary>
     private static string SelectionTotals(IReadOnlyList<Markup> selected)
     {
-        var values = selected.Select(m => (m, v: Measurement.Compute(m))).Where(x => x.v is { Unit: not "°" }).ToList();
+        var values = selected.Select(m => (m, v: Measurement.Compute(m))).Where(x => x.v is not null && MarkupKinds.IsSummable(x.m.Kind)).ToList();
         if (values.Count < 2 || values.Count != selected.Count || values.Select(x => x.v!.Value.Unit).Distinct().Count() != 1)
         {
             return "";

@@ -77,6 +77,7 @@ Rechts in der Markierungsleiste sitzen die Messwerkzeuge und die Schaltfläche f
    - Ausschnitt: Rechtsklick auf den Rand oder die Beschriftung einer Fläche, „Ausschnitt hinzufügen“, dann das abzuziehende Polygon zeichnen (zum Beispiel einen Schacht). Der Wert wird um den Ausschnitt verringert.
    - Anzahl: jedes Objekt anklicken, mit Eingabetaste beenden. Braucht keinen Maßstab.
    - Winkel: erst einen Punkt auf dem ersten Schenkel, dann den Scheitel, dann einen Punkt auf dem zweiten Schenkel klicken. Braucht keinen Maßstab.
+   - Radius: erst den Mittelpunkt, dann einen Punkt auf dem Kreis anklicken oder aufziehen. Durchmesser: von einem Kreisrand zum gegenüberliegenden ziehen. Die Liste zeigt zusätzlich die Kreisfläche.
    - Volumen: Rechtsklick auf eine Fläche, „Tiefe für Volumen …“, zum Beispiel 0,25 für eine Bodenplatte. Die Beschriftung zeigt dann Fläche und Volumen.
    - Wandfläche: Rechtsklick auf eine Länge, Polylänge oder einen Umfang, „Höhe für Wandfläche …“, zum Beispiel 2,80. Ein leeres Feld entfernt die Angabe wieder.
 3. Der Wert steht als Beschriftung im Plan und ändert sich live beim Ziehen an den Eckpunkten.
@@ -97,7 +98,7 @@ Diese Punkte sind geplant, aber noch nicht enthalten:
 
 - Drucken in Originalgröße oder gekachelt, geteilte und synchronisierte Ansichten, Metadaten bearbeiten.
 - Stempel aus eigenen Bilddateien, Unterschriften, Unterstreichen und Durchstreichen von Text, Drehen von Markierungen.
-- Messungen: Radius, Objektfang, Kostenansätze und die Übernahme in EGLE360 AVA.
+- Messungen: Objektfang, Gefälle, Kostenansätze und die Übernahme in EGLE360 AVA.
 - Ob Bluebeam die gespeicherten Messungen als Messungen (mit Wert in der Markups-Liste) erkennt, ist noch nicht geprüft. Die Datei enthält dafür die genormten PDF-Messangaben; im Plan sind die Messungen in jedem Fall sichtbar.
 - BIM, 4D/5D, KI-Funktionen und die AVA-Anbindung folgen in späteren Phasen.
 - Programmsymbol, digitale Signatur und Installationsprogramm.

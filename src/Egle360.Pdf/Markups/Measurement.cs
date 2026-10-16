@@ -103,7 +103,7 @@ public static class Measurement
         var sym = scale.UnitSymbol;
         return m.Kind switch
         {
-            MarkupKind.Length or MarkupKind.Polylength or MarkupKind.Dimension => new MeasureValue(PathLength(pts, closed: false) * f, sym),
+            MarkupKind.Length or MarkupKind.Polylength or MarkupKind.Dimension or MarkupKind.Radius or MarkupKind.Diameter => new MeasureValue(PathLength(pts, closed: false) * f, sym),
             MarkupKind.Perimeter => new MeasureValue(PathLength(pts, closed: true) * f, sym),
             MarkupKind.Area => new MeasureValue(NetArea(m) * f * f, sym + "²", PathLength(pts, closed: true) * f, sym),
             _ => null,
@@ -187,8 +187,27 @@ public static class Measurement
             return $"{Number(v.Value, 1)}°";
         }
         var d = Decimals(m.Scale!.Unit);
-        var main = $"{Number(v.Value, d)} {v.Unit}";
+        var main = $"{Prefix(m.Kind)}{Number(v.Value, d)} {v.Unit}";
         return Derived(m) is { } x ? $"{main}, {Number(x.Value, 2)} {x.Unit}" : main;
+    }
+
+    /// <summary>Vorangestelltes Zeichen der Beschriftung: R für Radius, Ø für Durchmesser.</summary>
+    public static string Prefix(MarkupKind kind) => kind switch
+    {
+        MarkupKind.Radius => "R ",
+        MarkupKind.Diameter => "Ø ",
+        _ => "",
+    };
+
+    /// <summary>Kreisfläche in Quadrat der Anzeigeeinheit bei Radius und Durchmesser, sonst null.</summary>
+    public static double? CircleArea(Markup m)
+    {
+        if (Compute(m) is not { } v || m.Kind is not (MarkupKind.Radius or MarkupKind.Diameter))
+        {
+            return null;
+        }
+        var r = m.Kind == MarkupKind.Radius ? v.Value : v.Value / 2;
+        return Math.PI * r * r;
     }
 
     /// <summary>Ausführlicher Text für Listen und Statuszeile, bei Flächen mit Umfang.</summary>
@@ -198,7 +217,11 @@ public static class Measurement
         {
             return Label(m);
         }
-        var text = $"{Number(v.Value, Decimals(s.Unit))} {v.Unit}";
+        var text = $"{Prefix(m.Kind)}{Number(v.Value, Decimals(s.Unit))} {v.Unit}";
+        if (CircleArea(m) is { } circle)
+        {
+            text += $", Kreisfläche {Number(circle, Decimals(s.Unit))} {v.Unit}²";
+        }
         if (v is { Perimeter: { } p, PerimeterUnit: { } pu })
         {
             text += $", Umfang {Number(p, Decimals(s.Unit))} {pu}";

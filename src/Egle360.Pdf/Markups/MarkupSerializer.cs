@@ -110,7 +110,7 @@ public static class MarkupSerializer
     /// <summary>PDFium kann diese Anmerkungsarten nicht anlegen; sie entstehen als Ink und werden beim Speichern umgeschrieben.</summary>
     public static bool NeedsStandardPatch(MarkupKind kind) =>
         kind is MarkupKind.Line or MarkupKind.Arrow or MarkupKind.Polyline or MarkupKind.Polygon or MarkupKind.Cloud
-            or MarkupKind.Length or MarkupKind.Polylength or MarkupKind.Perimeter or MarkupKind.Area or MarkupKind.Angle or MarkupKind.Dimension;
+            or MarkupKind.Length or MarkupKind.Polylength or MarkupKind.Perimeter or MarkupKind.Area or MarkupKind.Angle or MarkupKind.Dimension or MarkupKind.Radius or MarkupKind.Diameter;
 
     /// <summary>Einträge, die beim Speichern in die Anmerkung geschrieben werden; null, wenn keine nötig sind.</summary>
     public static string? StandardEntries(Markup m)
@@ -128,6 +128,9 @@ public static class MarkupSerializer
                 $"<</Subtype /Line /L [{N(pts[0].X)} {N(pts[0].Y)} {N(pts[1].X)} {N(pts[1].Y)}] /IT /LineDimension{MeasureEntry(m)}>>",
             MarkupKind.Dimension when pts.Count >= 2 =>
                 $"<</Subtype /Line /L [{N(pts[0].X)} {N(pts[0].Y)} {N(pts[1].X)} {N(pts[1].Y)}] /LE [/OpenArrow /OpenArrow] /IT /LineDimension /Cap true{MeasureEntry(m)}>>",
+            // Für Radius und Durchmesser gibt es keine eigene PDF-Messart; die gemessene Strecke ist eine Länge.
+            MarkupKind.Radius or MarkupKind.Diameter when pts.Count >= 2 =>
+                $"<</Subtype /Line /L [{N(pts[0].X)} {N(pts[0].Y)} {N(pts[1].X)} {N(pts[1].Y)}] /IT /LineDimension{MeasureEntry(m)}>>",
             MarkupKind.Angle => $"<</Subtype /PolyLine /Vertices {Vertices()}>>",
             MarkupKind.Polylength => $"<</Subtype /PolyLine /Vertices {Vertices()} /IT /PolyLineDimension{MeasureEntry(m)}>>",
             MarkupKind.Perimeter => $"<</Subtype /Polygon /Vertices {Vertices()} /IT /PolygonDimension{MeasureEntry(m)}>>",
