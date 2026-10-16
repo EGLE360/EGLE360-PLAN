@@ -15,7 +15,7 @@ Stand: 16.10.2026
 2. Bluebeam hat keinen eigenen IFC-Viewer, keine Kollisionsprüfung, kein 4D/5D und kein BCF. Diese Bereiche sind in der Matrix als EGLE360-Erweiterung geführt.
 3. Smart Review und Smart Overlay (Bluebeam Max) sind laut offizieller FAQ im Preview-Status, laufen in der Cloud und unterstützen nur imperiale Maße. Für Österreich und Deutschland braucht EGLE360 metrische Prüfregeln nach ÖNORM/DIN.
 4. 15 Funktionen sind als ungeklärt markiert, weil die gesichteten Quellen sie nicht ausreichend beschreiben (z. B. Magic Wand, Synchronisierte Ansicht, Stapelnummerierung).
-5. Nachtrag 16.10.2026: Abgleich mit der installierten Revu 21.11 (`phase1/EGLE360_PLAN_Bluebeam-Abgleich_Revu21.md`) eingearbeitet. 4 Kürzel korrigiert, 28 Funktionen ergänzt (Verifizierung „Belegt durch lokale Installation Revu 21.11“), Profile geklärt, 6 ungeklärte Einträge mit Teilergebnissen versehen. Bestehende IDs sind unverändert, neue Einträge stehen jeweils am Ende ihres Moduls.
+5. Nachtrag 16.10.2026: Abgleich mit der installierten Revu 21.11 (`phase1/EGLE360_PLAN_Bluebeam-Abgleich_Revu21.md`) eingearbeitet. 4 Kürzel korrigiert, 28 Funktionen ergänzt (Verifizierung „Belegt durch lokale Installation Revu 21.11“), Profile geklärt, 5 weitere ungeklärte Einträge mit Teilergebnissen versehen. Bestehende IDs sind unverändert, neue Einträge stehen jeweils am Ende ihres Moduls.
 
 ## Grenzen der Analyse
 
