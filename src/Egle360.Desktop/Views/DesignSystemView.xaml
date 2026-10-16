@@ -8,21 +8,33 @@
 
             <!-- Logo -->
             <TextBlock Style="{StaticResource TextTitle}" Text="Logo" Margin="0,0,0,12" />
+            <!-- Variante je Fläche, Zuordnung in design/tokens.json (logoUsage) -->
             <WrapPanel Margin="0,0,0,28">
                 <Border Background="{StaticResource NavBackgroundBrush}" CornerRadius="{StaticResource RadiusLarge}" Padding="24" Margin="0,0,16,16">
                     <StackPanel>
-                        <Image Source="/Assets/EGLE360_Master_Light_Flat.png" Height="96" HorizontalAlignment="Left"
-                               RenderOptions.BitmapScalingMode="HighQuality" />
-                        <TextBlock Text="Master Light Flat auf dunklem Grund" Margin="0,12,0,0" Foreground="{StaticResource NavTextSecondaryBrush}"
+                        <Image Source="{StaticResource LogoNavigationImage}" Height="96" HorizontalAlignment="Left"
+                               RenderOptions.BitmapScalingMode="HighQuality" AutomationProperties.Name="EGLE360 Logo, Navigation" />
+                        <TextBlock Text="Master Light Flat, Navigation in beiden Modi" Margin="0,12,0,0" Foreground="{StaticResource NavTextSecondaryBrush}"
                                    FontSize="{StaticResource FontSizeCaption}" />
                     </StackPanel>
                 </Border>
-                <Border Background="#FFFFFFFF" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                <Border Background="{DynamicResource Surface1Brush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                         CornerRadius="{StaticResource RadiusLarge}" Padding="24" Margin="0,0,16,16">
                     <StackPanel>
-                        <Image Source="/Assets/EGLE360_Horizontal_Light.png" Height="96" HorizontalAlignment="Left"
-                               RenderOptions.BitmapScalingMode="HighQuality" />
-                        <TextBlock Text="Horizontal Light, nur auf weißem Grund" Margin="0,12,0,0" Foreground="#FF66727D"
+                        <Image Source="{DynamicResource LogoContentImage}" Height="96" HorizontalAlignment="Left"
+                               RenderOptions.BitmapScalingMode="HighQuality" AutomationProperties.Name="EGLE360 Logo, Inhaltsfläche" />
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                            <TextBlock Style="{StaticResource TextCaption}" Text="{DynamicResource LogoContentName}" />
+                            <TextBlock Style="{StaticResource TextCaption}" Text=", Inhaltsflächen im aktiven Modus" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Border Background="{StaticResource LogoWhiteBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="{StaticResource RadiusLarge}" Padding="24" Margin="0,0,16,16">
+                    <StackPanel>
+                        <Image Source="{StaticResource LogoReportImage}" Height="96" HorizontalAlignment="Left"
+                               RenderOptions.BitmapScalingMode="HighQuality" AutomationProperties.Name="EGLE360 Logo, Bericht" />
+                        <TextBlock Text="Logo Report, Berichte und Druck auf weißem Grund" Margin="0,12,0,0" Foreground="#FF66727D"
                                    FontSize="{StaticResource FontSizeCaption}" />
                     </StackPanel>
                 </Border>

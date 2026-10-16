@@ -11,7 +11,7 @@
     <AssemblyName>EGLE360.PLAN</AssemblyName>
     <Product>EGLE360 PLAN</Product>
     <Company>EGLE360</Company>
-    <Version>0.3.0</Version>
+    <Version>0.3.1</Version>
     <ApplicationIcon />
   </PropertyGroup>
 
@@ -19,10 +19,12 @@
     <ProjectReference Include="..\Egle360.Design\Egle360.Design.csproj" />
   </ItemGroup>
 
-  <!-- Logodateien werden unverändert aus brand/ eingebunden. -->
+  <!-- Logodateien werden unverändert aus brand/ eingebunden; welche Variante wo erscheint, steht in design/tokens.json (logoUsage). -->
   <ItemGroup>
-    <Resource Include="..\..\brand\EGLE360_Master_Light_Flat_8192.png" Link="Assets\EGLE360_Master_Light_Flat.png" />
-    <Resource Include="..\..\brand\EGLE360_Horizontal_Light_4096x1024.png" Link="Assets\EGLE360_Horizontal_Light.png" />
+    <Resource Include="..\..\brand\EGLE360_Master_Light_Flat_8192.png" Link="Assets\EGLE360_Master_Light_Flat_8192.png" />
+    <Resource Include="..\..\brand\EGLE360_Master_Dark_8192.png" Link="Assets\EGLE360_Master_Dark_8192.png" />
+    <Resource Include="..\..\brand\EGLE360_Master_Light_HighContrast_8192.png" Link="Assets\EGLE360_Master_Light_HighContrast_8192.png" />
+    <Resource Include="..\..\brand\EGLE360_Logo_Report.png" Link="Assets\EGLE360_Logo_Report.png" />
   </ItemGroup>
 
 </Project>

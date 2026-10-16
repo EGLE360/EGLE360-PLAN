@@ -25,4 +25,7 @@
     <SolidColorBrush x:Key="CriticalBrush" Color="#FFD94A4A" />
     <Color x:Key="OnAccentColor">#FFFFFFFF</Color>
     <SolidColorBrush x:Key="OnAccentBrush" Color="#FFFFFFFF" />
+    <!-- Logo für Inhaltsflächen dieses Modus -->
+    <BitmapImage x:Key="LogoContentImage" UriSource="pack://application:,,,/EGLE360.PLAN;component/Assets/EGLE360_Master_Dark_8192.png" DecodePixelHeight="512" CacheOption="OnLoad" />
+    <sys:String x:Key="LogoContentName">Master Dark</sys:String>
 </ResourceDictionary>

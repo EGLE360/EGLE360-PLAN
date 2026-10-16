@@ -31,6 +31,9 @@
     <SolidColorBrush x:Key="NavTextBrush" Color="#FFFFFFFF" />
     <Color x:Key="NavTextSecondaryColor">#FF9EACBA</Color>
     <SolidColorBrush x:Key="NavTextSecondaryBrush" Color="#FF9EACBA" />
+    <!-- Logodateien (unverändert aus brand/) -->
+    <BitmapImage x:Key="LogoNavigationImage" UriSource="pack://application:,,,/EGLE360.PLAN;component/Assets/EGLE360_Master_Light_Flat_8192.png" DecodePixelHeight="512" CacheOption="OnLoad" />
+    <BitmapImage x:Key="LogoReportImage" UriSource="pack://application:,,,/EGLE360.PLAN;component/Assets/EGLE360_Logo_Report.png" CacheOption="OnLoad" />
     <!-- Typografie -->
     <FontFamily x:Key="FontFamilyUi">Segoe UI Variable Text, Segoe UI</FontFamily>
     <FontFamily x:Key="FontFamilyMono">Cascadia Mono, Consolas</FontFamily>

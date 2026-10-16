@@ -19,7 +19,7 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <Image x:Name="Logo" Grid.Row="0" Source="Assets/EGLE360_Master_Light_Flat.png"
+            <Image x:Name="Logo" Grid.Row="0" Source="{StaticResource LogoNavigationImage}"
                    Height="56" Margin="20,20,20,16" HorizontalAlignment="Left"
                    RenderOptions.BitmapScalingMode="HighQuality"
                    AutomationProperties.Name="EGLE360 Logo" />

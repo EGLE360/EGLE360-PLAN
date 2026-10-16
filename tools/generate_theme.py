@@ -25,6 +25,20 @@ def color_block(colors):
     return lines
 
 
+LOGO_DECODE_HEIGHT = 512
+
+
+def logo_image(key, file_name, decode=True):
+    # Die Datei bleibt unverändert; DecodePixelHeight begrenzt nur den Speicher beim Anzeigen.
+    uri = f"pack://application:,,,/EGLE360.PLAN;component/Assets/{file_name}"
+    limit = f' DecodePixelHeight="{LOGO_DECODE_HEIGHT}"' if decode else ""
+    return [f'    <BitmapImage x:Key="{key}" UriSource="{uri}"{limit} CacheOption="OnLoad" />']
+
+
+def logo_name(file_name):
+    return file_name.removeprefix("EGLE360_").removesuffix(".png").removesuffix("_8192").replace("_", " ")
+
+
 def write(path, lines):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -37,6 +51,9 @@ def brand_xaml():
     lines += color_block(TOKENS["brand"])
     lines.append("    <!-- Navigation (in beiden Modi dunkel) -->")
     lines += color_block(TOKENS["navigation"])
+    lines.append("    <!-- Logodateien (unverändert aus brand/) -->")
+    lines += logo_image("LogoNavigationImage", TOKENS["logoUsage"]["Navigation"])
+    lines += logo_image("LogoReportImage", TOKENS["logoUsage"]["Report"], decode=False)
     t = TOKENS["typography"]
     lines.append("    <!-- Typografie -->")
     lines.append(f'    <FontFamily x:Key="FontFamilyUi">{t["FontFamily"]}</FontFamily>')
@@ -56,6 +73,9 @@ def brand_xaml():
 def theme_xaml(name):
     lines = [HEADER, NS, f"    <!-- {name} Mode -->"]
     lines += color_block(TOKENS["themes"][name])
+    lines.append("    <!-- Logo für Inhaltsflächen dieses Modus -->")
+    lines += logo_image("LogoContentImage", TOKENS["logoUsage"][name])
+    lines.append(f'    <sys:String x:Key="LogoContentName">{logo_name(TOKENS["logoUsage"][name])}</sys:String>')
     lines.append("</ResourceDictionary>")
     write(THEMES_DIR / f"Colors.{name}.xaml", lines)
 

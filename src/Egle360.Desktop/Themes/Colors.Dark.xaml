@@ -25,4 +25,7 @@
     <SolidColorBrush x:Key="CriticalBrush" Color="#FFE85C5C" />
     <Color x:Key="OnAccentColor">#FF0B121A</Color>
     <SolidColorBrush x:Key="OnAccentBrush" Color="#FF0B121A" />
+    <!-- Logo für Inhaltsflächen dieses Modus -->
+    <BitmapImage x:Key="LogoContentImage" UriSource="pack://application:,,,/EGLE360.PLAN;component/Assets/EGLE360_Master_Light_HighContrast_8192.png" DecodePixelHeight="512" CacheOption="OnLoad" />
+    <sys:String x:Key="LogoContentName">Master Light HighContrast</sys:String>
 </ResourceDictionary>

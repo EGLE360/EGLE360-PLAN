@@ -35,10 +35,26 @@ Die Werte sind automatisch getestet (`ContrastTests`).
 
 ## Logo
 
-- `EGLE360_Master_Light_Flat` hat einen transparenten Hintergrund und einen weißen Schriftzug. Es steht in der Navigation, die in beiden Modi dunkel ist.
-- `EGLE360_Horizontal_Light` hat einen weißen, nicht transparenten Hintergrund und wird nur auf weißen Flächen gezeigt.
-- Beide Dateien werden unverändert aus `brand/` eingebunden. Sie wurden nicht freigestellt, umgefärbt oder skaliert gespeichert.
-- Hinweis: Die Master-Datei ist 1498 × 1050 Pixel groß. In der Navigation (56 Pixel Höhe) ist das ausreichend. Für große Darstellungen, etwa einen Startbildschirm in 4K, wäre eine höher aufgelöste oder Vektorfassung besser.
+Alle Logodateien liegen unverändert in `brand/`. Sie wurden nicht freigestellt, umgefärbt oder skaliert gespeichert; `brand/SHA256SUMS` hält die Prüfsummen fest, ein Test vergleicht sie. Welche Variante wo erscheint, steht in `design/tokens.json` unter `logoUsage`; der Generator legt daraus die Bildressourcen an.
+
+| Datei | Größe | Schriftzug | Einsatz |
+|---|---|---|---|
+| EGLE360_Master_Light_Flat_8192 | 1498 × 1050 | weiß, flache Farben | Navigation in beiden Modi |
+| EGLE360_Master_Light_HighContrast_8192 | 1498 × 1050 | weiß, kräftige Farben | Inhaltsflächen im Dark Mode |
+| EGLE360_Master_Dark_8192 | 2048 × 1436 | dunkel (#161C21) | Inhaltsflächen im Light Mode |
+| EGLE360_Logo_Report | 256 × 180 | dunkel | Berichte und Druck auf weißem Grund |
+| EGLE360_Master_Light_8192 | 1498 × 1050 | weiß, gedeckte Farben | derzeit nicht in der Oberfläche |
+| EGLE360_Horizontal_Light_4096x1024 | 4096 × 1024 | dunkel, weißer Hintergrund | derzeit nicht in der Oberfläche |
+
+Begründung, gemessen an den Logofarben (Kontrast der farbigen Teile zur Fläche):
+
+- Navigation #172532: Master Light Flat erreicht 3,9:1 (Blau) bis 8,5:1 (Grau), der Schriftzug 15,6:1. Die Farben (#45A049, #2682D6, #B8C0C8) liegen am nächsten an den Logofarben der Tokens. Die flache Fassung ohne Kontur bleibt auch bei 22 bis 56 Pixel Höhe sauber.
+- Dark-Inhaltsflächen: Master Light HighContrast erreicht auf der Navigationsfarbe 3,9:1 bis 8,1:1 und hat eine feine Kontur, die auf den dunklen Flächen #0B121A bis #172431 trägt.
+- Light-Inhaltsflächen: Master Dark hat einen dunklen Schriftzug und dunkle Farbteile (7:1 bis 17:1 auf Weiß). Die hellen Varianten verlieren auf Weiß den Schriftzug (1,0:1).
+- Master Light hat einen weißen Schriftzug, aber dunkles Grün und Blau. Auf der Navigationsfläche erreichen diese nur 1,3:1 bis 1,7:1, auf Weiß fehlt der Schriftzug. Für keine Fläche der Oberfläche ist sie deshalb die beste Wahl.
+- Logos fallen nicht unter die Kontrastvorgaben von WCAG 2.1 (1.4.3 nimmt Logotypen aus). Die Werte dienen hier nur als Orientierung.
+- Hinweis zu den Namen: „Light“ und „Dark“ beziehen sich in den Dateinamen auf den Schriftzug (Light = weiß), nicht auf den Hintergrund.
+- Speicher: Die Bilder werden beim Anzeigen auf höchstens 512 Pixel Höhe dekodiert. Die Dateien selbst bleiben unverändert. Für große Darstellungen, etwa einen Startbildschirm in 4K, wäre eine Vektorfassung besser.
 
 ## Navigation
 
