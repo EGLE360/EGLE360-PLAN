@@ -216,13 +216,13 @@
                               ColumnHeaderStyle="{StaticResource ListHeader}" CellStyle="{StaticResource ListCell}" RowStyle="{StaticResource ListRow}"
                               SelectionChanged="OnMarkupRowSelected" AutomationProperties.Name="Markierungsliste">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Seite" Binding="{Binding Page}" Width="60" />
-                            <DataGridTextColumn Header="Art" Binding="{Binding Kind}" Width="110" />
-                            <DataGridTextColumn Header="Wert" Binding="{Binding Value}" Width="170" SortMemberPath="Number" />
-                            <DataGridTextColumn Header="Text oder Kommentar" Binding="{Binding Text}" Width="*" />
-                            <DataGridTextColumn Header="Maßstab" Binding="{Binding Scale}" Width="150" />
-                            <DataGridTextColumn Header="Autor" Binding="{Binding Author}" Width="120" />
-                            <DataGridTextColumn Header="Geändert" Binding="{Binding Modified}" Width="130" SortMemberPath="ModifiedValue" />
+                            <DataGridTextColumn Header="Seite" Binding="{Binding Page}" Width="58" />
+                            <DataGridTextColumn Header="Art" Binding="{Binding Kind}" Width="100" />
+                            <DataGridTextColumn Header="Wert" Binding="{Binding Value}" Width="160" SortMemberPath="Number" />
+                            <DataGridTextColumn Header="Text oder Kommentar" Binding="{Binding Text}" Width="*" MinWidth="160" />
+                            <DataGridTextColumn Header="Maßstab" Binding="{Binding Scale}" Width="110" />
+                            <DataGridTextColumn Header="Autor" Binding="{Binding Author}" Width="110" />
+                            <DataGridTextColumn Header="Geändert" Binding="{Binding Modified}" Width="120" SortMemberPath="ModifiedValue" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </DockPanel>
