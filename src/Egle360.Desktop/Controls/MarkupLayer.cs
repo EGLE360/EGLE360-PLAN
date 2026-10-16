@@ -23,6 +23,8 @@ public sealed class MarkupLayer : FrameworkElement
     private IReadOnlyDictionary<string, Markup> _overrides = new Dictionary<string, Markup>();
     private IReadOnlySet<string> _selected = new HashSet<string>();
     private Markup? _preview;
+    private IReadOnlyList<PdfRect> _searchHits = [];
+    private IReadOnlyList<PdfRect> _currentHit = [];
     private PageTransform _transform;
     private double _scale = 1;
 
@@ -71,6 +73,18 @@ public sealed class MarkupLayer : FrameworkElement
         InvalidateVisual();
     }
 
+    /// <summary>Fundstellen der Textsuche auf dieser Seite; die aktuelle wird kräftiger hervorgehoben.</summary>
+    public void SetSearchHits(IReadOnlyList<PdfRect> hits, IReadOnlyList<PdfRect> current)
+    {
+        if (hits.Count == 0 && current.Count == 0 && _searchHits.Count == 0 && _currentHit.Count == 0)
+        {
+            return;
+        }
+        _searchHits = hits;
+        _currentHit = current;
+        InvalidateVisual();
+    }
+
     public IReadOnlyList<Markup> Markups => _markups;
 
     /// <summary>Aktuelle Fassung einer Markierung, einschließlich vorläufiger Änderungen.</summary>
@@ -80,6 +94,7 @@ public sealed class MarkupLayer : FrameworkElement
     {
         dc.PushClip(new RectangleGeometry(new Rect(0, 0, ActualWidth, ActualHeight)));
         dc.PushTransform(new MatrixTransform(UserToLocal));
+        DrawSearchHits(dc);
         foreach (var m in _markups)
         {
             Draw(dc, Current(m));
@@ -94,6 +109,33 @@ public sealed class MarkupLayer : FrameworkElement
             DrawSelection(dc, Current(m));
         }
         dc.Pop();
+    }
+
+    private static readonly Brush HitBrush = Frozen(new SolidColorBrush(Color.FromArgb(90, 255, 214, 0)));
+    private static readonly Brush CurrentHitBrush = Frozen(new SolidColorBrush(Color.FromArgb(120, 255, 140, 0)));
+
+    private static Brush Frozen(Brush b)
+    {
+        b.Freeze();
+        return b;
+    }
+
+    private void DrawSearchHits(DrawingContext dc)
+    {
+        foreach (var r in _searchHits)
+        {
+            dc.DrawRectangle(HitBrush, null, new Rect(r.Left, r.Bottom, r.Width, r.Height));
+        }
+        if (_currentHit.Count > 0)
+        {
+            var pen = new Pen((Brush)FindResource("AccentBrush"), 1.5 / Math.Max(_scale, 0.01));
+            foreach (var r in _currentHit)
+            {
+                var box = new Rect(r.Left, r.Bottom, r.Width, r.Height);
+                box.Inflate(1, 1);
+                dc.DrawRectangle(CurrentHitBrush, pen, box);
+            }
+        }
     }
 
     private void Draw(DrawingContext dc, Markup m)

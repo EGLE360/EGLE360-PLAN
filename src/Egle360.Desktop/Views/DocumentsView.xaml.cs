@@ -132,6 +132,10 @@ public partial class DocumentsView : UserControl, IDisposable
         viewer.ZoomChanged += (_, _) => { if (open == _active) { RefreshZoom(); } };
         document.PagesChanged += (_, _) =>
         {
+            if (open == _active)
+            {
+                ResetSearch();
+            }
             viewer.Reload();
             open.Title = document.FilePath is { } p ? Path.GetFileName(p) : open.Title;
             UpdateTab(open);
@@ -150,6 +154,10 @@ public partial class DocumentsView : UserControl, IDisposable
     private void Activate(OpenDocument document)
     {
         _active?.Viewer.CancelDrawing();
+        if (_active != document)
+        {
+            ResetSearch();
+        }
         _active = document;
         document.Tab.IsChecked = true;
         ApplyTool(document.Viewer, CheckedToolKey);
@@ -361,15 +369,17 @@ public partial class DocumentsView : UserControl, IDisposable
 
     private void UpdateSidebarTab()
     {
-        if (Thumbnails is null || Bookmarks is null)
+        if (Thumbnails is null || Bookmarks is null || SearchPanel is null)
         {
             return;
         }
         var pages = PagesTab.IsChecked == true;
+        var bookmarks = BookmarksTab.IsChecked == true;
         var hasBookmarks = Bookmarks.Items.Count > 0;
         Thumbnails.Visibility = pages ? Visibility.Visible : Visibility.Collapsed;
-        Bookmarks.Visibility = !pages && hasBookmarks ? Visibility.Visible : Visibility.Collapsed;
-        NoBookmarks.Visibility = !pages && !hasBookmarks ? Visibility.Visible : Visibility.Collapsed;
+        Bookmarks.Visibility = bookmarks && hasBookmarks ? Visibility.Visible : Visibility.Collapsed;
+        NoBookmarks.Visibility = bookmarks && !hasBookmarks ? Visibility.Visible : Visibility.Collapsed;
+        SearchPanel.Visibility = SearchTab.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void OnToggleSidebar(object sender, RoutedEventArgs e)
@@ -761,6 +771,8 @@ public partial class DocumentsView : UserControl, IDisposable
     {
         var viewer = _active?.Viewer;
         if (HandleMarkupShortcut(e)) { }
+        else if (KeyGestures.Ctrl(e, Key.F)) { ShowSearch(); }
+        else if (e.Key == Key.F3 && Keyboard.Modifiers is ModifierKeys.None or ModifierKeys.Shift) { StepSearch(Keyboard.Modifiers == ModifierKeys.Shift ? -1 : 1); }
         else if (KeyGestures.Ctrl(e, Key.O)) { OnOpen(this, e); }
         else if (KeyGestures.Ctrl(e, Key.N)) { OnNew(this, e); }
         else if (KeyGestures.Ctrl(e, Key.S)) { OnSave(this, e); }

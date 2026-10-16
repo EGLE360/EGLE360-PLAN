@@ -149,6 +149,7 @@ public sealed partial class PdfViewer
         visual.Layer.SetMarkups(_document.GetMarkups(visual.Index));
         visual.Layer.SetOverrides(new Dictionary<string, Markup>());
         visual.Layer.SetSelection(visual.Index == _selectedPage ? _selected : new HashSet<string>());
+        ApplySearch(visual, visual.Index);
     }
 
     private void RefreshSelection(bool raise = true)

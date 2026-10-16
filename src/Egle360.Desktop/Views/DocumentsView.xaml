@@ -83,6 +83,8 @@
                     <UniformGrid Rows="1" Margin="4,4,4,0">
                         <RadioButton x:Name="PagesTab" Style="{StaticResource SegmentButton}" Content="Seiten" IsChecked="True" GroupName="Sidebar" Checked="OnSidebarTab" />
                         <RadioButton x:Name="BookmarksTab" Style="{StaticResource SegmentButton}" Content="Lesezeichen" GroupName="Sidebar" Checked="OnSidebarTab" />
+                        <RadioButton x:Name="SearchTab" Style="{StaticResource SegmentButton}" Content="Suche" GroupName="Sidebar" Checked="OnSidebarTab"
+                                     ToolTip="Text im Dokument suchen (Strg+F)" />
                     </UniformGrid>
                     <ListBox x:Name="Thumbnails" Grid.Row="1" Style="{StaticResource PlainList}" SelectionChanged="OnThumbnailSelected"
                              VirtualizingPanel.VirtualizationMode="Standard"
@@ -120,6 +122,24 @@
                             </HierarchicalDataTemplate>
                         </TreeView.ItemTemplate>
                     </TreeView>
+                    <DockPanel x:Name="SearchPanel" Grid.Row="1" Visibility="Collapsed" Margin="8">
+                        <TextBox x:Name="SearchBox" DockPanel.Dock="Top" Style="{StaticResource InputBox}" KeyDown="OnSearchBoxKey"
+                                 ToolTip="Suchbegriff, Eingabetaste startet die Suche. F3 springt zur nächsten Fundstelle."
+                                 AutomationProperties.Name="Suchbegriff" />
+                        <TextBlock x:Name="SearchStatus" DockPanel.Dock="Top" Style="{StaticResource TextCaption}" Margin="2,6,2,6" TextWrapping="Wrap"
+                                   Text="Begriff eingeben und mit der Eingabetaste suchen. Gescannte Pläne ohne Textebene enthalten keinen durchsuchbaren Text." />
+                        <ListBox x:Name="SearchResults" Style="{StaticResource PlainList}" SelectionChanged="OnSearchResultSelected"
+                                 VirtualizingPanel.IsVirtualizing="True" AutomationProperties.Name="Suchergebnisse">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="2,3">
+                                        <TextBlock Style="{StaticResource TextCaption}" Text="{Binding PageLabel}" />
+                                        <TextBlock Style="{StaticResource TextBody}" Text="{Binding Context}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
                     <TextBlock x:Name="NoBookmarks" Grid.Row="1" Style="{StaticResource TextSecondary}" Margin="16" Visibility="Collapsed"
                                Text="Dieses Dokument enthält keine Lesezeichen." />
                 </Grid>
