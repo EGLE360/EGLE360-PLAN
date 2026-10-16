@@ -68,6 +68,9 @@ Im Startbildschirm „Beispielplan öffnen“ wählen. Das ist ein frei erfunden
 - Farbe, Linienbreite, Deckkraft und Füllung gelten für neue Markierungen und für die Auswahl.
 - Doppelklick bearbeitet Text oder Kommentar. Rechtsklick öffnet ein Menü (Text, Kopieren, Duplizieren, Vordergrund, Hintergrund, Löschen).
 - Strg+C, Strg+V, Strg+D (Duplizieren), Strg+A (alle auf der Seite), Entf, Esc, Strg+Z, Strg+Y.
+- Mehrere ausgewählte Markierungen lassen sich per Rechtsklick ausrichten (links, rechts, oben, unten, zentriert) und ab drei gleichmäßig verteilen.
+- Darstellung übertragen: Strg+Umschalt+C kopiert Farbe, Linie und Füllung der ausgewählten Markierung, Strg+Umschalt+V überträgt sie auf die Auswahl.
+- Die Schaltfläche mit dem durchgestrichenen Auge ganz rechts in der Markierungsleiste blendet alle Markierungen aus, um den Plan ohne sie zu sehen.
 - Nach dem Speichern sind Markierungen normale PDF-Anmerkungen. Zum Gegenprüfen die Datei in einem anderen Programm öffnen, zum Beispiel Bluebeam, Adobe Acrobat oder einem Browser. Sie sollten dort an derselben Stelle gleich aussehen.
 
 ### Mengenermittlung

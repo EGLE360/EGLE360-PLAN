@@ -181,3 +181,36 @@ public class TypewriterTests
         Assert.Equal("<</IT /FreeTextTypeWriter>>", MarkupSerializer.StandardEntries(m));
     }
 }
+
+/// <summary>Ausrichten und Verteilen.</summary>
+public class ArrangeTests
+{
+    private static Markup Box(double x, double y, double w, double h) =>
+        Markup.Create(MarkupKind.Rectangle, [[new(x, y), new(x + w, y + h)]], MarkupStyle.DefaultFor(MarkupKind.Rectangle), "Prüfer");
+
+    [Fact]
+    public void Links_und_oben_ausrichten_auch_auf_gedrehter_Seite()
+    {
+        var a = Box(100, 100, 50, 20);
+        var b = Box(130, 300, 80, 40);
+        var moved = MarkupArrange.Align([a, b], MarkupAlignment.Left, 0);
+        Assert.Equal(100, MarkupGeometry.HandleRect(Assert.Single(moved)).Left, 6);
+
+        // Oben heißt auf dem Bildschirm oben, ohne Drehung also größtes y.
+        var top = MarkupArrange.Align([a, b], MarkupAlignment.Top, 0);
+        Assert.Equal(340, MarkupGeometry.HandleRect(Assert.Single(top)).Top, 6);
+
+        // Bei 90 Grad Drehung liegt „links“ auf dem Bildschirm unten in Benutzerkoordinaten.
+        var rotated = MarkupArrange.Align([a, b], MarkupAlignment.Left, 90);
+        Assert.Equal(100, MarkupGeometry.HandleRect(Assert.Single(rotated)).Bottom, 6);
+    }
+
+    [Fact]
+    public void Gleichmaessig_verteilen()
+    {
+        var moved = MarkupArrange.Align([Box(0, 0, 10, 10), Box(30, 0, 10, 10), Box(100, 0, 10, 10)], MarkupAlignment.DistributeHorizontally, 0);
+        var middle = Assert.Single(moved);
+        Assert.Equal(50, MarkupGeometry.HandleRect(middle).Left, 6);
+        Assert.Empty(MarkupArrange.Align([Box(0, 0, 10, 10), Box(30, 0, 10, 10)], MarkupAlignment.DistributeHorizontally, 0));
+    }
+}

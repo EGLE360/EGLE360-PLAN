@@ -324,6 +324,7 @@ public sealed partial class PdfViewer : Grid
             if (!_visuals.TryGetValue(index, out var visual))
             {
                 visual = new PageVisual(index, _canvas, new MarkupLayer(Outliner));
+                visual.Layer.SetMarkupsVisible(_markupsVisible);
                 _visuals[index] = visual;
                 RefreshLayer(visual);
             }

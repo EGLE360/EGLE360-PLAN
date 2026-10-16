@@ -132,6 +132,7 @@ public partial class DocumentsView : UserControl, IDisposable
         viewer.DepthRequested += (_, args) => OnEditDepth(open, args.Page, args.Markup);
         viewer.PriceRequested += (_, args) => OnEditPrice(open, args.Page, args.Markup);
         viewer.ViewHistoryChanged += (_, _) => { if (open == _active) { RefreshViewHistory(); } };
+        viewer.MarkupsVisibilityChanged += (_, _) => { if (open == _active) { RefreshMarkupBar(); } };
         AttachMeasure(open);
         viewer.CurrentPageChanged += (_, _) => { if (open == _active) { SyncCurrentPage(); } };
         viewer.ZoomChanged += (_, _) => { if (open == _active) { RefreshZoom(); } };

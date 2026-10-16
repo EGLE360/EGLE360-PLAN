@@ -34,6 +34,79 @@ public sealed partial class PdfViewer
     /// <summary>Darstellung für neue Markierungen einer Art.</summary>
     public Func<MarkupKind, MarkupStyle> StyleProvider { get; set; } = MarkupStyle.DefaultFor;
 
+    private bool _markupsVisible = true;
+
+    /// <summary>Markierungen anzeigen. Ausgeblendete lassen sich weder anklicken noch bearbeiten.</summary>
+    public bool MarkupsVisible
+    {
+        get => _markupsVisible;
+        set
+        {
+            if (_markupsVisible == value)
+            {
+                return;
+            }
+            _markupsVisible = value;
+            if (!value)
+            {
+                ClearSelection();
+                if (_tool is ViewerTool.Draw)
+                {
+                    SetTool(ViewerTool.Select);
+                }
+            }
+            foreach (var visual in _visuals.Values)
+            {
+                visual.Layer.SetMarkupsVisible(value);
+            }
+            MarkupsVisibilityChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    public event EventHandler? MarkupsVisibilityChanged;
+
+    /// <summary>Kopierte Darstellung (Farbe, Linie, Füllung, Schrift) für „Darstellung einfügen“.</summary>
+    private static MarkupStyle? s_styleClipboard;
+
+    public static bool HasStyleClipboard => s_styleClipboard is not null;
+
+    public void CopyStyle()
+    {
+        if (SelectedMarkups is { Count: > 0 } selected)
+        {
+            s_styleClipboard = selected[0].Style;
+        }
+    }
+
+    /// <summary>Überträgt die kopierte Darstellung auf die Auswahl; Notizen und Hervorhebungen behalten ihre Eigenart.</summary>
+    public void PasteStyle()
+    {
+        if (s_styleClipboard is not { } style)
+        {
+            return;
+        }
+        ApplyToSelection(m => m.WithStyle(m.Kind switch
+        {
+            MarkupKind.Highlight => m.Style with { Stroke = style.Stroke, Fill = style.Stroke, Opacity = style.Opacity },
+            MarkupKind.Note => m.Style with { Fill = style.Fill ?? style.Stroke },
+            _ => style with { Fill = MarkupKinds.CanFill(m.Kind) || m.Kind == MarkupKind.Stamp ? style.Fill : null },
+        }), "Darstellung übertragen");
+    }
+
+    /// <summary>Richtet die ausgewählten, nicht gesperrten Markierungen aus.</summary>
+    public void AlignSelection(MarkupAlignment alignment)
+    {
+        if (!CanAnnotate || _selectedPage < 0)
+        {
+            return;
+        }
+        var moved = MarkupArrange.Align(SelectedMarkups.Where(m => !m.Locked).ToList(), alignment, Transform(_selectedPage).Rotation);
+        if (moved.Count > 0)
+        {
+            Run(() => _history!.ReplaceMany(_selectedPage, moved, MarkupArrange.DisplayName(alignment)));
+        }
+    }
+
     /// <summary>Objektfang beim Zeichnen und beim Ziehen von Eckpunkten.</summary>
     public bool SnapEnabled { get; set; } = true;
 
@@ -105,6 +178,10 @@ public sealed partial class PdfViewer
         CancelDrawing();
         ShowSnapMarker(-1, null);
         _cutout = null;
+        if (tool is ViewerTool.Draw or ViewerTool.Calibrate && !_markupsVisible)
+        {
+            MarkupsVisible = true;
+        }
         _tool = tool;
         if (kind is { } k)
         {
@@ -384,7 +461,7 @@ public sealed partial class PdfViewer
     {
         page = -1;
         local = default;
-        if (PageAt(e) is not { } hit || !_visuals.TryGetValue(hit.Page, out var visual))
+        if (!_markupsVisible || PageAt(e) is not { } hit || !_visuals.TryGetValue(hit.Page, out var visual))
         {
             return null;
         }
@@ -810,6 +887,24 @@ public sealed partial class PdfViewer
         menu.Items.Add(status);
         Add(markup.Locked ? "Entsperren" : "Sperren", () => ApplyToSelection(m => m with { Locked = !markup.Locked, Modified = DateTimeOffset.Now },
             markup.Locked ? "Entsperren" : "Sperren", includeLocked: true), CanAnnotate);
+        menu.Items.Add(new Separator());
+        if (_selected.Count >= 2)
+        {
+            var align = new MenuItem { Header = "Ausrichten", IsEnabled = CanAnnotate };
+            foreach (var a in Enum.GetValues<MarkupAlignment>())
+            {
+                if (a == MarkupAlignment.DistributeHorizontally)
+                {
+                    align.Items.Add(new Separator());
+                }
+                Add(MarkupArrange.DisplayName(a), () => AlignSelection(a),
+                    a is not (MarkupAlignment.DistributeHorizontally or MarkupAlignment.DistributeVertically) || _selected.Count >= 3, align);
+            }
+            menu.Items.Add(align);
+            menu.Items.Add(new Separator());
+        }
+        Add("Darstellung kopieren (Strg+Umschalt+C)", CopyStyle);
+        Add("Darstellung einfügen (Strg+Umschalt+V)", PasteStyle, CanAnnotate && HasStyleClipboard);
         menu.Items.Add(new Separator());
         Add("Kopieren (Strg+C)", CopySelection);
         Add("Duplizieren (Strg+D)", DuplicateSelection, editable);

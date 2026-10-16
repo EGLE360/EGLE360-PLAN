@@ -65,6 +65,7 @@ public partial class DocumentsView
     private Button _widthButton = null!;
     private Button _scaleButton = null!;
     private ToggleButton _snapButton = null!;
+    private ToggleButton _hideMarkupsButton = null!;
     private bool _snap = true;
     private Button _opacityButton = null!;
     private ToggleButton _fillButton = null!;
@@ -168,6 +169,21 @@ public partial class DocumentsView
         MarkupBar.Children.Add(_undoButton);
         MarkupBar.Children.Add(_redoButton);
         MarkupBar.Children.Add(_deleteMarkupButton);
+        _hideMarkupsButton = new ToggleButton
+        {
+            Style = (Style)FindResource("ToolToggle"),
+            Content = new Path { Style = (Style)FindResource("ToolIcon"), Data = Geometry.Parse("M1.5,8 C4,3.5 12,3.5 14.5,8 C12,12.5 4,12.5 1.5,8 Z M6,8 A2,2 0 1 0 10,8 A2,2 0 1 0 6,8 Z M2.5,14 L13.5,2") },
+            ToolTip = "Markierungen ausblenden, um den Plan ohne sie zu sehen",
+        };
+        AutomationPropertiesHelper.SetName(_hideMarkupsButton, "Markierungen ausblenden");
+        _hideMarkupsButton.Click += (_, _) =>
+        {
+            if (_active is { } open)
+            {
+                open.Viewer.MarkupsVisible = _hideMarkupsButton.IsChecked != true;
+            }
+        };
+        MarkupBar.Children.Add(_hideMarkupsButton);
         RefreshStyleButtons();
     }
 
@@ -370,6 +386,7 @@ public partial class DocumentsView
         _redoButton.ToolTip = history?.RedoDescription is { } r ? $"Wiederholen: {r} (Strg+Y)" : "Wiederholen (Strg+Y)";
         var selected = _active?.Viewer.SelectedMarkups ?? [];
         _deleteMarkupButton.IsEnabled = canAnnotate && selected.Count > 0;
+        _hideMarkupsButton.IsChecked = _active?.Viewer.MarkupsVisible == false;
         StatusMarkup.Text = selected.Count switch
         {
             0 => "",
@@ -415,6 +432,8 @@ public partial class DocumentsView
         if (KeyGestures.Ctrl(e, Key.Y) || KeyGestures.Ctrl(e, Key.Z, shift: true)) { Redo(); return true; }
         if (_active is { } open)
         {
+            if (KeyGestures.Ctrl(e, Key.C, shift: true)) { open.Viewer.CopyStyle(); return true; }
+            if (KeyGestures.Ctrl(e, Key.V, shift: true)) { open.Viewer.PasteStyle(); return true; }
             if (KeyGestures.Ctrl(e, Key.C)) { open.Viewer.CopySelection(); return true; }
             if (KeyGestures.Ctrl(e, Key.V)) { open.Viewer.Paste(); return true; }
             if (KeyGestures.Ctrl(e, Key.D)) { open.Viewer.DuplicateSelection(); return true; }

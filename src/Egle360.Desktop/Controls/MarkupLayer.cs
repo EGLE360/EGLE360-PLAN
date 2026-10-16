@@ -68,6 +68,17 @@ public sealed class MarkupLayer : FrameworkElement
     }
 
     private PdfPoint? _snapMarker;
+    private bool _markupsVisible = true;
+
+    /// <summary>Blendet die Markierungen aus; Suchtreffer und Fangmarke bleiben sichtbar.</summary>
+    public void SetMarkupsVisible(bool visible)
+    {
+        if (_markupsVisible != visible)
+        {
+            _markupsVisible = visible;
+            InvalidateVisual();
+        }
+    }
 
     /// <summary>Fangmarke: kleines Quadrat an dem Punkt, an dem der nächste Klick einrastet.</summary>
     public void SetSnapMarker(PdfPoint? point)
@@ -108,7 +119,7 @@ public sealed class MarkupLayer : FrameworkElement
         dc.PushClip(new RectangleGeometry(new Rect(0, 0, ActualWidth, ActualHeight)));
         dc.PushTransform(new MatrixTransform(UserToLocal));
         DrawSearchHits(dc);
-        foreach (var m in _markups)
+        foreach (var m in _markupsVisible ? _markups : [])
         {
             Draw(dc, Current(m));
         }
@@ -117,7 +128,7 @@ public sealed class MarkupLayer : FrameworkElement
             Draw(dc, _preview);
         }
         dc.Pop();
-        foreach (var m in _markups.Where(m => _selected.Contains(m.Id)))
+        foreach (var m in _markups.Where(m => _markupsVisible && _selected.Contains(m.Id)))
         {
             DrawSelection(dc, Current(m));
         }
