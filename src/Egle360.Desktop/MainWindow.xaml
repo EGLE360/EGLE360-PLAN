@@ -5,7 +5,7 @@
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource CanvasBrush}"
         UseLayoutRounding="True" SnapsToDevicePixels="True">
-    <Grid>
+    <Grid Background="{DynamicResource CanvasBrush}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition x:Name="NavColumn" Width="232" />
             <ColumnDefinition Width="*" />

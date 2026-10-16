@@ -38,6 +38,8 @@ public partial class MainWindow : Window
 
     public void ShowPage(string id) => _navigation.Select(id);
 
+    public DependencyObject? PageContent => PageHost.Content as DependencyObject;
+
     private void Register(NavigationEntry entry, Func<UserControl> factory)
     {
         _navigation.Register(entry);

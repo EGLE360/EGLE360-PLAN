@@ -1,5 +1,6 @@
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -28,10 +29,39 @@ internal static class ScreenshotRunner
             {
                 window.ShowPage(page);
                 WaitForRender(window);
-                Save(window, Path.Combine(outputDir, $"{page}-{theme.ToString().ToLowerInvariant()}.png"));
+                var name = $"{page}-{theme.ToString().ToLowerInvariant()}";
+                Save(window, Path.Combine(outputDir, name + ".png"));
+
+                // Längere Seiten zusätzlich am Ende aufnehmen.
+                if (FindScrollViewer(window.PageContent) is { ScrollableHeight: > 0 } scroll)
+                {
+                    scroll.ScrollToEnd();
+                    WaitForRender(window);
+                    Save(window, Path.Combine(outputDir, name + "-ende.png"));
+                }
             }
         }
         return 0;
+    }
+
+    private static ScrollViewer? FindScrollViewer(DependencyObject? node)
+    {
+        if (node is null)
+        {
+            return null;
+        }
+        if (node is ScrollViewer sv)
+        {
+            return sv;
+        }
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(node); i++)
+        {
+            if (FindScrollViewer(VisualTreeHelper.GetChild(node, i)) is { } found)
+            {
+                return found;
+            }
+        }
+        return null;
     }
 
     private static void WaitForRender(Window window)
