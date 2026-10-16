@@ -11,12 +11,13 @@
     <AssemblyName>EGLE360.PLAN</AssemblyName>
     <Product>EGLE360 PLAN</Product>
     <Company>EGLE360</Company>
-    <Version>0.3.1</Version>
+    <Version>0.4.0</Version>
     <ApplicationIcon />
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Egle360.Design\Egle360.Design.csproj" />
+    <ProjectReference Include="..\Egle360.Pdf\Egle360.Pdf.csproj" />
   </ItemGroup>
 
   <!-- Logodateien werden unverändert aus brand/ eingebunden; welche Variante wo erscheint, steht in design/tokens.json (logoUsage). -->

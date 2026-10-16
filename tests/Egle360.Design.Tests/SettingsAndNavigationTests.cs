@@ -71,3 +71,54 @@ public class SettingsAndNavigationTests : IDisposable
         Assert.Throws<InvalidOperationException>(() => nav.Register(new NavigationEntry("a", "B", "y")));
     }
 }
+
+public class RecentDocumentsTests
+{
+    [Fact]
+    public void NewestFirstWithoutDuplicates()
+    {
+        var list = new List<string>();
+        RecentDocuments.Add(list, "/plaene/a.pdf");
+        RecentDocuments.Add(list, "/plaene/b.pdf");
+        RecentDocuments.Add(list, "/plaene/a.pdf");
+        Assert.Equal([Path.GetFullPath("/plaene/a.pdf"), Path.GetFullPath("/plaene/b.pdf")], list);
+    }
+
+    [Fact]
+    public void ListIsLimited()
+    {
+        var list = new List<string>();
+        for (var i = 0; i < 15; i++)
+        {
+            RecentDocuments.Add(list, $"/plaene/{i}.pdf");
+        }
+        Assert.Equal(RecentDocuments.MaxEntries, list.Count);
+        Assert.Equal(Path.GetFullPath("/plaene/14.pdf"), list[0]);
+    }
+
+    [Fact]
+    public void MissingFilesAreRemoved()
+    {
+        var list = new List<string> { "/da.pdf", "/weg.pdf" };
+        Assert.Equal(1, RecentDocuments.RemoveMissing(list, p => p == "/da.pdf"));
+        Assert.Equal(["/da.pdf"], list);
+    }
+
+    [Fact]
+    public void RecentDocumentsArePersisted()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"egle360-recent-{Guid.NewGuid():N}.json");
+        try
+        {
+            var store = new UiSettingsStore(path);
+            var settings = new UiSettings();
+            RecentDocuments.Add(settings.RecentDocuments, "/plaene/a.pdf");
+            store.Save(settings);
+            Assert.Equal(settings.RecentDocuments, store.Load().RecentDocuments);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+}

@@ -22,6 +22,11 @@ internal static class ScreenshotRunner
         window.Height = 900;
         window.Show();
 
+        // Beispielplan für die Dokumentansicht (frei erfundene Testdaten).
+        var sample = Path.Combine(Path.GetTempPath(), $"EGLE360-Beispielplan-{Environment.ProcessId}.pdf");
+        SamplePlan.Write(sample);
+        window.OpenDocuments([sample]);
+
         foreach (var theme in new[] { ThemePreference.Light, ThemePreference.Dark })
         {
             App.Theme.SetPreference(theme);
@@ -30,6 +35,22 @@ internal static class ScreenshotRunner
                 window.ShowPage(page);
                 WaitForRender(window);
                 var name = $"{page}-{theme.ToString().ToLowerInvariant()}";
+                if (page == "documents" && window.Documents.ActiveViewer is { } viewer)
+                {
+                    viewer.FitWidth();
+                    WaitForDocuments(window);
+                    Save(window, Path.Combine(outputDir, name + ".png"));
+
+                    // Hoher Zoom: Detaildarstellung des sichtbaren Ausschnitts.
+                    while (viewer.Zoom < 4.0)
+                    {
+                        viewer.ZoomIn(); // um die Fenstermitte, damit Planinhalt im Bild ist
+                    }
+                    WaitForDocuments(window);
+                    Save(window, Path.Combine(outputDir, name + "-zoom.png"));
+                    viewer.FitWidth();
+                    continue;
+                }
                 Save(window, Path.Combine(outputDir, name + ".png"));
 
                 // Längere Seiten zusätzlich am Ende aufnehmen.
@@ -62,6 +83,23 @@ internal static class ScreenshotRunner
             }
         }
         return null;
+    }
+
+    /// <summary>Wartet, bis alle Seiten und Miniaturen gerendert sind (höchstens 20 Sekunden).</summary>
+    private static void WaitForDocuments(MainWindow window)
+    {
+        var until = DateTime.UtcNow.AddSeconds(20);
+        do
+        {
+            WaitForRender(window);
+            Thread.Sleep(50);
+            WaitForRender(window);
+        }
+        while (window.Documents.IsBusy && DateTime.UtcNow < until);
+        if (window.Documents.IsBusy)
+        {
+            throw new TimeoutException("Die Dokumentansicht ist nach 20 Sekunden nicht fertig gerendert.");
+        }
     }
 
     private static void WaitForRender(Window window)
