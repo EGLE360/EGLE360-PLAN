@@ -1,0 +1,61 @@
+<Window x:Class="Egle360.Desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="EGLE360 PLAN" Width="1440" Height="900" MinWidth="960" MinHeight="600"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource CanvasBrush}"
+        UseLayoutRounding="True" SnapsToDevicePixels="True">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition x:Name="NavColumn" Width="232" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Hauptnavigation -->
+        <Grid Grid.Column="0" Background="{StaticResource NavBackgroundBrush}" ClipToBounds="True">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Image x:Name="Logo" Grid.Row="0" Source="Assets/EGLE360_Master_Light_Flat.png"
+                   Height="56" Margin="20,20,20,16" HorizontalAlignment="Left"
+                   RenderOptions.BitmapScalingMode="HighQuality"
+                   AutomationProperties.Name="EGLE360 Logo" />
+
+            <StackPanel x:Name="MainItems" Grid.Row="1" />
+
+            <StackPanel Grid.Row="2" Margin="0,0,0,12">
+                <StackPanel x:Name="FooterItems" />
+                <Button x:Name="CollapseButton" Click="OnToggleCollapse" Margin="8,2" Height="40"
+                        HorizontalContentAlignment="Left" Cursor="Hand"
+                        ToolTip="Navigation ein- oder ausklappen (F4)"
+                        AutomationProperties.Name="Navigation ein- oder ausklappen">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="{StaticResource NavBackgroundBrush}" CornerRadius="{StaticResource RadiusMedium}">
+                                <TextBlock x:Name="Glyph" Width="40" Text="&#xE76B;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14"
+                                           HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Center"
+                                           Foreground="{StaticResource NavTextSecondaryBrush}" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource NavHoverBrush}" />
+                                    <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource NavTextBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource NavTextBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Inhaltsbereich -->
+        <ContentControl x:Name="PageHost" Grid.Column="1" Focusable="False" />
+    </Grid>
+
+</Window>

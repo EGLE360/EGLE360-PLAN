@@ -1,0 +1,58 @@
+<!-- Automatisch erzeugt aus design/tokens.json durch tools/generate_theme.py. Nicht von Hand ändern. -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <!-- Logofarben -->
+    <Color x:Key="LogoGreenColor">#FF45A04B</Color>
+    <SolidColorBrush x:Key="LogoGreenBrush" Color="#FF45A04B" />
+    <Color x:Key="LogoBlueColor">#FF2283D6</Color>
+    <SolidColorBrush x:Key="LogoBlueBrush" Color="#FF2283D6" />
+    <Color x:Key="LogoLightGrayColor">#FFBAC2CA</Color>
+    <SolidColorBrush x:Key="LogoLightGrayBrush" Color="#FFBAC2CA" />
+    <Color x:Key="LogoWhiteColor">#FFFFFFFF</Color>
+    <SolidColorBrush x:Key="LogoWhiteBrush" Color="#FFFFFFFF" />
+    <!-- Markenfarben -->
+    <Color x:Key="BrandDarkBlueColor">#FF102A43</Color>
+    <SolidColorBrush x:Key="BrandDarkBlueBrush" Color="#FF102A43" />
+    <Color x:Key="BrandGreenColor">#FF194D23</Color>
+    <SolidColorBrush x:Key="BrandGreenBrush" Color="#FF194D23" />
+    <Color x:Key="BrandAnthraciteColor">#FF4A4F57</Color>
+    <SolidColorBrush x:Key="BrandAnthraciteBrush" Color="#FF4A4F57" />
+    <Color x:Key="BrandBlueAccentColor">#FF1677D2</Color>
+    <SolidColorBrush x:Key="BrandBlueAccentBrush" Color="#FF1677D2" />
+    <!-- Navigation (in beiden Modi dunkel) -->
+    <Color x:Key="NavBackgroundColor">#FF172532</Color>
+    <SolidColorBrush x:Key="NavBackgroundBrush" Color="#FF172532" />
+    <Color x:Key="NavHoverColor">#FF1D3040</Color>
+    <SolidColorBrush x:Key="NavHoverBrush" Color="#FF1D3040" />
+    <Color x:Key="NavSelectedColor">#FF135E9F</Color>
+    <SolidColorBrush x:Key="NavSelectedBrush" Color="#FF135E9F" />
+    <Color x:Key="NavTextColor">#FFFFFFFF</Color>
+    <SolidColorBrush x:Key="NavTextBrush" Color="#FFFFFFFF" />
+    <Color x:Key="NavTextSecondaryColor">#FF9EACBA</Color>
+    <SolidColorBrush x:Key="NavTextSecondaryBrush" Color="#FF9EACBA" />
+    <!-- Typografie -->
+    <FontFamily x:Key="FontFamilyUi">Segoe UI Variable Text, Segoe UI</FontFamily>
+    <FontFamily x:Key="FontFamilyMono">Cascadia Mono, Consolas</FontFamily>
+    <sys:Double x:Key="FontSizeCaption">11</sys:Double>
+    <sys:Double x:Key="FontSizeBody">13</sys:Double>
+    <sys:Double x:Key="FontSizeSubtitle">15</sys:Double>
+    <sys:Double x:Key="FontSizeTitle">20</sys:Double>
+    <sys:Double x:Key="FontSizeDisplay">28</sys:Double>
+    <!-- Abstände und Radien -->
+    <sys:Double x:Key="SpaceXS">4</sys:Double>
+    <Thickness x:Key="PadXS">4</Thickness>
+    <sys:Double x:Key="SpaceS">8</sys:Double>
+    <Thickness x:Key="PadS">8</Thickness>
+    <sys:Double x:Key="SpaceM">12</sys:Double>
+    <Thickness x:Key="PadM">12</Thickness>
+    <sys:Double x:Key="SpaceL">16</sys:Double>
+    <Thickness x:Key="PadL">16</Thickness>
+    <sys:Double x:Key="SpaceXL">24</sys:Double>
+    <Thickness x:Key="PadXL">24</Thickness>
+    <sys:Double x:Key="SpaceXXL">32</sys:Double>
+    <Thickness x:Key="PadXXL">32</Thickness>
+    <CornerRadius x:Key="RadiusSmall">4</CornerRadius>
+    <CornerRadius x:Key="RadiusMedium">6</CornerRadius>
+    <CornerRadius x:Key="RadiusLarge">8</CornerRadius>
+</ResourceDictionary>

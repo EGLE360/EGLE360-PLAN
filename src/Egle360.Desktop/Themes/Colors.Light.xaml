@@ -1,0 +1,28 @@
+<!-- Automatisch erzeugt aus design/tokens.json durch tools/generate_theme.py. Nicht von Hand ändern. -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <!-- Light Mode -->
+    <Color x:Key="CanvasColor">#FFF3F5F7</Color>
+    <SolidColorBrush x:Key="CanvasBrush" Color="#FFF3F5F7" />
+    <Color x:Key="Surface1Color">#FFFFFFFF</Color>
+    <SolidColorBrush x:Key="Surface1Brush" Color="#FFFFFFFF" />
+    <Color x:Key="Surface2Color">#FFF3F5F7</Color>
+    <SolidColorBrush x:Key="Surface2Brush" Color="#FFF3F5F7" />
+    <Color x:Key="BorderColor">#FFD8E0E8</Color>
+    <SolidColorBrush x:Key="BorderBrush" Color="#FFD8E0E8" />
+    <Color x:Key="TextColor">#FF17212B</Color>
+    <SolidColorBrush x:Key="TextBrush" Color="#FF17212B" />
+    <Color x:Key="TextSecondaryColor">#FF66727D</Color>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FF66727D" />
+    <Color x:Key="AccentColor">#FF1677D2</Color>
+    <SolidColorBrush x:Key="AccentBrush" Color="#FF1677D2" />
+    <Color x:Key="SuccessColor">#FF2E9D59</Color>
+    <SolidColorBrush x:Key="SuccessBrush" Color="#FF2E9D59" />
+    <Color x:Key="WarningColor">#FFE5A323</Color>
+    <SolidColorBrush x:Key="WarningBrush" Color="#FFE5A323" />
+    <Color x:Key="CriticalColor">#FFD94A4A</Color>
+    <SolidColorBrush x:Key="CriticalBrush" Color="#FFD94A4A" />
+    <Color x:Key="OnAccentColor">#FFFFFFFF</Color>
+    <SolidColorBrush x:Key="OnAccentBrush" Color="#FFFFFFFF" />
+</ResourceDictionary>
