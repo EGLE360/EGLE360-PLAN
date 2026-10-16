@@ -77,6 +77,26 @@ internal static class ScreenshotRunner
                         window.Documents.SetMarkupListVisible(false);
                     }
 
+                    // Stempel, Bemaßung und Titelblock bei 100 %.
+                    if (window.Documents.ActiveDocument?.GetMarkups(0).FirstOrDefault(m => m.Kind == Egle360.Pdf.Markups.MarkupKind.Stamp) is { } stamp)
+                    {
+                        viewer.SetZoom(1.0);
+                        WaitForRender(window);
+                        var r = Egle360.Pdf.Markups.MarkupGeometry.HandleRect(stamp);
+                        viewer.CenterOn(0, new Egle360.Pdf.Markups.PdfPoint(r.Right + 150, r.Top + 120));
+                        WaitForDocuments(window);
+                        Save(window, Path.Combine(outputDir, name + "-stempel.png"));
+                    }
+                    if (window.Documents.ActiveDocument?.GetMarkups(0).FirstOrDefault(m => m.Kind == Egle360.Pdf.Markups.MarkupKind.Dimension) is { } dimension)
+                    {
+                        viewer.SetZoom(1.0);
+                        WaitForRender(window);
+                        var p0 = dimension.Points[0];
+                        viewer.CenterOn(0, new Egle360.Pdf.Markups.PdfPoint(p0.X + 250, p0.Y + 60));
+                        WaitForDocuments(window);
+                        Save(window, Path.Combine(outputDir, name + "-bemassung.png"));
+                    }
+
                     // Druck ohne Drucker prüfen: beide Seiten auf A4 hoch als XPS ausgeben.
                     if (theme == ThemePreference.Light && window.Documents.ActiveDocument is { } printDoc)
                     {
