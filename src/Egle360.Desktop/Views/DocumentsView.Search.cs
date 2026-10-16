@@ -122,7 +122,7 @@ public partial class DocumentsView
         catch (OperationCanceledException)
         {
         }
-        catch (Exception ex) when (ex is PdfException or ObjectDisposedException)
+        catch (Exception ex) when (ex is PdfException or ObjectDisposedException or ArgumentOutOfRangeException)
         {
             SearchStatus.Text = $"Die Suche wurde abgebrochen: {ex.Message}";
         }

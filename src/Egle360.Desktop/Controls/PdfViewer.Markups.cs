@@ -194,7 +194,7 @@ public sealed partial class PdfViewer
 
     private void Insert(IReadOnlyList<Markup> source, int step, string description, int page = -1)
     {
-        if (!CanAnnotate || source.Count == 0 || _document is null)
+        if (!CanAnnotate || source.Count == 0 || _document is null || _layout.PageCount == 0)
         {
             return;
         }
