@@ -343,6 +343,13 @@ public partial class DocumentsView
         }
         if (KeyGestures.Ctrl(e, Key.Z)) { Undo(); return true; }
         if (KeyGestures.Ctrl(e, Key.Y) || KeyGestures.Ctrl(e, Key.Z, shift: true)) { Redo(); return true; }
+        if (_active is { } open)
+        {
+            if (KeyGestures.Ctrl(e, Key.C)) { open.Viewer.CopySelection(); return true; }
+            if (KeyGestures.Ctrl(e, Key.V)) { open.Viewer.Paste(); return true; }
+            if (KeyGestures.Ctrl(e, Key.D)) { open.Viewer.DuplicateSelection(); return true; }
+            if (KeyGestures.Ctrl(e, Key.A)) { open.Viewer.SelectAllOnPage(); return true; }
+        }
         if (Keyboard.Modifiers == ModifierKeys.None && _active is not null)
         {
             var tool = Tools.FirstOrDefault(t => t.Shortcut == e.Key);

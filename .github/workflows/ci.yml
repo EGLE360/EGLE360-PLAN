@@ -8,6 +8,11 @@ on:
 permissions:
   contents: write
 
+# Ein neuer Push ersetzt den laufenden Lauf desselben Branches, damit die Vorabversion immer den neuesten Stand hat.
+concurrency:
+  group: ci-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-test:
     runs-on: windows-latest

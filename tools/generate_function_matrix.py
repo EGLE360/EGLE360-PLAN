@@ -508,6 +508,52 @@ for prefix, bereich, modul, phase, rs in M:
         f, desc, art, paket, kz, q, v, p, dep, acc = r
         rows.append([f"{prefix}-{i:03d}", bereich, modul, f, desc, art, paket or "nicht in Referenz", kz, q, v, PRIO[p], phase, dep, acc, "Offen"])
 
+
+# Umsetzungsstand aus Phase 4 (Teil 2) und Phase 5 (Teil 1).
+STATUS = {
+    "PDF-VIEW-015": "Umgesetzt (Phase 4, Teil 2): Suche über alle Seiten, Trefferliste, Hervorhebung, F3",
+    "PDF-VIEW-012": "Teilweise (Phase 4, Teil 2): Seitenleiste mit Miniaturen, Lesezeichen und Suche; Markierungsliste unten",
+    "PDF-VIEW-020": "Teilweise (Phase 4, Teil 2): Kontextmenüs für Miniaturen und Markierungen",
+    "MKP-TOOL-001": "Umgesetzt (Phase 4, Teil 2)",
+    "MKP-TOOL-002": "Umgesetzt (Phase 4, Teil 2)",
+    "MKP-TOOL-003": "Umgesetzt (Phase 4, Teil 2)",
+    "MKP-TOOL-005": "Umgesetzt (Phase 4, Teil 2)",
+    "MKP-TOOL-006": "Umgesetzt (Phase 4, Teil 2)",
+    "MKP-TOOL-007": "Umgesetzt (Phase 4, Teil 2)",
+    "MKP-TOOL-008": "Umgesetzt (Phase 4, Teil 2)",
+    "MKP-TOOL-011": "Umgesetzt (Phase 4, Teil 2)",
+    "MKP-TOOL-013": "Umgesetzt (Phase 4, Teil 2)",
+    "MKP-TOOL-016": "Umgesetzt (Phase 4, Teil 2)",
+    "MKP-TOOL-018": "Teilweise (Phase 4, Teil 2): Bereich hervorheben; an Textauswahl gebunden offen",
+    "MKP-EDIT-001": "Umgesetzt (Phase 4, Teil 2): Klick, Strg+Klick, Strg+A",
+    "MKP-EDIT-002": "Teilweise (Phase 4, Teil 2): Verschieben und Skalieren; Drehen offen",
+    "MKP-EDIT-004": "Teilweise (Phase 4, Teil 2): Kopieren und Einfügen (Strg+C, Strg+V); Ausschneiden und an Position einfügen offen",
+    "MKP-EDIT-005": "Umgesetzt (Phase 4, Teil 2): Strg+D",
+    "MKP-EDIT-009": "Teilweise (Phase 4, Teil 2): Vordergrund und Hintergrund über Kontextmenü",
+    "MKP-EDIT-011": "Teilweise (Phase 4, Teil 2): Farbe, Linienbreite, Deckkraft, Füllung, Text, Kommentar",
+    "MKP-EDIT-013": "Umgesetzt (Phase 4, Teil 2)",
+    "MKP-EDIT-017": "Umgesetzt (Phase 4, Teil 2): Umschalttaste beim Zeichnen",
+    "MKP-EDIT-027": "Umgesetzt (Phase 4, Teil 2): Eckpunkte von Linien, Polygonen und Messungen ziehen",
+    "MKP-LIST-001": "Teilweise (Phase 5, Teil 1): Liste aller Markierungen des Dokuments",
+    "MKP-LIST-002": "Teilweise (Phase 5, Teil 1): Seite, Art, Wert, Text, Maßstab, Autor, Datum",
+    "MKP-LIST-003": "Teilweise (Phase 5, Teil 1): Sortieren und Filtern; Gruppieren offen",
+    "MKP-LIST-008": "Teilweise (Phase 5, Teil 1): Summen je Messart in der Liste",
+    "MKP-LIST-009": "Teilweise (Phase 5, Teil 1): CSV-Export für Excel; XLSX offen",
+    "QTO-002": "Umgesetzt (Phase 5, Teil 1)",
+    "QTO-003": "Umgesetzt (Phase 5, Teil 1)",
+    "QTO-004": "Umgesetzt (Phase 5, Teil 1)",
+    "QTO-005": "Umgesetzt (Phase 5, Teil 1): Fläche mit Umfang",
+    "QTO-012": "Umgesetzt (Phase 5, Teil 1)",
+    "QTO-017": "Umgesetzt (Phase 5, Teil 1)",
+    "QTO-019": "Teilweise (Phase 5, Teil 1): Summen in der Liste und für ausgewählte Messungen",
+    "QTO-SCL-001": "Umgesetzt (Phase 5, Teil 1): übliche Maßstäbe 1:1 bis 1:2000 je Seite",
+    "QTO-SCL-002": "Umgesetzt (Phase 5, Teil 1)",
+    "QTO-SCL-005": "Teilweise (Phase 5, Teil 1): m, cm, mm",
+    "QTO-EVAL-001": "Teilweise (Phase 5, Teil 1): Mengenliste mit Summen und CSV-Export",
+}
+for _id, _status in STATUS.items():
+    PATCHES.setdefault(_id, {})["Implementierungsstatus"] = _status
+
 for r in rows:
     for col, val in PATCHES.pop(r[0], {}).items():
         r[HEAD.index(col)] = val

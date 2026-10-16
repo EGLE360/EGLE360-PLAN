@@ -169,4 +169,23 @@ public class MeasurementTests
         Assert.Equal(s, again.GetPageScale(0));
         Assert.Single(again.GetMarkups(0));
     }
+
+    [Fact]
+    public void Umschalttaste_rastet_ein()
+    {
+        var a = new PdfPoint(100, 100);
+        var h = MarkupDrawing.Constrain(MarkupKind.Length, a, new PdfPoint(200, 108));
+        Assert.Equal(200, h.X, 6);
+        Assert.Equal(100, h.Y, 6);
+        var d = MarkupDrawing.Constrain(MarkupKind.Line, a, new PdfPoint(150, 155));
+        Assert.Equal(d.X - 100, d.Y - 100, 6);
+        var sq = MarkupDrawing.Constrain(MarkupKind.Rectangle, a, new PdfPoint(140, 70));
+        Assert.Equal((140.0, 60.0), (sq.X, sq.Y));
+
+        var drawing = new MarkupDrawing(MarkupKind.Area, MarkupStyle.DefaultFor(MarkupKind.Area), "Prüfer", 0, 1, MeasureScale.FromRatio(50));
+        Assert.Null(drawing.Anchor);
+        drawing.Press(new PdfPoint(10, 10));
+        drawing.Release(new PdfPoint(10, 10));
+        Assert.Equal(new PdfPoint(10, 10), drawing.Anchor);
+    }
 }

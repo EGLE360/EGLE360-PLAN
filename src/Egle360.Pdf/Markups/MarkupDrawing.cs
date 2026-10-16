@@ -18,6 +18,38 @@ public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string aut
     /// <summary>Standardgröße eines per Klick gesetzten Textfelds in Punkt (Breite, Höhe auf dem Bildschirm).</summary>
     public static (double Width, double Height) DefaultTextBox => (160, 40);
 
+    /// <summary>
+    /// Bezugspunkt für das Einrasten mit gedrückter Umschalttaste: der zuletzt gesetzte Punkt bei Klickarten, sonst der
+    /// Anfangspunkt. Null, solange nichts gesetzt ist oder die Art nicht einrastet (Freihand, Notiz, Anzahl).
+    /// </summary>
+    public PdfPoint? Anchor => Kind is MarkupKind.Freehand or MarkupKind.Note or MarkupKind.Count || _points.Count == 0
+        ? null
+        : MarkupKinds.IsMultiPoint(Kind) ? (_points.Count >= 2 ? _points[^2] : null) : _points[0];
+
+    /// <summary>
+    /// Rastet <paramref name="p"/> relativ zu <paramref name="anchor"/> ein: Rahmenarten werden quadratisch, Linien
+    /// waagrecht, senkrecht oder unter 45 Grad.
+    /// </summary>
+    public static PdfPoint Constrain(MarkupKind kind, PdfPoint anchor, PdfPoint p)
+    {
+        var d = p - anchor;
+        if (MarkupKinds.IsBox(kind))
+        {
+            var size = Math.Max(Math.Abs(d.X), Math.Abs(d.Y));
+            return anchor + new PdfPoint(Math.CopySign(size, d.X), Math.CopySign(size, d.Y));
+        }
+        var length = d.Length;
+        if (length < 1e-9)
+        {
+            return p;
+        }
+        var angle = Math.Round(Math.Atan2(d.Y, d.X) / (Math.PI / 4)) * (Math.PI / 4);
+        // Auf die Achse projizieren, damit die Länge der gewünschten Richtung entspricht.
+        var dir = new PdfPoint(Math.Cos(angle), Math.Sin(angle));
+        var along = d.X * dir.X + d.Y * dir.Y;
+        return anchor + dir * along;
+    }
+
     public void Press(PdfPoint p)
     {
         _pressed = true;

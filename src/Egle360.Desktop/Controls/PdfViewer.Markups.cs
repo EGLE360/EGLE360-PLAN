@@ -132,6 +132,87 @@ public sealed partial class PdfViewer
         Run(() => _history!.ReplaceMany(_selectedPage, changed, description));
     }
 
+    // ---------- Kopieren und Einfügen ----------
+
+    /// <summary>Zwischenablage für Markierungen, für alle offenen Dokumente gemeinsam.</summary>
+    private static IReadOnlyList<Markup> s_clipboard = [];
+    private static int s_pasteCount;
+
+    public static bool HasClipboard => s_clipboard.Count > 0;
+
+    public void CopySelection()
+    {
+        if (SelectedMarkups is { Count: > 0 } selected)
+        {
+            s_clipboard = selected;
+            s_pasteCount = 0;
+        }
+    }
+
+    /// <summary>Fügt die kopierten Markierungen auf der aktuellen Seite ein, leicht versetzt.</summary>
+    public void Paste()
+    {
+        s_pasteCount++;
+        Insert(s_clipboard, s_pasteCount, s_clipboard.Count == 1 ? "Einfügen" : $"{s_clipboard.Count} Markierungen einfügen");
+    }
+
+    /// <summary>Verdoppelt die Auswahl auf derselben Seite, ohne die Zwischenablage zu ändern.</summary>
+    public void DuplicateSelection()
+    {
+        if (_selected.Count > 0)
+        {
+            GoToPageIfHidden(_selectedPage);
+            Insert(SelectedMarkups, 1, "Duplizieren", _selectedPage);
+        }
+    }
+
+    public void SelectAllOnPage()
+    {
+        if (_document is null || _currentPage < 0)
+        {
+            return;
+        }
+        ClearSelection(raise: false);
+        _selectedPage = _currentPage;
+        foreach (var m in _document.GetMarkups(_currentPage))
+        {
+            _selected.Add(m.Id);
+        }
+        RefreshSelection();
+    }
+
+    private void Insert(IReadOnlyList<Markup> source, int step, string description, int page = -1)
+    {
+        if (!CanAnnotate || source.Count == 0 || _document is null)
+        {
+            return;
+        }
+        page = page >= 0 ? page : Math.Clamp(_currentPage, 0, _layout.PageCount - 1);
+        // Versatz nach rechts unten, wie die Seite auf dem Bildschirm erscheint.
+        var offset = new TextFrame(default, Transform(page).Rotation, 0, 0).ToUser(new PdfPoint(12 * step, 12 * step));
+        var scale = ScaleProvider(page);
+        var now = DateTimeOffset.Now;
+        var copies = source.Select(m => MarkupGeometry.Translate(m, offset.X, offset.Y) with
+        {
+            Id = Markup.NewId(),
+            Author = Author,
+            Created = now,
+            Modified = now,
+            Scale = MarkupKinds.IsMeasurement(m.Kind) && m.Kind != MarkupKind.Count ? scale ?? m.Scale : m.Scale,
+        }).ToList();
+        if (!Run(() => _history!.Apply(page, [.. _document.GetMarkups(page), .. copies], description)))
+        {
+            return;
+        }
+        ClearSelection(raise: false);
+        _selectedPage = page;
+        foreach (var c in copies)
+        {
+            _selected.Add(c.Id);
+        }
+        RefreshSelection();
+    }
+
     public void CancelDrawing()
     {
         _drawing?.Cancel();
@@ -329,7 +410,7 @@ public sealed partial class PdfViewer
             _drawing = new MarkupDrawing(kind, style, Author, rotation, minSize, scale);
             _drawingPage = h.Page;
         }
-        _drawing.Press(h.User);
+        _drawing.Press(Snap(h.User));
         _scroll.CaptureMouse();
         _visuals[_drawingPage].Layer.SetPreview(_drawing.Preview);
     }
@@ -395,7 +476,7 @@ public sealed partial class PdfViewer
         }
         if (_drawing is { IsActive: true } && PageAt(e, clampTo: true, page: _drawingPage) is { } h)
         {
-            _drawing.Move(h.User);
+            _drawing.Move(Snap(h.User));
             _visuals.GetValueOrDefault(_drawingPage)?.Layer.SetPreview(_drawing.Preview);
             return;
         }
@@ -427,7 +508,7 @@ public sealed partial class PdfViewer
         if (_drawing is { IsActive: true } drawing && PageAt(e, clampTo: true, page: _drawingPage) is { } h)
         {
             var page = _drawingPage;
-            var markup = drawing.Release(h.User);
+            var markup = drawing.Release(Snap(h.User));
             // Erst nach dem Auswerten freigeben: Der Verlust der Mauserfassung bricht sonst das Zeichnen ab.
             if (!MarkupKinds.IsMultiPoint(drawing.Kind) || markup is not null)
             {
@@ -462,6 +543,10 @@ public sealed partial class PdfViewer
             }
         }
     }
+
+    /// <summary>Mit gedrückter Umschalttaste rastet der Punkt ein (waagrecht, senkrecht, 45 Grad, Quadrat).</summary>
+    private PdfPoint Snap(PdfPoint p) =>
+        _drawing?.Anchor is { } anchor && Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) ? MarkupDrawing.Constrain(_drawing.Kind, anchor, p) : p;
 
     private void Commit(Markup? markup, int page)
     {
@@ -532,6 +617,9 @@ public sealed partial class PdfViewer
             menu.Items.Add(item);
         }
         Add(MarkupKinds.HasText(markup.Kind) ? "Text bearbeiten …" : "Kommentar bearbeiten …", () => EditTextRequested?.Invoke(this, (page, markup)), editable);
+        menu.Items.Add(new Separator());
+        Add("Kopieren (Strg+C)", CopySelection);
+        Add("Duplizieren (Strg+D)", DuplicateSelection, editable);
         menu.Items.Add(new Separator());
         Add("In den Vordergrund", () => Reorder(page, markup.Id, toFront: true), editable);
         Add("In den Hintergrund", () => Reorder(page, markup.Id, toFront: false), editable);
