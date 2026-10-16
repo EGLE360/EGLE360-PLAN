@@ -353,8 +353,8 @@ public partial class DocumentsView
         {
             0 => "",
             1 when MarkupKinds.IsMeasurement(selected[0].Kind) => $"{MarkupKinds.DisplayName(selected[0].Kind)}: {Measurement.Describe(selected[0])}"
-                + (selected[0].Scale is { } sc ? $", Maßstab {sc.Label}" : ""),
-            1 => $"{MarkupKinds.DisplayName(selected[0].Kind)} ausgewählt, {selected[0].Author}, {selected[0].Modified.LocalDateTime:g}",
+                + (selected[0].Scale is { } sc ? $", Maßstab {sc.Label}" : "") + StatusSuffix(selected[0]),
+            1 => $"{MarkupKinds.DisplayName(selected[0].Kind)} ausgewählt, {selected[0].Author}, {selected[0].Modified.LocalDateTime:g}" + StatusSuffix(selected[0]),
             _ => $"{selected.Count} Markierungen ausgewählt" + SelectionTotals(selected),
         };
         RefreshScaleButton(canAnnotate);
@@ -363,6 +363,10 @@ public partial class DocumentsView
             StatusMarkup.Text = "Markierungen sind laut Berechtigungen des Dokuments nicht erlaubt.";
         }
     }
+
+    /// <summary>Status und Sperre für die Statuszeile, z. B. „, Status Geprüft (Elias), gesperrt“.</summary>
+    private static string StatusSuffix(Markup m) =>
+        (m.Status is { } s ? $", Status {s.Name}" + (s.By.Length > 0 ? $" ({s.By})" : "") : "") + (m.Locked ? ", gesperrt" : "");
 
     private void Undo()
     {
@@ -411,7 +415,7 @@ public partial class DocumentsView
 
     private void OnEditText(OpenDocument open, int page, Markup markup)
     {
-        if (!open.Document.CanAnnotate)
+        if (!open.Document.CanAnnotate || markup.Locked)
         {
             return;
         }

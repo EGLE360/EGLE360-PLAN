@@ -157,13 +157,15 @@ internal static class SamplePlan
                 Scale: MarkupKinds.NeedsScale(kind) ? scale : null);
         return
         [
-            Make(MarkupKind.Area, "0.02 Küche", new(ox + 10 * M, oy + 6 * M), new(ox + 20 * M, oy + 6 * M), new(ox + 20 * M, oy + 16 * M), new(ox + 10 * M, oy + 16 * M)),
+            // Bodenbelag Küche mit Einheitspreis, geprüft und gesperrt.
+            Make(MarkupKind.Area, "0.02 Küche", new(ox + 10 * M, oy + 6 * M), new(ox + 20 * M, oy + 6 * M), new(ox + 20 * M, oy + 16 * M), new(ox + 10 * M, oy + 16 * M))
+                with { UnitPrice = 38.5, Status = new MarkupStatus("Geprüft", "Mengenermittlung", created.AddMinutes(20)), Locked = true },
             Make(MarkupKind.Length, "Achse A bis C", new(ox, oy + 17 * M), new(ox + 10 * M, oy + 17 * M)),
             // Innenwand zwischen Achse E und dem Flur, 11 m lang, 2,80 m hoch: Wandfläche 30,80 m².
             Make(MarkupKind.Polylength, "Innenwand Achse E", new(ox + 20 * M, oy), new(ox + 20 * M, oy + 11 * M)) with { Depth = 2.8 },
             // Gesamtlänge unter dem Grundriss: 30,00 m.
             Make(MarkupKind.Dimension, "Gebäudelänge", new(ox, oy - 45), new(ox + 30 * M, oy - 45)),
-            Make(MarkupKind.Count, "Innentüren", new(ox + 4.5 * M, oy + 6 * M), new(ox + 14.5 * M, oy + 6 * M), new(ox + 24.5 * M, oy + 6 * M)),
+            Make(MarkupKind.Count, "Innentüren", new(ox + 4.5 * M, oy + 6 * M), new(ox + 14.5 * M, oy + 6 * M), new(ox + 24.5 * M, oy + 6 * M)) with { UnitPrice = 650 },
         ];
     }
 

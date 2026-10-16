@@ -228,7 +228,7 @@ public sealed unsafe partial class PdfDocument
             {
                 Pdfium.FPDFAnnot_SetBorder(annot, 0, 0, (float)m.Style.LineWidth);
             }
-            Pdfium.FPDFAnnot_SetFlags(annot, Pdfium.FPDF_ANNOT_FLAG_PRINT);
+            Pdfium.FPDFAnnot_SetFlags(annot, Pdfium.FPDF_ANNOT_FLAG_PRINT | (m.Locked ? Pdfium.FPDF_ANNOT_FLAG_LOCKED : 0));
 
             switch (m.Kind)
             {

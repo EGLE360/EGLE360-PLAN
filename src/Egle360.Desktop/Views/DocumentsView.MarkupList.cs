@@ -72,6 +72,7 @@ public partial class DocumentsView
             && (filter.Length == 0
                 || r.Kind.Contains(filter, StringComparison.CurrentCultureIgnoreCase)
                 || r.Text.Contains(filter, StringComparison.CurrentCultureIgnoreCase)
+                || r.Status.Contains(filter, StringComparison.CurrentCultureIgnoreCase)
                 || r.Author.Contains(filter, StringComparison.CurrentCultureIgnoreCase)));
     }
 

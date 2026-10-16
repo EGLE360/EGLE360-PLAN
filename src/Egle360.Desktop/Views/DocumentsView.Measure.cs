@@ -181,7 +181,7 @@ public partial class DocumentsView
     /// <summary>Höhe (Wandfläche) oder Tiefe (Volumen) einer Messung festlegen oder entfernen.</summary>
     private void OnEditDepth(OpenDocument open, int page, Markup markup)
     {
-        if (!open.Document.CanAnnotate || !Measurement.SupportsDepth(markup.Kind))
+        if (!open.Document.CanAnnotate || !Measurement.SupportsDepth(markup.Kind) || markup.Locked)
         {
             return;
         }
@@ -204,6 +204,36 @@ public partial class DocumentsView
         try
         {
             open.History.Replace(page, current with { Depth = depth, Modified = DateTimeOffset.Now }, area ? "Tiefe ändern" : "Höhe ändern");
+        }
+        catch (PdfException ex)
+        {
+            ShowError(ex.Message);
+        }
+    }
+
+    /// <summary>Einheitspreis einer Messung festlegen oder entfernen.</summary>
+    private void OnEditPrice(OpenDocument open, int page, Markup markup)
+    {
+        if (!open.Document.CanAnnotate || markup.Locked || Egle360.Pdf.Export.MarkupReport.PricedQuantity(markup) is not { Quantity: not null } priced)
+        {
+            return;
+        }
+        var value = Dialogs.AskPositiveNumber(Owner, "Einheitspreis",
+            $"Preis in Euro je {priced.Unit}. Der Gesamtpreis erscheint in der Mengenliste und im Excel-Export.",
+            markup.UnitPrice, $"€ je {priced.Unit}", "45,50");
+        if (value is null)
+        {
+            return;
+        }
+        double? price = value > 0 ? value : null;
+        var current = open.Document.GetMarkups(page).FirstOrDefault(m => m.Id == markup.Id);
+        if (current is null || current.UnitPrice == price)
+        {
+            return;
+        }
+        try
+        {
+            open.History.Replace(page, current with { UnitPrice = price, Modified = DateTimeOffset.Now }, "Einheitspreis ändern");
         }
         catch (PdfException ex)
         {

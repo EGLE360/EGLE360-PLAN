@@ -93,6 +93,11 @@ Zum Ausprobieren im Beispielplan: Die Küche ist 10 m × 10 m, die Fläche muss 
 - Klick auf eine Zeile springt zur Markierung und wählt sie aus.
 - „Exportieren (Excel) …“ speichert die (gefilterte) Liste als Excel-Arbeitsmappe (XLSX) mit echten Zahlen und Datumswerten, einem Filter in der Kopfzeile und einem zweiten Blatt mit den Summen. Im Speichern-Dialog lässt sich stattdessen CSV wählen.
 
+### Status, Sperren und Preise (neu)
+- Rechtsklick auf eine Markierung, „Status“: Offen, In Bearbeitung, Erledigt, Geprüft, Freigegeben oder Abgelehnt. Gespeichert werden auch Name und Zeitpunkt. Der Status steht in der Liste, in der Statuszeile und im Excel-Export.
+- „Sperren“ schützt eine Markierung: Sie lässt sich noch auswählen und kopieren, aber nicht mehr verschieben, ändern oder löschen, bis sie wieder entsperrt wird. Im Beispielplan ist die Küchenfläche gesperrt.
+- „Einheitspreis …“ bei Längen, Flächen, Umfängen und Anzahlen: Preis in Euro je Einheit. Ist eine Höhe oder Tiefe angegeben, gilt der Preis je m² Wandfläche oder je m³ Volumen. Die Liste zeigt den Gesamtpreis und oben die Summe aller Kosten. Im Beispielplan: Küche 100 m² zu 38,50 € und drei Türen zu 650 €, zusammen 5.800,00 €.
+
 ## Was noch fehlt
 
 Diese Punkte sind geplant, aber noch nicht enthalten:

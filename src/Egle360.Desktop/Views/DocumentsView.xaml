@@ -219,6 +219,8 @@
                             <DataGridTextColumn Header="Seite" Binding="{Binding Page}" Width="58" />
                             <DataGridTextColumn Header="Art" Binding="{Binding Kind}" Width="100" />
                             <DataGridTextColumn Header="Wert" Binding="{Binding Value}" Width="160" SortMemberPath="Number" />
+                            <DataGridTextColumn Header="Preis" Binding="{Binding CostText}" Width="100" SortMemberPath="Cost" />
+                            <DataGridTextColumn Header="Status" Binding="{Binding StatusText}" Width="120" SortMemberPath="Status" />
                             <DataGridTextColumn Header="Text oder Kommentar" Binding="{Binding Text}" Width="*" MinWidth="160" />
                             <DataGridTextColumn Header="Maßstab" Binding="{Binding Scale}" Width="110" />
                             <DataGridTextColumn Header="Autor" Binding="{Binding Author}" Width="110" />

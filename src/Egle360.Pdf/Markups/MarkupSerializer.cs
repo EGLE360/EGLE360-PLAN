@@ -201,6 +201,9 @@ public static class MarkupSerializer
             Created = m.Created,
             Scale = m.Scale is { } sc ? new ScaleDto { Mpp = sc.MetersPerPoint, Unit = sc.Unit, Label = sc.Label } : null,
             Depth = m.Depth,
+            Status = m.Status is { } st ? new StatusDto { Name = st.Name, By = st.By, At = st.At } : null,
+            Locked = m.Locked ? true : null,
+            Price = m.UnitPrice,
         };
         return JsonSerializer.Serialize(dto, Json);
     }
@@ -227,7 +230,10 @@ public static class MarkupSerializer
             var created = dto.Created ?? modified ?? DateTimeOffset.Now;
             var scale = dto.Scale is { Mpp: > 0 and < double.PositiveInfinity } sd ? new MeasureScale(sd.Mpp, sd.Unit, sd.Label ?? "") : null;
             var depth = dto.Depth is > 0 and < 1e6 ? dto.Depth : null;
-            return new Markup(id, dto.Kind, paths, style, text, author, created, modified ?? created, TextFrame.Normalize(dto.Rot), scale, depth);
+            var status = dto.Status is { Name: { Length: > 0 and <= 100 } name } sdto ? new MarkupStatus(name, sdto.By ?? "", sdto.At ?? created) : null;
+            var price = dto.Price is >= 0 and < 1e9 ? dto.Price : null;
+            return new Markup(id, dto.Kind, paths, style, text, author, created, modified ?? created, TextFrame.Normalize(dto.Rot), scale, depth,
+                status, dto.Locked == true, price);
         }
         catch (JsonException)
         {
@@ -256,6 +262,16 @@ public static class MarkupSerializer
         [JsonPropertyName("created")] public DateTimeOffset? Created { get; set; }
         [JsonPropertyName("scale")] public ScaleDto? Scale { get; set; }
         [JsonPropertyName("depth")] public double? Depth { get; set; }
+        [JsonPropertyName("status")] public StatusDto? Status { get; set; }
+        [JsonPropertyName("locked")] public bool? Locked { get; set; }
+        [JsonPropertyName("price")] public double? Price { get; set; }
+    }
+
+    private sealed class StatusDto
+    {
+        [JsonPropertyName("name")] public string? Name { get; set; }
+        [JsonPropertyName("by")] public string? By { get; set; }
+        [JsonPropertyName("at")] public DateTimeOffset? At { get; set; }
     }
 
     private sealed class ScaleDto

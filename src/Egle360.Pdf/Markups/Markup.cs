@@ -111,6 +111,9 @@ public sealed record MarkupStyle(PdfColor Stroke, PdfColor? Fill, double Opacity
 /// <param name="TextRotation">Seitendrehung beim Anlegen (0, 90, 180, 270), damit Text auf dem Bildschirm aufrecht steht.</param>
 /// <param name="Scale">Maßstab einer Messung; bei anderen Markierungen null.</param>
 /// <param name="Depth">Höhe oder Tiefe in Metern: Flächen ergeben damit ein Volumen, Längen eine Wandfläche.</param>
+/// <param name="Status">Prüf- oder Bearbeitungsstatus mit Person und Zeitpunkt.</param>
+/// <param name="Locked">Gesperrt: nicht verschiebbar, nicht änderbar, nicht löschbar, bis die Sperre aufgehoben wird.</param>
+/// <param name="UnitPrice">Einheitspreis in Euro je Mengeneinheit einer Messung.</param>
 public sealed record Markup(
     string Id,
     MarkupKind Kind,
@@ -122,7 +125,10 @@ public sealed record Markup(
     DateTimeOffset Modified,
     int TextRotation = 0,
     MeasureScale? Scale = null,
-    double? Depth = null)
+    double? Depth = null,
+    MarkupStatus? Status = null,
+    bool Locked = false,
+    double? UnitPrice = null)
 {
     public IReadOnlyList<PdfPoint> Points => Paths.Count > 0 ? Paths[0] : [];
 
@@ -142,6 +148,8 @@ public sealed record Markup(
     public Markup WithText(string text) => this with { Text = text, Modified = DateTimeOffset.Now };
 
     public Markup WithScale(MeasureScale? scale) => this with { Scale = scale, Modified = DateTimeOffset.Now };
+
+    public Markup WithStatus(MarkupStatus? status) => this with { Status = status, Modified = DateTimeOffset.Now };
 }
 
 /// <summary>Eigenschaften der Markierungsarten.</summary>
@@ -232,4 +240,14 @@ public sealed record StampPreset(string Title, PdfColor Color)
 
     /// <summary>Standardgröße eines per Klick gesetzten Stempels in Punkt (Breite, Höhe auf dem Bildschirm).</summary>
     public static (double Width, double Height) DefaultSize => (190, 56);
+}
+
+/// <summary>Status einer Markierung: Bezeichnung, wer ihn gesetzt hat und wann.</summary>
+public sealed record MarkupStatus(string Name, string By, DateTimeOffset At)
+{
+    /// <summary>
+    /// Vorgegebene Status für Prüfvermerke (offen bis erledigt) und für Mengen (geprüft, freigegeben). Weitere
+    /// Bezeichnungen aus anderen Dateien werden unverändert übernommen.
+    /// </summary>
+    public static IReadOnlyList<string> Names { get; } = ["Offen", "In Bearbeitung", "Erledigt", "Geprüft", "Freigegeben", "Abgelehnt"];
 }

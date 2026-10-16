@@ -76,6 +76,9 @@ public sealed partial class PdfViewer
     /// <summary>Text einer Markierung soll bearbeitet werden (Doppelklick, neues Textfeld, Kontextmenü).</summary>
     public event EventHandler<(int Page, Markup Markup)>? EditTextRequested;
 
+    /// <summary>Einheitspreis einer Messung soll eingegeben werden (Kontextmenü).</summary>
+    public event EventHandler<(int Page, Markup Markup)>? PriceRequested;
+
     /// <summary>Höhe oder Tiefe einer Messung soll eingegeben werden (Kontextmenü).</summary>
     public event EventHandler<(int Page, Markup Markup)>? DepthRequested;
 
@@ -132,20 +135,33 @@ public sealed partial class PdfViewer
             return;
         }
         var page = _selectedPage;
-        var ids = _selected.ToList();
+        // Gesperrte Markierungen bleiben stehen und ausgewählt.
+        var locked = SelectedMarkups.Where(m => m.Locked).Select(m => m.Id).ToHashSet();
+        var ids = _selected.Where(id => !locked.Contains(id)).ToList();
+        if (ids.Count == 0)
+        {
+            return;
+        }
         ClearSelection(raise: false);
         Run(() => _history!.Remove(page, ids));
         SelectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>Ändert alle ausgewählten Markierungen in einem Schritt (z. B. Farbe oder Linienbreite).</summary>
-    public void ApplyToSelection(Func<Markup, Markup> change, string description)
+    /// <summary>
+    /// Ändert alle ausgewählten Markierungen in einem Schritt (z. B. Farbe oder Linienbreite). Gesperrte bleiben
+    /// unverändert, außer bei <paramref name="includeLocked"/> (Status und Sperre selbst).
+    /// </summary>
+    public void ApplyToSelection(Func<Markup, Markup> change, string description, bool includeLocked = false)
     {
         if (!CanAnnotate || _selected.Count == 0)
         {
             return;
         }
-        var changed = SelectedMarkups.Select(change).ToList();
+        var changed = SelectedMarkups.Where(m => includeLocked || !m.Locked).Select(change).ToList();
+        if (changed.Count == 0)
+        {
+            return;
+        }
         Run(() => _history!.ReplaceMany(_selectedPage, changed, description));
     }
 
@@ -216,6 +232,9 @@ public sealed partial class PdfViewer
             Created = now,
             Modified = now,
             Scale = MarkupKinds.NeedsScale(m.Kind) ? scale ?? m.Scale : m.Scale,
+            // Kopien sind neue Markierungen: ohne Status und ohne Sperre.
+            Status = null,
+            Locked = false,
         }).ToList();
         if (!Run(() => _history!.Apply(page, [.. _document.GetMarkups(page), .. copies], description)))
         {
@@ -444,7 +463,7 @@ public sealed partial class PdfViewer
         if (CanAnnotate && hit.Page == _selectedPage && _selected.Count == 1)
         {
             var selected = visual.Layer.Markups.FirstOrDefault(m => _selected.Contains(m.Id));
-            if (selected is not null && visual.Layer.HandleAt(selected, hit.Local) is var handle and >= 0)
+            if (selected is { Locked: false } && visual.Layer.HandleAt(selected, hit.Local) is var handle and >= 0)
             {
                 _drag = new EditDrag(hit.Page, hit.Local, [selected], handle);
                 _scroll.CaptureMouse();
@@ -479,9 +498,12 @@ public sealed partial class PdfViewer
         }
         if (CanAnnotate && _selected.Count > 0)
         {
-            var originals = visual.Layer.Markups.Where(m => _selected.Contains(m.Id)).ToList();
-            _drag = new EditDrag(hit.Page, hit.Local, originals, -1);
-            _scroll.CaptureMouse();
+            var originals = visual.Layer.Markups.Where(m => _selected.Contains(m.Id) && !m.Locked).ToList();
+            if (originals.Count > 0)
+            {
+                _drag = new EditDrag(hit.Page, hit.Local, originals, -1);
+                _scroll.CaptureMouse();
+            }
         }
     }
 
@@ -638,12 +660,13 @@ public sealed partial class PdfViewer
             Select(page, markup.Id);
         }
         var menu = new ContextMenu { PlacementTarget = _scroll };
-        var editable = CanAnnotate;
-        void Add(string header, Action action, bool enabled = true)
+        var editable = CanAnnotate && !markup.Locked;
+        MenuItem Add(string header, Action action, bool enabled = true, ItemsControl? parent = null)
         {
             var item = new MenuItem { Header = header, IsEnabled = enabled };
             item.Click += (_, _) => action();
-            menu.Items.Add(item);
+            (parent ?? menu).Items.Add(item);
+            return item;
         }
         Add(MarkupKinds.HasText(markup.Kind) ? "Text bearbeiten …" : "Kommentar bearbeiten …", () => EditTextRequested?.Invoke(this, (page, markup)), editable);
         menu.Items.Add(new Separator());
@@ -665,6 +688,26 @@ public sealed partial class PdfViewer
             }
             menu.Items.Add(new Separator());
         }
+        if (MarkupKinds.IsSummable(markup.Kind))
+        {
+            Add(markup.UnitPrice is { } price ? $"Einheitspreis ({Measurement.Number(price, 2)} €) …" : "Einheitspreis …",
+                () => PriceRequested?.Invoke(this, (page, markup)), editable);
+            menu.Items.Add(new Separator());
+        }
+        var status = new MenuItem { Header = markup.Status is { } st ? $"Status: {st.Name}" : "Status", IsEnabled = CanAnnotate };
+        foreach (var name in MarkupStatus.Names)
+        {
+            var item = Add(name, () => ApplyToSelection(m => m.WithStatus(new MarkupStatus(name, Author, DateTimeOffset.Now)), $"Status „{name}“", includeLocked: true),
+                parent: status);
+            item.IsCheckable = true;
+            item.IsChecked = markup.Status?.Name == name;
+        }
+        status.Items.Add(new Separator());
+        Add("Kein Status", () => ApplyToSelection(m => m.WithStatus(null), "Status entfernen", includeLocked: true), markup.Status is not null, status);
+        menu.Items.Add(status);
+        Add(markup.Locked ? "Entsperren" : "Sperren", () => ApplyToSelection(m => m with { Locked = !markup.Locked, Modified = DateTimeOffset.Now },
+            markup.Locked ? "Entsperren" : "Sperren", includeLocked: true), CanAnnotate);
+        menu.Items.Add(new Separator());
         Add("Kopieren (Strg+C)", CopySelection);
         Add("Duplizieren (Strg+D)", DuplicateSelection, editable);
         menu.Items.Add(new Separator());

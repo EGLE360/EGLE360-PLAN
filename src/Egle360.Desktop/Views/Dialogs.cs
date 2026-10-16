@@ -78,11 +78,15 @@ internal static class Dialogs
     /// Höhe (Wandfläche) oder Tiefe (Volumen) in Metern. Liefert null bei Abbruch, sonst den Wert; ein leeres Feld
     /// ergibt 0 und entfernt die Angabe.
     /// </summary>
-    public static double? AskDepth(Window owner, string title, string hint, double? current)
+    public static double? AskDepth(Window owner, string title, string hint, double? current) =>
+        AskPositiveNumber(owner, title, hint, current, "m", "2,80");
+
+    /// <summary>Zahl größer null mit Einheit. Liefert null bei Abbruch, 0 bei leerem Feld (Angabe entfernen).</summary>
+    public static double? AskPositiveNumber(Window owner, string title, string hint, double? current, string unitText, string example)
     {
         var box = new TextBox { Style = (Style)owner.FindResource("InputBox"), Width = 140, Text = current is { } c ? Measurement.Number(c, 2) : "" };
-        var unit = new TextBlock { Style = (Style)owner.FindResource("TextBody"), Text = "m", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
-        var error = new TextBlock { Style = (Style)owner.FindResource("TextCaption"), Margin = new Thickness(0, 6, 0, 0), Visibility = Visibility.Collapsed, Text = "Bitte eine Zahl größer als null eingeben, zum Beispiel 2,80, oder das Feld leeren." };
+        var unit = new TextBlock { Style = (Style)owner.FindResource("TextBody"), Text = unitText, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
+        var error = new TextBlock { Style = (Style)owner.FindResource("TextCaption"), Margin = new Thickness(0, 6, 0, 0), Visibility = Visibility.Collapsed, Text = $"Bitte eine Zahl größer als null eingeben, zum Beispiel {example}, oder das Feld leeren." };
         var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 0) };
         row.Children.Add(box);
         row.Children.Add(unit);

@@ -83,7 +83,7 @@ internal static class ScreenshotRunner
                         viewer.SetZoom(1.0);
                         WaitForRender(window);
                         var r = Egle360.Pdf.Markups.MarkupGeometry.HandleRect(stamp);
-                        viewer.CenterOn(0, new Egle360.Pdf.Markups.PdfPoint(r.Right + 150, r.Top + 120));
+                        viewer.CenterOn(0, new Egle360.Pdf.Markups.PdfPoint((r.Left + r.Right) / 2 + 100, (r.Bottom + r.Top) / 2 + 80));
                         WaitForDocuments(window);
                         Save(window, Path.Combine(outputDir, name + "-stempel.png"));
                     }
@@ -91,8 +91,8 @@ internal static class ScreenshotRunner
                     {
                         viewer.SetZoom(1.0);
                         WaitForRender(window);
-                        var p0 = dimension.Points[0];
-                        viewer.CenterOn(0, new Egle360.Pdf.Markups.PdfPoint(p0.X + 250, p0.Y + 60));
+                        var (p0, p1) = (dimension.Points[0], dimension.Points[1]);
+                        viewer.CenterOn(0, new Egle360.Pdf.Markups.PdfPoint((p0.X + p1.X) / 2, (p0.Y + p1.Y) / 2 + 40));
                         WaitForDocuments(window);
                         Save(window, Path.Combine(outputDir, name + "-bemassung.png"));
                     }

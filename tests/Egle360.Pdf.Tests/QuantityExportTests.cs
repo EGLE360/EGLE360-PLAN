@@ -115,6 +115,48 @@ public class QuantityExportTests
         Assert.Contains(sums, r => r.Value.StartsWith("Volumen10"));
     }
 
+    [Fact]
+    public void Einheitspreise_Status_und_Sperre()
+    {
+        var at = new DateTimeOffset(2026, 10, 17, 8, 0, 0, TimeSpan.FromHours(2));
+        var slab = Measure(MarkupKind.Area, 0.25, P(0, 0), P(10, 0), P(10, 4), P(0, 4)) with
+        {
+            UnitPrice = 180, // € je m³, weil eine Tiefe angegeben ist
+            Status = new MarkupStatus("Geprüft", "Elias", at),
+            Locked = true,
+        };
+        var floor = Measure(MarkupKind.Area, null, P(0, 0), P(2, 0), P(2, 2), P(0, 2)) with { UnitPrice = 45.5 };
+        var doors = Markup.Create(MarkupKind.Count, [[P(1, 1), P(2, 2), P(3, 3)]], MarkupStyle.DefaultFor(MarkupKind.Count), "Prüfer") with { UnitPrice = 650 };
+        var angle = Markup.Create(MarkupKind.Angle, [[P(1, 0), P(0, 0), P(0, 1)]], MarkupStyle.DefaultFor(MarkupKind.Angle), "Prüfer") with { UnitPrice = 10 };
+
+        Assert.Equal((10.0, "m³"), MarkupReport.PricedQuantity(slab));
+        Assert.Equal((null, ""), MarkupReport.PricedQuantity(angle));
+        List<MarkupReportRow> rows = [MarkupReport.ToRow(0, slab), MarkupReport.ToRow(0, floor), MarkupReport.ToRow(0, doors), MarkupReport.ToRow(0, angle)];
+        Assert.Equal(1800, rows[0].Cost);
+        Assert.Equal("1.800,00 €", rows[0].CostText);
+        Assert.Equal(182, rows[1].Cost);
+        Assert.Equal(1950, rows[2].Cost);
+        Assert.Null(rows[3].Cost);
+        Assert.Equal("Geprüft (Elias)", rows[0].StatusText);
+        Assert.EndsWith("Kosten 3.932,00 €", MarkupReport.Totals(rows));
+        Assert.Contains(";180;m³;1800;Geprüft;Elias;17.10.2026 ", MarkupReport.ToCsv(rows).Split(Environment.NewLine)[1]);
+
+        using var dir = new TempDir();
+        using (var doc = PdfDocument.CreateNew())
+        {
+            doc.InsertBlankPage(0, 842, 595);
+            doc.SetMarkups(0, [slab, floor], Text);
+            doc.SaveAs(dir.File("preise.pdf"));
+        }
+        using var reopened = PdfDocument.Open(dir.File("preise.pdf"));
+        var read = reopened.GetMarkups(0);
+        Assert.Equal(180, read[0].UnitPrice);
+        Assert.True(read[0].Locked);
+        Assert.Equal(new MarkupStatus("Geprüft", "Elias", at), read[0].Status);
+        Assert.False(read[1].Locked);
+        Assert.Null(read[1].Status);
+    }
+
     [Theory]
     [InlineData(0, "A")]
     [InlineData(25, "Z")]

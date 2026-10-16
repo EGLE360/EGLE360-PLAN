@@ -38,6 +38,7 @@ internal static unsafe class Pdfium
     public const int FPDF_ANNOT_INK = 15;
     public const int FPDF_ANNOT_FLAG_HIDDEN = 1 << 1;
     public const int FPDF_ANNOT_FLAG_PRINT = 1 << 2;
+    public const int FPDF_ANNOT_FLAG_LOCKED = 1 << 7;
     public const int FPDF_ANNOT_APPEARANCEMODE_NORMAL = 0;
     public const int FPDFANNOT_COLORTYPE_Color = 0;
     public const int FPDFANNOT_COLORTYPE_InteriorColor = 1;
