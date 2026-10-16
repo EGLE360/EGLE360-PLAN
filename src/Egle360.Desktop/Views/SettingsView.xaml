@@ -1,0 +1,19 @@
+<UserControl x:Class="Egle360.Desktop.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel Margin="32,28,32,32" MaxWidth="720" HorizontalAlignment="Left">
+        <TextBlock Style="{StaticResource TextDisplay}" Text="Einstellungen" />
+        <TextBlock Style="{StaticResource TextTitle}" Text="Darstellung" Margin="0,24,0,12" />
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Style="{StaticResource TextSubtitle}" Text="Farbmodus" />
+                <TextBlock Style="{StaticResource TextSecondary}" Margin="0,4,0,8"
+                           Text="Die Wahl wird gespeichert und beim nächsten Start übernommen." />
+                <RadioButton x:Name="SystemOption" Style="{StaticResource ChoiceRadio}" GroupName="Theme" Content="Wie Windows" Checked="OnThemeChecked" />
+                <RadioButton x:Name="LightOption" Style="{StaticResource ChoiceRadio}" GroupName="Theme" Content="Hell (Light Mode)" Checked="OnThemeChecked" />
+                <RadioButton x:Name="DarkOption" Style="{StaticResource ChoiceRadio}" GroupName="Theme" Content="Dunkel (Dark Mode)" Checked="OnThemeChecked" />
+            </StackPanel>
+        </Border>
+        <TextBlock Style="{StaticResource TextCaption}" Margin="0,16,0,0" x:Name="VersionInfo" />
+    </StackPanel>
+</UserControl>

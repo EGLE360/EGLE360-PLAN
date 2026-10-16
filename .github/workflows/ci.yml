@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  build-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generierte Theme-Dateien sind aktuell
+        shell: bash
+        run: |
+          python tools/generate_theme.py
+          git diff --exit-code -- src/Egle360.Desktop/Themes design/tokens.css
+
+      - name: Build
+        run: dotnet build EGLE360.PLAN.sln -c Release -warnaserror
+
+      - name: Tests
+        run: dotnet test EGLE360.PLAN.sln -c Release --no-build
+
+      - name: Rauchtest mit Screenshots
+        shell: pwsh
+        run: |
+          $exe = "src/Egle360.Desktop/bin/Release/net10.0-windows/EGLE360.PLAN.exe"
+          $p = Start-Process -FilePath $exe -ArgumentList "--screenshots", "screenshots" -Wait -PassThru
+          if (Test-Path screenshots/error.txt) { Get-Content screenshots/error.txt }
+          if ($p.ExitCode -ne 0) { throw "Anwendung endete mit Code $($p.ExitCode)" }
+          $count = (Get-ChildItem screenshots -Filter *.png).Count
+          if ($count -lt 4) { throw "Nur $count Screenshots erzeugt" }
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: screenshots/
+
+      # Screenshots zusätzlich als eigener Branch, damit sie ohne Artefakt-Download auf GitHub sichtbar sind.
+      - name: Screenshots im Branch ci-screenshots ablegen
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd screenshots
+          git init -q -b ci-screenshots
+          git add .
+          git -c user.name="github-actions" -c user.email="github-actions@users.noreply.github.com" commit -qm "Screenshots für ${{ github.event.pull_request.head.sha }}"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" ci-screenshots

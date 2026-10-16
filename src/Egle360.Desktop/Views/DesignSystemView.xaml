@@ -1,0 +1,84 @@
+<UserControl x:Class="Egle360.Desktop.Views.DesignSystemView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+        <StackPanel Margin="32,28,32,32" MaxWidth="1200" HorizontalAlignment="Left">
+            <TextBlock Style="{StaticResource TextDisplay}" Text="Designsystem" />
+            <TextBlock Style="{StaticResource TextSecondary}" Margin="0,4,0,24" x:Name="ThemeInfo" />
+
+            <!-- Logo -->
+            <TextBlock Style="{StaticResource TextTitle}" Text="Logo" Margin="0,0,0,12" />
+            <!-- Variante je Fläche, Zuordnung in design/tokens.json (logoUsage) -->
+            <WrapPanel Margin="0,0,0,28">
+                <Border Background="{StaticResource NavBackgroundBrush}" CornerRadius="{StaticResource RadiusLarge}" Padding="24" Margin="0,0,16,16">
+                    <StackPanel>
+                        <Image Source="{StaticResource LogoNavigationImage}" Height="96" HorizontalAlignment="Left"
+                               RenderOptions.BitmapScalingMode="HighQuality" AutomationProperties.Name="EGLE360 Logo, Navigation" />
+                        <TextBlock Text="Master Light Flat, Navigation in beiden Modi" Margin="0,12,0,0" Foreground="{StaticResource NavTextSecondaryBrush}"
+                                   FontSize="{StaticResource FontSizeCaption}" />
+                    </StackPanel>
+                </Border>
+                <Border Background="{DynamicResource Surface1Brush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="{StaticResource RadiusLarge}" Padding="24" Margin="0,0,16,16">
+                    <StackPanel>
+                        <Image Source="{DynamicResource LogoContentImage}" Height="96" HorizontalAlignment="Left"
+                               RenderOptions.BitmapScalingMode="HighQuality" AutomationProperties.Name="EGLE360 Logo, Inhaltsfläche" />
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                            <TextBlock Style="{StaticResource TextCaption}" Text="{DynamicResource LogoContentName}" />
+                            <TextBlock Style="{StaticResource TextCaption}" Text=", Inhaltsflächen im aktiven Modus" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Border Background="{StaticResource LogoWhiteBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="{StaticResource RadiusLarge}" Padding="24" Margin="0,0,16,16">
+                    <StackPanel>
+                        <Image Source="{StaticResource LogoReportImage}" Height="96" HorizontalAlignment="Left"
+                               RenderOptions.BitmapScalingMode="HighQuality" AutomationProperties.Name="EGLE360 Logo, Bericht" />
+                        <TextBlock Text="Logo Report, Berichte und Druck auf weißem Grund" Margin="0,12,0,0" Foreground="#FF66727D"
+                                   FontSize="{StaticResource FontSizeCaption}" />
+                    </StackPanel>
+                </Border>
+            </WrapPanel>
+
+            <!-- Farben -->
+            <TextBlock Style="{StaticResource TextTitle}" Text="Farben des aktiven Modus" Margin="0,0,0,12" />
+            <WrapPanel x:Name="ThemeSwatches" Margin="0,0,0,20" />
+            <TextBlock Style="{StaticResource TextTitle}" Text="Logo-, Marken- und Navigationsfarben" Margin="0,0,0,12" />
+            <WrapPanel x:Name="FixedSwatches" Margin="0,0,0,28" />
+
+            <!-- Typografie -->
+            <TextBlock Style="{StaticResource TextTitle}" Text="Typografie" Margin="0,0,0,12" />
+            <Border Style="{StaticResource Card}" Margin="0,0,0,28">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource TextDisplay}" Text="Display 28 – Projektübersicht" />
+                    <TextBlock Style="{StaticResource TextTitle}" Text="Titel 20 – Grundriss Erdgeschoss" Margin="0,8,0,0" />
+                    <TextBlock Style="{StaticResource TextSubtitle}" Text="Untertitel 15 – Plan A-101, Index C" Margin="0,8,0,0" />
+                    <TextBlock Style="{StaticResource TextBody}" Text="Fließtext 13 – Wandfläche netto 124,38 m² nach Abzug von 3 Öffnungen." Margin="0,8,0,0" />
+                    <TextBlock Style="{StaticResource TextSecondary}" Text="Nebentext 13 – Zuletzt geändert am 16.10.2026" Margin="0,8,0,0" />
+                    <TextBlock Style="{StaticResource TextCaption}" Text="Beschriftung 11 – Maßstab 1:100" Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Bedienelemente -->
+            <TextBlock Style="{StaticResource TextTitle}" Text="Schaltflächen und Status" Margin="0,0,0,12" />
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource ButtonPrimary}" Content="Primäre Aktion" Margin="0,0,12,0" Click="OnSampleClick" />
+                        <Button Style="{StaticResource ButtonSecondary}" Content="Sekundäre Aktion" Margin="0,0,12,0" Click="OnSampleClick" />
+                        <Button Style="{StaticResource ButtonSecondary}" Content="Deaktiviert" IsEnabled="False" />
+                    </StackPanel>
+                    <TextBlock x:Name="ClickInfo" Style="{StaticResource TextCaption}" Margin="0,8,0,16" Text="Schaltflächen reagieren auf Maus und Tastatur (Tab, Leertaste)." />
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Style="{StaticResource StatusDot}" Fill="{DynamicResource SuccessBrush}" />
+                        <TextBlock Style="{StaticResource TextBody}" Text="Freigegeben" Margin="6,0,24,0" />
+                        <Ellipse Style="{StaticResource StatusDot}" Fill="{DynamicResource WarningBrush}" />
+                        <TextBlock Style="{StaticResource TextBody}" Text="In Prüfung" Margin="6,0,24,0" />
+                        <Ellipse Style="{StaticResource StatusDot}" Fill="{DynamicResource CriticalBrush}" />
+                        <TextBlock Style="{StaticResource TextBody}" Text="Abgelehnt" Margin="6,0,0,0" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

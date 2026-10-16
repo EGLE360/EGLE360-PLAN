@@ -1,0 +1,55 @@
+/* Automatisch erzeugt aus design/tokens.json durch tools/generate_theme.py. Nicht von Hand ändern. */
+:root {
+  --egle-logo-green: #45A04B;
+  --egle-logo-blue: #2283D6;
+  --egle-logo-light-gray: #BAC2CA;
+  --egle-logo-white: #FFFFFF;
+  --egle-brand-dark-blue: #102A43;
+  --egle-brand-green: #194D23;
+  --egle-brand-anthracite: #4A4F57;
+  --egle-brand-blue-accent: #1677D2;
+  --egle-nav-background: #172532;
+  --egle-nav-hover: #1D3040;
+  --egle-nav-selected: #135E9F;
+  --egle-nav-text: #FFFFFF;
+  --egle-nav-text-secondary: #9EACBA;
+  --egle-canvas: #F3F5F7;
+  --egle-surface1: #FFFFFF;
+  --egle-surface2: #F3F5F7;
+  --egle-border: #D8E0E8;
+  --egle-text: #17212B;
+  --egle-text-secondary: #66727D;
+  --egle-accent: #1677D2;
+  --egle-success: #2E9D59;
+  --egle-warning: #E5A323;
+  --egle-critical: #D94A4A;
+  --egle-on-accent: #FFFFFF;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+  --egle-canvas: #0B121A;
+  --egle-surface1: #111C27;
+  --egle-surface2: #172431;
+  --egle-border: #293847;
+  --egle-text: #F3F6F9;
+  --egle-text-secondary: #9EACBA;
+  --egle-accent: #3395E8;
+  --egle-success: #43B96C;
+  --egle-warning: #F0AE32;
+  --egle-critical: #E85C5C;
+  --egle-on-accent: #0B121A;
+  }
+}
+:root[data-theme="dark"] {
+  --egle-canvas: #0B121A;
+  --egle-surface1: #111C27;
+  --egle-surface2: #172431;
+  --egle-border: #293847;
+  --egle-text: #F3F6F9;
+  --egle-text-secondary: #9EACBA;
+  --egle-accent: #3395E8;
+  --egle-success: #43B96C;
+  --egle-warning: #F0AE32;
+  --egle-critical: #E85C5C;
+  --egle-on-accent: #0B121A;
+}

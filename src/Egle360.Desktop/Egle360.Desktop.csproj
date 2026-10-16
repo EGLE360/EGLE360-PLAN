@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Egle360.Desktop</RootNamespace>
+    <AssemblyName>EGLE360.PLAN</AssemblyName>
+    <Product>EGLE360 PLAN</Product>
+    <Company>EGLE360</Company>
+    <Version>0.3.1</Version>
+    <ApplicationIcon />
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Egle360.Design\Egle360.Design.csproj" />
+  </ItemGroup>
+
+  <!-- Logodateien werden unverändert aus brand/ eingebunden; welche Variante wo erscheint, steht in design/tokens.json (logoUsage). -->
+  <ItemGroup>
+    <Resource Include="..\..\brand\EGLE360_Master_Light_Flat_8192.png" Link="Assets\EGLE360_Master_Light_Flat_8192.png" />
+    <Resource Include="..\..\brand\EGLE360_Master_Dark_8192.png" Link="Assets\EGLE360_Master_Dark_8192.png" />
+    <Resource Include="..\..\brand\EGLE360_Master_Light_HighContrast_8192.png" Link="Assets\EGLE360_Master_Light_HighContrast_8192.png" />
+    <Resource Include="..\..\brand\EGLE360_Logo_Report.png" Link="Assets\EGLE360_Logo_Report.png" />
+  </ItemGroup>
+
+</Project>
