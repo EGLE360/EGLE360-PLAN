@@ -65,6 +65,7 @@ internal static class ScreenshotRunner
                     // Mengenermittlung: Fläche der Küche ausgewählt, Wert in der Statuszeile.
                     if (window.Documents.ActiveDocument?.GetMarkups(0).FirstOrDefault(m => m.Kind == Egle360.Pdf.Markups.MarkupKind.Area) is { } area)
                     {
+                        window.Documents.SetMarkupListVisible(true);
                         viewer.SetZoom(0.75);
                         WaitForRender(window);
                         var r = Egle360.Pdf.Markups.MarkupGeometry.HandleRect(area);
@@ -73,6 +74,7 @@ internal static class ScreenshotRunner
                         WaitForDocuments(window);
                         Save(window, Path.Combine(outputDir, name + "-messen.png"));
                         viewer.ClearSelection();
+                        window.Documents.SetMarkupListVisible(false);
                     }
 
                     // Textsuche mit Trefferliste in der Seitenleiste.

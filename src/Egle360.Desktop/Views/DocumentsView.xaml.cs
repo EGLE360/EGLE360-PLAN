@@ -123,6 +123,7 @@ public partial class DocumentsView : UserControl, IDisposable
             if (open == _active)
             {
                 RefreshMarkupBar();
+                RefreshMarkupList();
             }
         };
         viewer.SelectionChanged += (_, _) => { if (open == _active) { RefreshMarkupBar(); } };
@@ -144,6 +145,7 @@ public partial class DocumentsView : UserControl, IDisposable
             {
                 BuildThumbnails();
                 BuildBookmarks();
+                RefreshMarkupList();
                 RefreshUi();
             }
         };
@@ -163,6 +165,7 @@ public partial class DocumentsView : UserControl, IDisposable
         document.Tab.IsChecked = true;
         ApplyTool(document.Viewer, CheckedToolKey);
         ViewerHost.Content = document.Viewer;
+        RefreshMarkupList();
         BuildThumbnails();
         BuildBookmarks();
         RefreshUi();
@@ -423,7 +426,7 @@ public partial class DocumentsView : UserControl, IDisposable
         EmptyState.Visibility = has ? Visibility.Collapsed : Visibility.Visible;
         TabStripBorder.Visibility = _documents.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         var canModify = has && _active!.Document.CanModify;
-        foreach (var b in new[] { SaveButton, SaveAsButton, SidebarButton, ZoomOutButton, ZoomInButton, FitWidthButton, FitPageButton, PrevButton, NextButton, PropertiesButton, ExtractButton })
+        foreach (var b in new[] { SaveButton, SaveAsButton, SidebarButton, ZoomOutButton, ZoomInButton, FitWidthButton, FitPageButton, PrevButton, NextButton, PropertiesButton, ExtractButton, MarkupListButton })
         {
             b.IsEnabled = has;
         }
@@ -432,6 +435,10 @@ public partial class DocumentsView : UserControl, IDisposable
             b.IsEnabled = canModify;
         }
         ZoomBox.IsEnabled = PageBox.IsEnabled = has;
+        if (!has && MarkupListVisible)
+        {
+            OnToggleMarkupList(this, new RoutedEventArgs());
+        }
         if (has)
         {
             UpdateTab(_active!);
