@@ -597,7 +597,8 @@ public sealed partial class PdfViewer
         // Nach dem Zeichnen zurück zur Auswahl, die neue Markierung ist ausgewählt.
         SetTool(ViewerTool.Select);
         Select(page, markup.Id);
-        if (MarkupKinds.HasText(markup.Kind))
+        // Neue Textfelder, Sprechblasen und Notizen fragen gleich nach dem Text; Stempel haben ihre Aufschrift schon.
+        if (MarkupKinds.HasText(markup.Kind) && string.IsNullOrEmpty(markup.Text))
         {
             EditTextRequested?.Invoke(this, (page, markup));
         }

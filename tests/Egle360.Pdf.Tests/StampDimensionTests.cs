@@ -103,3 +103,64 @@ public class CircleMeasureTests
         Assert.Contains("/IT /LineDimension", MarkupSerializer.StandardEntries(diameter));
     }
 }
+
+/// <summary>Sprechblase mit Pfeillinie.</summary>
+public class CalloutTests
+{
+    private static readonly ITextOutliner Text = new BlockTextOutliner();
+
+    [Fact]
+    public void Sprechblase_ziehen_bearbeiten_und_speichern()
+    {
+        var drawing = new MarkupDrawing(MarkupKind.Callout, MarkupStyle.DefaultFor(MarkupKind.Callout), "Prüfer", 0, 4);
+        drawing.Press(new PdfPoint(100, 100));
+        drawing.Move(new PdfPoint(200, 150));
+        Assert.Equal(MarkupKind.Callout, drawing.Preview!.Kind);
+        var callout = drawing.Release(new PdfPoint(200, 150))!;
+        Assert.Equal(new PdfPoint(100, 100), callout.Paths[1][0]);
+        var box = MarkupGeometry.HandleRect(callout);
+        Assert.Equal(200, box.Left, 6);
+        Assert.Equal(150, (box.Bottom + box.Top) / 2, 6);
+        Assert.Equal(new PdfPoint(200, 150), MarkupGeometry.CalloutAnchor(callout));
+
+        // Neun Griffe: acht am Rahmen, der neunte verschiebt die Spitze; Größenänderung behält die Spitze.
+        var handles = MarkupGeometry.Handles(callout);
+        Assert.Equal(9, handles.Count);
+        var moved = MarkupGeometry.DragHandle(callout, 8, new PdfPoint(50, 300));
+        Assert.Equal(new PdfPoint(50, 300), moved.Paths[1][0]);
+        var resized = MarkupGeometry.DragHandle(callout, 4, new PdfPoint(500, 300));
+        Assert.Equal(new PdfPoint(100, 100), resized.Paths[1][0]);
+        Assert.Equal(500, MarkupGeometry.HandleRect(resized).Right, 6);
+
+        // Die Pfeillinie ist anklickbar.
+        Assert.True(MarkupGeometry.HitTest(callout, new PdfPoint(150, 125), 1));
+
+        using var dir = new TempDir();
+        using (var doc = PdfDocument.CreateNew())
+        {
+            doc.InsertBlankPage(0, 842, 595);
+            doc.SetMarkups(0, [callout.WithText("Brandschutzklappe fehlt")], Text);
+            doc.SaveAs(dir.File("sprechblase.pdf"));
+        }
+        var raw = System.Text.Encoding.Latin1.GetString(File.ReadAllBytes(dir.File("sprechblase.pdf")));
+        Assert.Contains("/IT /FreeTextCallout", raw);
+        Assert.Contains("/CL [100 100 200 150]", raw);
+        using var reopened = PdfDocument.Open(dir.File("sprechblase.pdf"));
+        var read = Assert.Single(reopened.GetMarkups(0));
+        Assert.Equal(MarkupKind.Callout, read.Kind);
+        Assert.Equal(2, read.Paths.Count);
+        Assert.Equal("Brandschutzklappe fehlt", read.Text);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(90)]
+    [InlineData(180)]
+    [InlineData(270)]
+    public void Rahmenkoordinaten_hin_und_zurueck(int rotation)
+    {
+        var frame = new TextFrame(new PdfPoint(10, 20), rotation, 0, 0);
+        var local = new PdfPoint(7, -3);
+        Assert.Equal(local, frame.ToLocal(frame.ToUser(local)));
+    }
+}

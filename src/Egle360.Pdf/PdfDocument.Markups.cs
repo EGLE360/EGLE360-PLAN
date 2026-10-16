@@ -199,7 +199,7 @@ public sealed unsafe partial class PdfDocument
         {
             MarkupKind.Rectangle => Pdfium.FPDF_ANNOT_SQUARE,
             MarkupKind.Ellipse => Pdfium.FPDF_ANNOT_CIRCLE,
-            MarkupKind.TextBox => Pdfium.FPDF_ANNOT_FREETEXT,
+            MarkupKind.TextBox or MarkupKind.Callout => Pdfium.FPDF_ANNOT_FREETEXT,
             MarkupKind.Note => Pdfium.FPDF_ANNOT_TEXT,
             MarkupKind.Highlight => Pdfium.FPDF_ANNOT_HIGHLIGHT,
             MarkupKind.Stamp => Pdfium.FPDF_ANNOT_STAMP,
@@ -259,7 +259,7 @@ public sealed unsafe partial class PdfDocument
                     };
                     Pdfium.FPDFAnnot_AppendAttachmentPoints(annot, &quad);
                     break;
-                case MarkupKind.TextBox:
+                case MarkupKind.TextBox or MarkupKind.Callout:
                     WriteString(annot, "DA", MarkupSerializer.DefaultAppearance(m));
                     break;
             }

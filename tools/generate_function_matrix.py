@@ -524,6 +524,7 @@ STATUS = {
     "MKP-TOOL-008": "Umgesetzt (Phase 4, Teil 2)",
     "MKP-TOOL-011": "Umgesetzt (Phase 4, Teil 2)",
     "MKP-TOOL-013": "Umgesetzt (Phase 4, Teil 2)",
+    "MKP-TOOL-015": "Umgesetzt (Phase 5, Teil 2): Textfeld mit Pfeillinie, als FreeTextCallout gespeichert",
     "MKP-TOOL-016": "Umgesetzt (Phase 4, Teil 2)",
     "MKP-TOOL-017": "Umgesetzt (Phase 5, Teil 2): Maßlinie mit Pfeilen, Zahl über der Linie, nach Seitenmaßstab",
     "MKP-TOOL-023": "Teilweise (Phase 5, Teil 2): sieben eigene Textstempel und eigene Aufschrift, mit Autor und Datum; Bildstempel offen",

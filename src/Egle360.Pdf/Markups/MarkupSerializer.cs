@@ -131,12 +131,21 @@ public static class MarkupSerializer
             // Für Radius und Durchmesser gibt es keine eigene PDF-Messart; die gemessene Strecke ist eine Länge.
             MarkupKind.Radius or MarkupKind.Diameter when pts.Count >= 2 =>
                 $"<</Subtype /Line /L [{N(pts[0].X)} {N(pts[0].Y)} {N(pts[1].X)} {N(pts[1].Y)}] /IT /LineDimension{MeasureEntry(m)}>>",
+            MarkupKind.Callout when pts.Count >= 2 && m.Paths.Count >= 2 && m.Paths[1].Count > 0 => CalloutEntries(m),
             MarkupKind.Angle => $"<</Subtype /PolyLine /Vertices {Vertices()}>>",
             MarkupKind.Polylength => $"<</Subtype /PolyLine /Vertices {Vertices()} /IT /PolyLineDimension{MeasureEntry(m)}>>",
             MarkupKind.Perimeter => $"<</Subtype /Polygon /Vertices {Vertices()} /IT /PolygonDimension{MeasureEntry(m)}>>",
             MarkupKind.Area => $"<</Subtype /Polygon /Vertices {Vertices()} /IT /PolygonDimension{MeasureEntry(m)}>>",
             _ => null,
         };
+    }
+
+    /// <summary>Freitext als Legende (ISO 32000, 12.5.6.6): Pfeillinie in CL, Pfeil an der Spitze.</summary>
+    private static string CalloutEntries(Markup m)
+    {
+        var tip = m.Paths[1][0];
+        var anchor = MarkupGeometry.CalloutAnchor(m);
+        return $"<</IT /FreeTextCallout /CL [{N(tip.X)} {N(tip.Y)} {N(anchor.X)} {N(anchor.Y)}] /LE /OpenArrow>>";
     }
 
     /// <summary>

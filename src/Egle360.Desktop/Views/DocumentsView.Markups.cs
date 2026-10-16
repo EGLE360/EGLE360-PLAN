@@ -43,6 +43,7 @@ public partial class DocumentsView
         (nameof(MarkupKind.Cloud), "Wolke (Abschluss mit Doppelklick oder Eingabetaste)", "M3.5,11 A2.5,2.5 0 0 1 2.5,6 A3,3 0 0 1 7.5,3.5 A3,3 0 0 1 12.5,5 A2.5,2.5 0 0 1 13,10.5 A3,3 0 0 1 8,12.5 A3,3 0 0 1 3.5,11 Z", Key.C),
         (nameof(MarkupKind.Freehand), "Freihand", "M1.5,11 C4,3 6,3 7,8 C8,13 10,13 14.5,4", Key.F),
         (nameof(MarkupKind.TextBox), "Textfeld", "M1.5,2.5 H14.5 V13.5 H1.5 Z M5,5.5 H11 M8,5.5 V11", Key.T),
+        (nameof(MarkupKind.Callout), "Sprechblase (von der Pfeilspitze zum Textfeld ziehen)", "M6.5,1.5 H14.5 V8 H6.5 Z M8.5,4.75 H12.5 M6.5,6.5 L1.5,14.5 M1.5,11 V14.5 H5", Key.B),
         (nameof(MarkupKind.Note), "Notiz", "M2,2.5 H14 V10.5 H7 L4,13.5 L4.5,10.5 H2 Z M4.5,5 H11.5 M4.5,7.5 H9.5", Key.K),
         (nameof(MarkupKind.Highlight), "Hervorhebung", "M2.5,14 H13.5 M5,11 L10.5,2.5 L13,4 L7.5,12.5 Z", Key.M),
         (nameof(MarkupKind.Stamp), "Stempel (Klick setzt, Aufziehen bestimmt die Größe)", "M1.5,4 H14.5 V12 H1.5 Z M3,5.5 H13 V10.5 H3 Z M5,8 H11", Key.S),
@@ -188,6 +189,7 @@ public partial class DocumentsView
             MarkupKind.Highlight => d with { Stroke = _color, Fill = _color, Opacity = _opacity < 1 ? _opacity : 0.4 },
             MarkupKind.Note => d with { Fill = _color == Palette[0].Color ? d.Fill : _color, Opacity = _opacity },
             MarkupKind.TextBox => d with { Stroke = _color, LineWidth = _width, Opacity = _opacity, Fill = _fill ? PdfColor.White : null },
+            MarkupKind.Callout => d with { Stroke = _color, LineWidth = _width, Opacity = _opacity },
             MarkupKind.Stamp => d with { Stroke = _stamp.Color, Opacity = _opacity < 1 ? _opacity : d.Opacity, Fill = _fill ? PdfColor.White : null },
             _ => d with { Stroke = _color, LineWidth = _width, Opacity = _opacity, Fill = _fill && MarkupKinds.CanFill(kind) ? Tint(_color) : null },
         };
@@ -203,7 +205,7 @@ public partial class DocumentsView
         {
             MarkupKind.Highlight => m.WithStyle(m.Style with { Stroke = color, Fill = color }),
             MarkupKind.Note => m.WithStyle(m.Style with { Fill = color }),
-            MarkupKind.TextBox => m.WithStyle(m.Style with { Stroke = color }),
+            MarkupKind.TextBox or MarkupKind.Callout or MarkupKind.Stamp => m.WithStyle(m.Style with { Stroke = color }),
             _ => m.WithStyle(m.Style with { Stroke = color, Fill = m.Style.Fill is null ? null : Tint(color) }),
         }, "Farbe ändern");
     }
@@ -228,7 +230,7 @@ public partial class DocumentsView
     {
         _fill = fill;
         _active?.Viewer.ApplyToSelection(m => !MarkupKinds.CanFill(m.Kind) ? m
-            : m.WithStyle(m.Style with { Fill = fill ? (m.Kind == MarkupKind.TextBox ? PdfColor.White : Tint(m.Style.Stroke)) : null }), fill ? "Füllung hinzufügen" : "Füllung entfernen");
+            : m.WithStyle(m.Style with { Fill = fill ? (m.Kind is MarkupKind.TextBox or MarkupKind.Callout or MarkupKind.Stamp ? PdfColor.White : Tint(m.Style.Stroke)) : null }), fill ? "Füllung hinzufügen" : "Füllung entfernen");
     }
 
     private void ShowChoiceMenu(Button target, double[] values, double current, Func<double, string> label, Action<double> choose)
@@ -428,7 +430,7 @@ public partial class DocumentsView
             return;
         }
         var changed = current.WithText(text);
-        if (changed.Kind == MarkupKind.TextBox)
+        if (MarkupKinds.HasTextFrame(changed.Kind))
         {
             changed = GrowToFitText(changed);
         }

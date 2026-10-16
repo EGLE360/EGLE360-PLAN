@@ -127,6 +127,7 @@ public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string aut
         {
             MarkupKind.Note => Complete([new[] { start }]),
             MarkupKind.Stamp when !dragged => Complete([StampAt(start)]),
+            MarkupKind.Callout => Complete(CalloutPaths(start, p, dragged)),
             MarkupKind.TextBox when !dragged => Complete([new[] { start, new TextFrame(start, pageRotation, 0, 0).ToUser(new PdfPoint(DefaultTextBox.Width, DefaultTextBox.Height)) }]),
             _ when !dragged => Complete(null),
             _ => Complete([new[] { start, p }]),
@@ -182,8 +183,23 @@ public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string aut
                 _ when MarkupKinds.IsMultiPoint(Kind) && pts.Count < 3 => MarkupKinds.IsMeasurement(Kind) ? MarkupKind.Polylength : MarkupKind.Polyline,
                 _ => Kind,
             };
-            return new Markup("preview", previewKind, [pts], style, text, author, DateTimeOffset.Now, DateTimeOffset.Now, pageRotation, scale);
+            IReadOnlyList<IReadOnlyList<PdfPoint>> paths = Kind == MarkupKind.Callout && pts.Count >= 2 ? CalloutPaths(pts[0], pts[^1], true) : [pts];
+            return new Markup("preview", previewKind, paths, style, text, author, DateTimeOffset.Now, DateTimeOffset.Now, pageRotation, scale);
         }
+    }
+
+    /// <summary>
+    /// Sprechblase von der Pfeilspitze <paramref name="tip"/> zum Textrahmen bei <paramref name="at"/>. Der Rahmen
+    /// in Standardgröße liegt auf dem Bildschirm vom Spitzenpunkt weg; ohne Ziehen schräg rechts darüber.
+    /// </summary>
+    private IReadOnlyList<IReadOnlyList<PdfPoint>> CalloutPaths(PdfPoint tip, PdfPoint at, bool dragged)
+    {
+        var frame = new TextFrame(tip, pageRotation, 0, 0);
+        var local = dragged ? frame.ToLocal(at) : new PdfPoint(40, -60);
+        var (w, h) = DefaultTextBox;
+        var left = local.X >= 0 ? local.X : local.X - w;
+        var top = local.Y - h / 2;
+        return [new[] { frame.ToUser(new PdfPoint(left, top)), frame.ToUser(new PdfPoint(left + w, top + h)) }, new[] { tip }];
     }
 
     /// <summary>Stempel in Standardgröße, mittig auf dem Klickpunkt.</summary>

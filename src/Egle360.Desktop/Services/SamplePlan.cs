@@ -133,9 +133,8 @@ internal static class SamplePlan
         [
             Make(MarkupKind.Cloud, new MarkupStyle(red, null, 1, 2), "Lüftung Bad fehlt",
                 new(ox + 20.4 * M, oy + 11.4 * M), new(ox + 29.6 * M, oy + 11.4 * M), new(ox + 29.6 * M, oy + 15.6 * M), new(ox + 20.4 * M, oy + 15.6 * M)),
-            Make(MarkupKind.Arrow, new MarkupStyle(red, null, 1, 2), "", new(2030, 1195), new(ox + 29.9 * M, oy + 14 * M)),
-            Make(MarkupKind.TextBox, new MarkupStyle(red, PdfColor.White, 1, 1.5, 16), "Lüftung Bad fehlt.\nAbluft nach DIN 18017-3 ergänzen.",
-                new(2030, 1120), new(2340, 1230)),
+            Make(MarkupKind.Callout, new MarkupStyle(red, PdfColor.White, 1, 1.5, 16), "Lüftung Bad fehlt.\nAbluft nach DIN 18017-3 ergänzen.",
+                new(2030, 1120), new(2340, 1230)) with { Paths = [new PdfPoint[] { new(2030, 1120), new(2340, 1230) }, new PdfPoint[] { new(ox + 29.9 * M, oy + 14 * M) }] },
             Make(MarkupKind.Rectangle, new MarkupStyle(blue, new PdfColor(209, 228, 246), 0.75, 1.5), "Türbreite prüfen",
                 new(ox + 13.7 * M, oy + 5.5 * M), new(ox + 15.3 * M, oy + 7.5 * M)),
             Make(MarkupKind.Note, MarkupStyle.DefaultFor(MarkupKind.Note), "Türbreite 1,01 m lichte Breite bestätigen.", new PdfPoint(ox + 15.5 * M, oy + 8.2 * M)),

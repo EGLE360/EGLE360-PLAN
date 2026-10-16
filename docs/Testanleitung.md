@@ -55,6 +55,7 @@ Im Startbildschirm „Beispielplan öffnen“ wählen. Das ist ein frei erfunden
 | Wolke | C | wie Polylinie |
 | Freihand | F | Mit gedrückter Maustaste zeichnen |
 | Textfeld | T | Aufziehen oder klicken, dann Text eingeben |
+| Sprechblase | B | Von der Stelle, auf die der Pfeil zeigen soll, zum Textfeld ziehen (oder nur klicken), dann Text eingeben. Rahmen und Pfeilspitze lassen sich danach an den Griffen verschieben |
 | Notiz | K | Klicken, dann Text eingeben |
 | Hervorhebung | M | Bereich aufziehen |
 | Stempel | S | Aufschrift im Menü der Schaltfläche wählen (GEPRÜFT, FREIGEGEBEN, ABGELEHNT und andere oder eine eigene), dann klicken oder aufziehen. Darunter stehen automatisch Autor und Datum |

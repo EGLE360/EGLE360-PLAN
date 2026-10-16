@@ -28,6 +28,7 @@ public enum MarkupKind
     Stamp,
     Radius,
     Diameter,
+    Callout,
 }
 
 /// <summary>Punkt im PDF-Benutzerkoordinatensystem (Punkt, y nach oben, ohne Seitendrehung).</summary>
@@ -89,6 +90,7 @@ public sealed record MarkupStyle(PdfColor Stroke, PdfColor? Fill, double Opacity
         MarkupKind.Highlight => new MarkupStyle(new PdfColor(255, 220, 0), new PdfColor(255, 220, 0), 0.4, 0),
         MarkupKind.Note => new MarkupStyle(new PdfColor(40, 40, 40), new PdfColor(255, 214, 10), 1, 0.75),
         MarkupKind.TextBox => new MarkupStyle(new PdfColor(200, 30, 30), null, 1, 1, 12),
+        MarkupKind.Callout => new MarkupStyle(new PdfColor(200, 30, 30), PdfColor.White, 1, 1, 12),
         MarkupKind.Stamp => new MarkupStyle(StampPreset.Defaults[0].Color, null, 0.9, 2, 14),
         _ when MarkupKinds.IsMeasurement(kind) => new MarkupStyle(new PdfColor(22, 119, 210), null, 1, 1.5, 10),
         _ => new MarkupStyle(new PdfColor(200, 30, 30), null, 1, 1.5),
@@ -103,6 +105,7 @@ public sealed record MarkupStyle(PdfColor Stroke, PdfColor? Fill, double Opacity
 /// <param name="Paths">
 /// Geometrie in Benutzerkoordinaten. Rechteck, Ellipse, Textfeld und Hervorhebung: zwei Eckpunkte. Linie und Pfeil:
 /// Anfang und Ende. Polylinie, Polygon, Wolke: alle Eckpunkte. Freihand: ein Pfad je Strich. Notiz: linke obere Ecke.
+/// Sprechblase: erster Pfad die beiden Ecken des Textrahmens, zweiter Pfad die Pfeilspitze.
 /// </param>
 /// <param name="Text">Inhalt (Textfeld, Notiz) oder Kommentar (alle anderen).</param>
 /// <param name="TextRotation">Seitendrehung beim Anlegen (0, 90, 180, 270), damit Text auf dem Bildschirm aufrecht steht.</param>
@@ -168,6 +171,7 @@ public static class MarkupKinds
         MarkupKind.Stamp => "Stempel",
         MarkupKind.Radius => "Radius",
         MarkupKind.Diameter => "Durchmesser",
+        MarkupKind.Callout => "Sprechblase",
         _ => kind.ToString(),
     };
 
@@ -182,7 +186,7 @@ public static class MarkupKinds
     public static bool IsClosed(MarkupKind kind) => kind is MarkupKind.Polygon or MarkupKind.Cloud or MarkupKind.Perimeter or MarkupKind.Area;
 
     public static bool CanFill(MarkupKind kind) =>
-        kind is MarkupKind.Rectangle or MarkupKind.Ellipse or MarkupKind.Polygon or MarkupKind.Cloud or MarkupKind.TextBox or MarkupKind.Area;
+        kind is MarkupKind.Rectangle or MarkupKind.Ellipse or MarkupKind.Polygon or MarkupKind.Cloud or MarkupKind.TextBox or MarkupKind.Area or MarkupKind.Callout;
 
     /// <summary>Messwerkzeuge der Mengenermittlung, dazu die Bemaßung (eine Länge mit Maßpfeilen).</summary>
     public static bool IsMeasurement(MarkupKind kind) =>
@@ -203,7 +207,10 @@ public static class MarkupKinds
         _ => IsClosed(kind) ? 3 : 2,
     };
 
-    public static bool HasText(MarkupKind kind) => kind is MarkupKind.TextBox or MarkupKind.Note or MarkupKind.Stamp;
+    public static bool HasText(MarkupKind kind) => kind is MarkupKind.TextBox or MarkupKind.Note or MarkupKind.Stamp or MarkupKind.Callout;
+
+    /// <summary>Arten mit Textrahmen, der beim Bearbeiten des Textes nach unten mitwächst.</summary>
+    public static bool HasTextFrame(MarkupKind kind) => kind is MarkupKind.TextBox or MarkupKind.Callout;
 
     /// <summary>Größe des Notizsymbols in Punkt.</summary>
     public const double NoteSize = 20;

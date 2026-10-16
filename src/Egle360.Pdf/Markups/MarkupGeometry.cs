@@ -55,7 +55,16 @@ public static class MarkupGeometry
                 }
                 layers.Add(new ShapeLayer(ink, s.Stroke, w, null));
                 break;
-            case MarkupKind.TextBox when pts.Count >= 2:
+            case MarkupKind.TextBox or MarkupKind.Callout when pts.Count >= 2:
+                if (m.Kind == MarkupKind.Callout && m.Paths.Count >= 2 && m.Paths[1].Count >= 1)
+                {
+                    // Pfeillinie zuerst, damit der Textrahmen sie überdeckt, wenn die Spitze im Rahmen liegt.
+                    var tip = m.Paths[1][0];
+                    var anchor = CalloutAnchor(m);
+                    var leader = new PathData().Polyline([anchor, tip], false);
+                    leader.Append(ArrowHead(anchor, tip, w));
+                    layers.Add(new ShapeLayer(leader, s.Stroke, w, null));
+                }
                 var box = PdfRect.FromPoints(pts[0], pts[1]);
                 layers.Add(new ShapeLayer(new PathData().Rectangle(box), stroke, w, fill));
                 if (outliner is not null && !string.IsNullOrEmpty(m.Text))
@@ -310,6 +319,17 @@ public static class MarkupGeometry
         layers.Add(new ShapeLayer(path, null, 0, m.Style.Stroke, IsText: true, Clip: rect));
     }
 
+    /// <summary>Punkt am Textrahmen der Sprechblase, an dem die Pfeillinie ansetzt: die nächstgelegene Seitenmitte.</summary>
+    public static PdfPoint CalloutAnchor(Markup m)
+    {
+        var box = PdfRect.FromPoints(m.Points[0], m.Points[1]);
+        var tip = m.Paths.Count >= 2 && m.Paths[1].Count > 0 ? m.Paths[1][0] : new PdfPoint(box.Left, box.Bottom);
+        var cx = (box.Left + box.Right) / 2;
+        var cy = (box.Bottom + box.Top) / 2;
+        PdfPoint[] candidates = [new(box.Left, cy), new(box.Right, cy), new(cx, box.Bottom), new(cx, box.Top)];
+        return candidates.MinBy(c => c.DistanceTo(tip));
+    }
+
     /// <summary>
     /// Mitte der Bemaßungszahl: über der Maßlinie, also auf der Seite, die auf dem Bildschirm oben liegt (bei
     /// senkrechten Linien links).
@@ -485,7 +505,7 @@ public static class MarkupGeometry
         {
             return false;
         }
-        var areaCounts = m.Kind is MarkupKind.TextBox or MarkupKind.Note or MarkupKind.Highlight or MarkupKind.Count or MarkupKind.Stamp;
+        var areaCounts = m.Kind is MarkupKind.TextBox or MarkupKind.Note or MarkupKind.Highlight or MarkupKind.Count or MarkupKind.Stamp or MarkupKind.Callout;
         foreach (var layer in shape.Layers)
         {
             var figures = layer.Path.Flatten().ToList();
@@ -593,7 +613,9 @@ public static class MarkupGeometry
             return m.Paths.SelectMany(p => p).ToArray();
         }
         var r = HandleRect(m);
-        return BoxHandles.Select(h => new PdfPoint(r.Left + h.X * r.Width, r.Bottom + h.Y * r.Height)).ToArray();
+        var handles = BoxHandles.Select(h => new PdfPoint(r.Left + h.X * r.Width, r.Bottom + h.Y * r.Height));
+        // Bei der Sprechblase folgt als neunter Griff die Pfeilspitze.
+        return m.Kind == MarkupKind.Callout && m.Paths.Count >= 2 && m.Paths[1].Count > 0 ? [.. handles, m.Paths[1][0]] : handles.ToArray();
     }
 
     public static bool UsesVertexHandles(MarkupKind kind) =>
@@ -622,6 +644,10 @@ public static class MarkupGeometry
             }
             return m;
         }
+        if (m.Kind == MarkupKind.Callout && handle == BoxHandles.Length && m.Paths.Count >= 2)
+        {
+            return m.WithPaths([m.Paths[0], new[] { to }]);
+        }
         if (m.Kind == MarkupKind.Note || handle < 0 || handle >= BoxHandles.Length)
         {
             return m;
@@ -648,7 +674,8 @@ public static class MarkupGeometry
             return m.WithPaths(m.Paths.Select(path => (IReadOnlyList<PdfPoint>)path
                 .Select(p => new PdfPoint(target.Left + (p.X - r.Left) * sx, target.Bottom + (p.Y - r.Bottom) * sy)).ToArray()).ToArray());
         }
-        return m.WithPaths([new[] { new PdfPoint(target.Left, target.Bottom), new PdfPoint(target.Right, target.Top) }]);
+        IReadOnlyList<PdfPoint> corners = [new PdfPoint(target.Left, target.Bottom), new PdfPoint(target.Right, target.Top)];
+        return m.Kind == MarkupKind.Callout && m.Paths.Count >= 2 ? m.WithPaths([corners, m.Paths[1]]) : m.WithPaths([corners]);
     }
 
     public static Markup Translate(Markup m, double dx, double dy)
@@ -658,7 +685,8 @@ public static class MarkupGeometry
     }
 
     /// <summary>Rechteck, an dem die Rahmengriffe sitzen (Geometrie ohne Linienbreite).</summary>
-    public static PdfRect HandleRect(Markup m) => PdfRect.Bounds(m.Paths.SelectMany(p => p));
+    public static PdfRect HandleRect(Markup m) =>
+        m.Kind == MarkupKind.Callout && m.Points.Count >= 2 ? PdfRect.FromPoints(m.Points[0], m.Points[1]) : PdfRect.Bounds(m.Paths.SelectMany(p => p));
 
     // ---------- Hilfen ----------
 
@@ -737,6 +765,19 @@ public readonly record struct TextFrame(PdfPoint Origin, int Rotation, double Wi
         270 => new PdfPoint(Origin.X - local.Y, Origin.Y - local.X),
         _ => new PdfPoint(Origin.X + local.X, Origin.Y - local.Y),
     };
+
+    /// <summary>Umkehrung von <see cref="ToUser"/>: Benutzerkoordinaten in Rahmenkoordinaten (x rechts, y unten).</summary>
+    public PdfPoint ToLocal(PdfPoint user)
+    {
+        var d = user - Origin;
+        return Normalize(Rotation) switch
+        {
+            90 => new PdfPoint(d.Y, d.X),
+            180 => new PdfPoint(-d.X, d.Y),
+            270 => new PdfPoint(-d.Y, -d.X),
+            _ => new PdfPoint(d.X, -d.Y),
+        };
+    }
 
     public static int Normalize(int rotation) => ((rotation % 360) + 360) % 360;
 }
