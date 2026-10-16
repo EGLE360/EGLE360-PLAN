@@ -85,7 +85,7 @@ Begründung:
 - Sicherheit: PDFium wird laufend gegen Fuzzing gehärtet. PDF-Verarbeitung aus unbekannten Quellen läuft auf dem Server in isolierten Worker-Prozessen.
 - Unbeabsichtigte Änderungen: Speichern erfolgt standardmäßig inkrementell, der Originalteil der Datei bleibt bytegleich (Matrix PDF-DOC-003).
 
-Risiko und Alternative: Digitale Signaturen, dauerhafte Schwärzung, PDF/A-Erzeugung und Textbearbeitung sind mit freien Bausteinen aufwendig. Ein kommerzielles SDK (z. B. Apryse, Foxit, Nutrient) würde diese Teile verkürzen, verursacht aber laufende Lizenzkosten pro Nutzer oder Server und eine Herstellerabhängigkeit. Empfehlung: mit dem freien Stack starten und nach Phase 4 einen festen Prüfpunkt einplanen. Wenn Schwärzung oder Signaturen dort die Akzeptanztests nicht erreichen, wird für diese Teile ein SDK lizenziert. Diese Entscheidung braucht eine Freigabe durch EGLE360 (siehe Abschnitt 7).
+Risiko und Alternative: Digitale Signaturen, dauerhafte Schwärzung, PDF/A-Erzeugung und Textbearbeitung sind mit freien Bausteinen aufwendig. Ein kommerzielles SDK (z. B. Apryse, Foxit, Nutrient) würde diese Teile verkürzen, verursacht aber laufende Lizenzkosten pro Nutzer oder Server und eine Herstellerabhängigkeit. Empfehlung: mit dem freien Stack starten und nach Phase 4 einen festen Prüfpunkt einplanen. Wenn Schwärzung oder Signaturen dort die Akzeptanztests nicht erreichen, wird für diese Teile ein SDK lizenziert. EGLE360 hat am 16.10.2026 bestätigt, dass ein kommerzielles SDK als Rückfalloption infrage kommt. Die Auswahl des Anbieters erfolgt erst, wenn der Prüfpunkt nach Phase 4 das nötig macht.
 
 ### ADR-04 BIM-Engine: IfcOpenShell im Worker, Darstellung mit three.js
 
@@ -213,7 +213,7 @@ Ein Produkt im Umfang des Master-Prompts ist ein mehrjähriges Vorhaben für ein
 
 ## 7. Offene Entscheidungen für EGLE360
 
-1. Kommerzielles PDF-SDK als Rückfalloption für Signaturen und Schwärzung (ADR-03): Budget ja oder nein.
+1. Erledigt am 16.10.2026: Ein kommerzielles PDF-SDK kommt als Rückfalloption infrage (ADR-03).
 2. Hosting-Anbieter und Region in der EU (ADR-05).
 3. Spezifikation der EGLE360-AVA-Schnittstelle (ADR-09).
 4. Lizenzmodell des Produkts (proprietär oder teilweise offen), weil davon die Bibliotheksauswahl abhängt.
