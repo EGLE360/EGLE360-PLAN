@@ -4,7 +4,7 @@ Stand: 16.10.2026
 
 ## Inhalt
 
-- `phase1/EGLE360_PLAN_Funktionsmatrix.xlsx` (und `.csv`): 272 Funktionen mit eindeutiger ID, Referenzpaket, Tastenkürzel der Referenz, Quelle, Verifizierungsstatus, Priorität, Phase, Abhängigkeiten, Akzeptanzkriterium und Implementierungsstatus. Tabellenblätter: Funktionsmatrix, Quellen, Legende, Übersicht.
+- `phase1/EGLE360_PLAN_Funktionsmatrix.xlsx` (und `.csv`): 300 Funktionen mit eindeutiger ID, Referenzpaket, Tastenkürzel der Referenz, Quelle, Verifizierungsstatus, Priorität, Phase, Abhängigkeiten, Akzeptanzkriterium und Implementierungsstatus. Tabellenblätter: Funktionsmatrix, Quellen, Legende, Übersicht.
 - `phase2/EGLE360_PLAN_Architektur.md`: Architekturentscheide mit Begründung zu Lizenz, Sicherheit, Leistung und Wartbarkeit.
 - `phase2/EGLE360_PLAN_Datenbankschema.sql`: PostgreSQL-Schema mit 44 Tabellen, gegen PostgreSQL 16 fehlerfrei eingespielt.
 - `brand/`: Logodateien, unverändert wie geliefert.
@@ -14,7 +14,8 @@ Stand: 16.10.2026
 1. Die offizielle Funktionsliste von Bluebeam (Revu 21, Pakete Basics, Core, Complete, Max) ist vollständig in die Matrix übernommen und mit Quelle belegt. Einzelwerkzeuge, Tastenkürzel, Markup-Listen-Spalten, Messwerkzeuge und das Stapelmenü stammen aus den offiziellen Hilfeseiten.
 2. Bluebeam hat keinen eigenen IFC-Viewer, keine Kollisionsprüfung, kein 4D/5D und kein BCF. Diese Bereiche sind in der Matrix als EGLE360-Erweiterung geführt.
 3. Smart Review und Smart Overlay (Bluebeam Max) sind laut offizieller FAQ im Preview-Status, laufen in der Cloud und unterstützen nur imperiale Maße. Für Österreich und Deutschland braucht EGLE360 metrische Prüfregeln nach ÖNORM/DIN.
-4. 14 Funktionen sind als ungeklärt markiert, weil die gesichteten Quellen sie nicht ausreichend beschreiben (z. B. Magic Wand, Synchronisierte Ansicht im Detail, Stapelnummerierung, Werkzeugset-Import aus Bluebeam).
+4. 15 Funktionen sind als ungeklärt markiert, weil die gesichteten Quellen sie nicht ausreichend beschreiben (z. B. Magic Wand, Synchronisierte Ansicht, Stapelnummerierung).
+5. Nachtrag 16.10.2026: Abgleich mit der installierten Revu 21.11 (`phase1/EGLE360_PLAN_Bluebeam-Abgleich_Revu21.md`) eingearbeitet. 4 Kürzel korrigiert, 28 Funktionen ergänzt (Verifizierung „Belegt durch lokale Installation Revu 21.11“), Profile geklärt, 6 ungeklärte Einträge mit Teilergebnissen versehen. Bestehende IDs sind unverändert, neue Einträge stehen jeweils am Ende ihres Moduls.
 
 ## Grenzen der Analyse
 

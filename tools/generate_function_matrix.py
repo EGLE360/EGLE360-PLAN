@@ -18,6 +18,7 @@ SOURCES = {
     "Q9": ("Bluebeam Support: Batch menu", "https://support.bluebeam.com/user-manual/menus/batch/batch-menu.html"),
     "Q10": ("Architosh (Sekundärquelle): AI-powered Bluebeam Max launches globally, Mai 2026", "https://architosh.com/2026/05/ai-powered-bluebeam-max-launches-globally/"),
     "MP": ("Master-Prompt EGLE360 PLAN (Projektthread, 16.10.2026)", "Projektthread"),
+    "Q11": ("Abgleich mit lokal installiertem Bluebeam Revu 21.11.0.23287 (Daten-, Konfigurations- und Vorlagendateien)", "phase1/EGLE360_PLAN_Bluebeam-Abgleich_Revu21.md"),
 }
 
 VER = {
@@ -25,6 +26,7 @@ VER = {
     "S": "Nur Sekundärquelle",
     "U": "Ungeklärt (nicht ausreichend dokumentiert)",
     "E": "EGLE360-Erweiterung (kein Referenzumfang)",
+    "L": "Belegt durch lokale Installation Revu 21.11",
 }
 PRIO = {"M": "MVP", "H": "Hoch", "N": "Später"}
 
@@ -394,13 +396,105 @@ mod("API", "Plattform", "Schnittstellen", 2, [
     ("Bluebeam Stapler (Referenz)", "Eigenständiges Stapel-Konvertierungstool", "Plug-in", "Basics", "", "Q1", "V", "N", "", ""),
 ])
 
+
+# --- Abgleich mit installiertem Revu 21.11 (16.10.2026) ---
+# Neue Einträge werden je Modul hinten angehängt, damit bestehende IDs stabil bleiben.
+ADDITIONS = {
+    "PDF-DOC": [
+        ("Lesezeichen-Vorlagen", "Vorlagen für Lesezeichenstrukturen (z. B. Baudokumente) speichern und anwenden", "Navigation", "unbekannt", "", "Q11", "L", "H", "PDF-DOC-019", ""),
+    ],
+    "PDF-VIEW": [
+        ("Zuletzt geschlossene Datei wieder öffnen", "Zuletzt geschlossene Dokumente wiederherstellen", "Dokument", "unbekannt", "Strg+Alt+O", "Q11", "L", "H", "", ""),
+        ("Nächste/vorige Datei im Ordner", "Benachbarte Datei im selben Ordner öffnen", "Navigation", "unbekannt", "Alt+Bild ab / Alt+Bild auf", "Q11", "L", "H", "", ""),
+        ("Web-Registerkarte", "Webseite als Registerkarte im Programm öffnen", "Ansicht", "Basics", "Strg+T", "Q4/Q11", "V", "N", "", ""),
+        ("Zoomfenster / Lupe", "Lupe bzw. Zoomwerkzeug umschalten", "Ansicht", "Basics", "Umschalt+Z", "Q4/Q11", "V", "H", "PDF-VIEW-005", ""),
+        ("Ansichten umschalten und ausgleichen", "Aktive Teilansicht wechseln, Teilansichten gleich groß machen", "Ansicht", "Basics", "Strg+1 / Umschalt+F12", "Q4/Q11", "V", "H", "PDF-VIEW-002", ""),
+        ("Navigationsleiste und Panels ein-/ausblenden", "Navigationsleiste und Seitenpanels umschalten", "Arbeitsbereich", "Basics", "F4 / Umschalt+F4", "Q4/Q11", "V", "M", "PDF-VIEW-012", "In EGLE360 seit Phase 3: F4 klappt die Hauptnavigation ein und aus"),
+        ("Datei-Manager-Panel", "Panel mit Dateizugriff innerhalb des Programms", "Arbeitsbereich", "Basics", "Alt+A", "Q4/Q11", "V", "H", "PDF-VIEW-012", ""),
+        ("Startseite", "Startseite mit zuletzt verwendeten Dateien und Projekten", "UI", "unbekannt", "F12", "Q11", "L", "H", "", ""),
+        ("Linienstärken ausblenden", "Darstellung aller Linien in Haarlinienstärke", "Ansicht", "unbekannt", "", "Q11", "L", "N", "", ""),
+    ],
+    "PDF-SEC": [
+        ("Vertraulichkeitsbezeichnungen (Microsoft Purview)", "Dokumente mit Vertraulichkeitsbezeichnungen lesen und schützen", "Sicherheit", "unbekannt", "", "Q11", "U", "N", "", "Nur aus Dateinamen von Bibliotheken vermutet; Funktion nicht belegt"),
+    ],
+    "PDF-OCR": [
+        ("Dateieigenschaften aus CAD übernehmen", "Zuordnung von CAD-Dateieigenschaften zu PDF-Metadaten bei der Erstellung", "Konvertierung", "Core", "", "Q11", "L", "N", "PDF-DOC-022", ""),
+        ("Druckertreiber-Profile für CAD-Programme", "Voreinstellungen u. a. für Inventor, MicroStation, NX, Pro/ENGINEER, DWF; PDF-Erstellung aus Outlook", "Konvertierung", "Basics/Core", "", "Q11", "L", "N", "PDF-OCR-004", ""),
+    ],
+    "PDF-FORM": [
+        ("Dokumentvorlagen", "Mitgelieferte Vorlagen (z. B. Baustellenbericht, Mängelliste, RFI, Memo, Rechnung), teils als Formular", "Vorlage", "unbekannt", "", "Q11", "L", "H", "PDF-FORM-001", "EGLE360: eigene Vorlagen nach AT/DE-Praxis erstellen"),
+    ],
+    "MKP-TOOL": [
+        ("Flaggen-Panel", "Panel mit allen markierten Flaggen", "Arbeitsbereich", "unbekannt", "", "Q11", "L", "N", "MKP-TOOL-026", ""),
+    ],
+    "MKP-EDIT": [
+        ("Markups neu aufbauen", "Darstellung der Markups aus den gespeicherten Daten neu erzeugen", "Bearbeitung", "unbekannt", "Strg+Alt+A", "Q11", "L", "N", "", ""),
+        ("Vervielfältigen", "Markup in Reihe oder Raster mehrfach kopieren", "Bearbeitung", "unbekannt", "Strg+M", "Q11", "L", "H", "", "Klärt teilweise MKP-EDIT-005"),
+        ("Gleiche Größe, Breite, Höhe; auf Seite zentrieren", "Mehrere Markups angleichen bzw. auf der Seite zentrieren", "Bearbeitung", "unbekannt", "", "Q11", "L", "H", "MKP-EDIT-007", ""),
+        ("Kontrollpunkte bearbeiten", "Kontrollpunkte hinzufügen, entfernen und zwischen Ecke und Bogen umwandeln", "CAD", "unbekannt", "", "Q11", "L", "M", "MKP-TOOL-010", ""),
+    ],
+    "MKP-LIST": [
+        ("Vorheriges/nächstes Markup ansteuern", "Mit Tabulator durch die Markups springen", "Navigation", "unbekannt", "Tab / Umschalt+Tab", "Q11", "L", "H", "", ""),
+    ],
+    "QTO": [
+        ("Magic Fill", "Messfläche durch Klick in eine Fläche automatisch erzeugen (Abgrenzung zu Dynamischer Füllung ungeklärt)", "Messung", "unbekannt", "Umschalt+Alt+M", "Q11", "L", "H", "QTO-016", "Verhältnis zu „Magic Wand“ (MKP-EDIT-023) nicht belegt"),
+    ],
+    "PLAN": [
+        ("Gewerk- und Disziplinkategorien", "Vordefinierte Kategorien mit Kürzeln für Plansätze", "Datenmodell", "unbekannt", "", "Q11", "L", "M", "PLAN-002", "EGLE360: Kategorien nach AT/DE-Gewerken"),
+    ],
+    "AUTO": [
+        ("Profil-Skripte", "Mehrschrittige Abläufe als Skript im Profil (z. B. vereinfachen und per E-Mail senden)", "Automatisierung", "unbekannt", "", "Q11", "L", "N", "AI-004", ""),
+    ],
+    "COL": [
+        ("Studio-Papierkorb", "Gelöschte Projektdateien wiederherstellen", "Kollaboration", "unbekannt", "", "Q11", "L", "H", "COL-002", "Nur über aktives Feature-Flag belegt"),
+        ("Revisionsverlauf von Projektdateien", "Frühere Fassungen einer Projektdatei einsehen und wiederherstellen", "Kollaboration", "unbekannt", "", "Q11", "L", "H", "COL-002", "Nur über aktives Feature-Flag belegt"),
+        ("Bedrohungserkennung beim Hochladen", "Hochgeladene Dateien auf Schadcode prüfen", "Sicherheit", "unbekannt", "", "Q11", "L", "H", "COL-002", "Nur über aktives Feature-Flag belegt"),
+        ("GoCanvas-Anbindung", "Integration mit GoCanvas (mobile Formulare)", "Integration", "unbekannt", "", "Q11", "L", "N", "", "Nur über aktives Feature-Flag belegt; für EGLE360 ohne Priorität"),
+        ("Länderspezifische Smart Search", "Suchfunktion mit Länderausprägung (u. a. Deutschland)", "Suche", "unbekannt", "", "Q11", "U", "N", "", "Nur Feature-Flags; Funktion aus den Dateien nicht erkennbar"),
+    ],
+}
+
+# Änderungen an bestehenden Einträgen: Spalte -> neuer Wert (Spaltennamen wie in HEAD)
+PATCHES = {
+    "PDF-DOC-004": {"Referenz-Kürzel": "Umschalt+F2", "Quelle": "Q11"},
+    "PDF-DOC-024": {"Anforderung": "Inhalt löschen, ausschneiden, radieren, Text ändern"},
+    "PDF-DOC-018": {"Akzeptanzkriterium / Hinweis": "Lesezeichen sind in Fremdviewern (Acrobat, PDF.js) funktionsfähig. Vorlagen siehe PDF-DOC-037"},
+    "PDF-OCR-006": {"Akzeptanzkriterium / Hinweis": "3D-PDF in Acrobat darstellbar. In 21.11 sind IFC- und U3D-Bibliotheken mitinstalliert (Q11)"},
+    "PDF-VIEW-013": {"Verifizierung": "L", "Quelle": "Q5/Q11", "Akzeptanzkriterium / Hinweis": "Layout auf anderem Rechner identisch wiederherstellbar. Referenz: Profile als XML (*.bpx) mit Spalten, Werkzeugleisten, Panels, Werkzeugsätzen, Status-Modellen, Skripten"},
+    "MKP-EDIT-009": {"Referenz-Kürzel": "Strg+] / Strg+Umschalt+] / Strg+[ / Strg+Umschalt+[", "Quelle": "Q11"},
+    "MKP-EDIT-016": {"Referenz-Kürzel": "Strg+Umschalt+F8 (Inhalt) / Strg+Umschalt+F7 (Markup) / Strg+Umschalt+F9 (Raster)"},
+    "MKP-EDIT-019": {"Referenz-Kürzel": "O laut Online-Liste (Q4), in 21.11 nicht belegt", "Quelle": "Q4/Q11"},
+    "MKP-EDIT-005": {"Akzeptanzkriterium / Hinweis": "Teilweise geklärt: kein eigener Befehl in 21.11, dort „Vervielfältigen“ (MKP-EDIT-025, Strg+M)"},
+    "MKP-EDIT-023": {"Akzeptanzkriterium / Hinweis": "Teilweise geklärt: in 21.11 nicht vorhanden, dort „Magic Fill“ (QTO-022). Ob identisch, ist nicht belegt"},
+    "MKP-TOOL-023": {"Akzeptanzkriterium / Hinweis": "Dynamische Felder korrekt aufgelöst. Referenz liefert 13 deutsche Standardstempel; EGLE360 erstellt eigene"},
+    "MKP-TOOL-027": {"Anforderung": "Foto, Video, Audio, 360-Grad-Foto an Markups anhängen; Bild von Kamera", "Quelle": "Q1/Q4/Q7/Q11"},
+    "MKP-TOOL-035": {"Anforderung": "Kalibrierte Markups mit Längen-/Winkeleingabe zeichnen, für Linie, Polylinie, Rechteck, Ellipse und Polygon", "Quelle": "Q1/Q11"},
+    "MKP-TOOL-037": {"Anforderung": "Rechtschreibprüfung für Markup-Texte (Deutsch AT/DE); Referenz liefert Wörterbücher in 15 Sprachen"},
+    "CMP-003": {"Akzeptanzkriterium / Hinweis": "Teilweise geklärt: Bibliothek für automatische Ausrichtung in 21.11 vorhanden (nur Dateiname); manuelle Ausrichtung lokal nicht beschrieben"},
+    "CMP-004": {"Akzeptanzkriterium / Hinweis": "Bibliothek „Autoalignment“ in 21.11 vorhanden (nur Dateiname, Vermutung)"},
+    "PDF-FORM-003": {"Akzeptanzkriterium / Hinweis": "Rundlauf ohne Datenverlust. Teilweise geklärt: FDF-Dateisymbol in 21.11 deutet auf FDF-Unterstützung (Vermutung); XFDF, XML, CSV nicht belegt"},
+    "TOOL-003": {"Akzeptanzkriterium / Hinweis": "Technisch geklärt: BTX ist XML mit zlib-komprimierten, hex-kodierten Feldern und PDF-Annotationswörterbüchern; Import machbar. Rechtliche Zulässigkeit weiterhin offen"},
+    "AI-001": {"Akzeptanzkriterium / Hinweis": "Schreibende Aktionen erst nach Benutzerfreigabe. In 21.11 ist ein MCP-Server mitinstalliert (Q11)"},
+    "COL-002": {"Akzeptanzkriterium / Hinweis": "Zuordnung von Alt+K zum Projekte-Panel nur vermutet (Q11)"},
+}
+
+for prefix, bereich, modul, phase, rs in M:
+    rs.extend(ADDITIONS.pop(prefix, []))
+assert not ADDITIONS, f"Unbekannte Module: {list(ADDITIONS)}"
+
 # --- Erzeugung ---
 HEAD = ["ID", "Bereich", "Modul", "Funktion", "Anforderung", "Art", "Referenz-Paket (Bluebeam)", "Referenz-Kürzel", "Quelle", "Verifizierung", "Priorität", "Phase", "Abhängigkeiten", "Akzeptanzkriterium / Hinweis", "Implementierungsstatus"]
 rows = []
 for prefix, bereich, modul, phase, rs in M:
     for i, r in enumerate(rs, 1):
         f, desc, art, paket, kz, q, v, p, dep, acc = r
-        rows.append([f"{prefix}-{i:03d}", bereich, modul, f, desc, art, paket or "nicht in Referenz", kz, q, VER[v], PRIO[p], phase, dep, acc, "Offen"])
+        rows.append([f"{prefix}-{i:03d}", bereich, modul, f, desc, art, paket or "nicht in Referenz", kz, q, v, PRIO[p], phase, dep, acc, "Offen"])
+
+for r in rows:
+    for col, val in PATCHES.pop(r[0], {}).items():
+        r[HEAD.index(col)] = val
+    r[9] = VER[r[9]]
+assert not PATCHES, f"Unbekannte IDs: {list(PATCHES)}"
 
 wb = Workbook()
 ws = wb.active
