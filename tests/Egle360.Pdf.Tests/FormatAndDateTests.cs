@@ -60,3 +60,31 @@ public class FormatAndDateTests
         Assert.Null(PdfDocument.ParsePdfDate(value));
     }
 }
+
+public class PageRangeTests
+{
+    [Theory]
+    [InlineData("1", "1", 1)]
+    [InlineData(" 1 - 3 , 5 ", "1-3,5", 4)]
+    [InlineData("2-2,4", "2,4", 2)]
+    [InlineData("1-10", "1-10", 10)]
+    public void ValidRanges(string input, string expected, int count)
+    {
+        var normalized = PageRange.Normalize(input, 10);
+        Assert.Equal(expected, normalized);
+        Assert.Equal(count, PageRange.Count(normalized));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("a")]
+    [InlineData("0")]
+    [InlineData("11")]
+    [InlineData("5-3")]
+    [InlineData("1,,2")]
+    [InlineData("1-")]
+    public void InvalidRanges(string input)
+    {
+        Assert.Throws<FormatException>(() => PageRange.Normalize(input, 10));
+    }
+}

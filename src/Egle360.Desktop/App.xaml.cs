@@ -25,6 +25,7 @@ public partial class App : Application
         if (screenshotDir is null)
         {
             window.Show();
+            window.OpenDocuments(e.Args.Where(a => a.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) && File.Exists(a)));
             return;
         }
 

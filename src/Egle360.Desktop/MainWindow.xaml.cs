@@ -20,6 +20,8 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         // Nur funktionsfähige Module werden registriert. Weitere Module folgen in den nächsten Phasen.
+        // Die Dokumentansicht bleibt beim Wechseln erhalten, damit geöffnete Dokumente offen bleiben.
+        Register(new NavigationEntry("documents", "Dokumente", "\uE8A5"), () => Documents);
         Register(new NavigationEntry("design", "Designsystem", ""), () => new DesignSystemView());
         Register(new NavigationEntry("settings", "Einstellungen", "", NavigationGroup.Footer), () => new SettingsView());
 
@@ -28,10 +30,35 @@ public partial class MainWindow : Window
             PageHost.Content = _pages[entry.Id]();
             _buttons[entry.Id].IsChecked = true;
         };
-        _navigation.Select("design");
+        _navigation.Select("documents");
+        Closing += (_, e) =>
+        {
+            if (_documents is not null && !_documents.ConfirmCloseAll())
+            {
+                e.Cancel = true;
+            }
+        };
+        Closed += (_, _) => _documents?.Dispose();
 
         ApplyCollapsed(App.Theme.Settings.NavigationCollapsed);
         PreviewKeyDown += OnPreviewKeyDown;
+    }
+
+    private DocumentsView? _documents;
+
+    /// <summary>Die Dokumentansicht wird beim ersten Aufruf angelegt und danach wiederverwendet.</summary>
+    public DocumentsView Documents => _documents ??= new DocumentsView();
+
+    /// <summary>Öffnet PDF-Dateien, z. B. aus der Befehlszeile, und zeigt die Dokumentansicht.</summary>
+    public void OpenDocuments(IEnumerable<string> paths)
+    {
+        var list = paths.ToList();
+        if (list.Count == 0)
+        {
+            return;
+        }
+        ShowPage("documents");
+        Documents.OpenFiles(list);
     }
 
     public IEnumerable<string> PageIds => _navigation.Entries.Select(e => e.Id);
