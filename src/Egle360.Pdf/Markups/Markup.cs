@@ -29,6 +29,7 @@ public enum MarkupKind
     Radius,
     Diameter,
     Callout,
+    Typewriter,
 }
 
 /// <summary>Punkt im PDF-Benutzerkoordinatensystem (Punkt, y nach oben, ohne Seitendrehung).</summary>
@@ -90,6 +91,7 @@ public sealed record MarkupStyle(PdfColor Stroke, PdfColor? Fill, double Opacity
         MarkupKind.Highlight => new MarkupStyle(new PdfColor(255, 220, 0), new PdfColor(255, 220, 0), 0.4, 0),
         MarkupKind.Note => new MarkupStyle(new PdfColor(40, 40, 40), new PdfColor(255, 214, 10), 1, 0.75),
         MarkupKind.TextBox => new MarkupStyle(new PdfColor(200, 30, 30), null, 1, 1, 12),
+        MarkupKind.Typewriter => new MarkupStyle(new PdfColor(30, 30, 30), null, 1, 0, 12),
         MarkupKind.Callout => new MarkupStyle(new PdfColor(200, 30, 30), PdfColor.White, 1, 1, 12),
         MarkupKind.Stamp => new MarkupStyle(StampPreset.Defaults[0].Color, null, 0.9, 2, 14),
         _ when MarkupKinds.IsMeasurement(kind) => new MarkupStyle(new PdfColor(22, 119, 210), null, 1, 1.5, 10),
@@ -180,11 +182,12 @@ public static class MarkupKinds
         MarkupKind.Radius => "Radius",
         MarkupKind.Diameter => "Durchmesser",
         MarkupKind.Callout => "Sprechblase",
+        MarkupKind.Typewriter => "Schreibmaschine",
         _ => kind.ToString(),
     };
 
     /// <summary>Arten, die durch Aufziehen eines Rechtecks entstehen.</summary>
-    public static bool IsBox(MarkupKind kind) => kind is MarkupKind.Rectangle or MarkupKind.Ellipse or MarkupKind.TextBox or MarkupKind.Highlight or MarkupKind.Stamp;
+    public static bool IsBox(MarkupKind kind) => kind is MarkupKind.Rectangle or MarkupKind.Ellipse or MarkupKind.TextBox or MarkupKind.Highlight or MarkupKind.Stamp or MarkupKind.Typewriter;
 
     /// <summary>Arten mit beliebig vielen Eckpunkten, die per Klick gesetzt werden.</summary>
     public static bool IsMultiPoint(MarkupKind kind) =>
@@ -215,10 +218,10 @@ public static class MarkupKinds
         _ => IsClosed(kind) ? 3 : 2,
     };
 
-    public static bool HasText(MarkupKind kind) => kind is MarkupKind.TextBox or MarkupKind.Note or MarkupKind.Stamp or MarkupKind.Callout;
+    public static bool HasText(MarkupKind kind) => kind is MarkupKind.TextBox or MarkupKind.Note or MarkupKind.Stamp or MarkupKind.Callout or MarkupKind.Typewriter;
 
     /// <summary>Arten mit Textrahmen, der beim Bearbeiten des Textes nach unten mitwächst.</summary>
-    public static bool HasTextFrame(MarkupKind kind) => kind is MarkupKind.TextBox or MarkupKind.Callout;
+    public static bool HasTextFrame(MarkupKind kind) => kind is MarkupKind.TextBox or MarkupKind.Callout or MarkupKind.Typewriter;
 
     /// <summary>Größe des Notizsymbols in Punkt.</summary>
     public const double NoteSize = 20;

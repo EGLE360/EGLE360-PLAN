@@ -55,7 +55,7 @@ public static class MarkupGeometry
                 }
                 layers.Add(new ShapeLayer(ink, s.Stroke, w, null));
                 break;
-            case MarkupKind.TextBox or MarkupKind.Callout when pts.Count >= 2:
+            case MarkupKind.TextBox or MarkupKind.Callout or MarkupKind.Typewriter when pts.Count >= 2:
                 if (m.Kind == MarkupKind.Callout && m.Paths.Count >= 2 && m.Paths[1].Count >= 1)
                 {
                     // Pfeillinie zuerst, damit der Textrahmen sie überdeckt, wenn die Spitze im Rahmen liegt.
@@ -505,7 +505,7 @@ public static class MarkupGeometry
         {
             return false;
         }
-        var areaCounts = m.Kind is MarkupKind.TextBox or MarkupKind.Note or MarkupKind.Highlight or MarkupKind.Count or MarkupKind.Stamp or MarkupKind.Callout;
+        var areaCounts = m.Kind is MarkupKind.TextBox or MarkupKind.Note or MarkupKind.Highlight or MarkupKind.Count or MarkupKind.Stamp or MarkupKind.Callout or MarkupKind.Typewriter;
         foreach (var layer in shape.Layers)
         {
             var figures = layer.Path.Flatten().ToList();

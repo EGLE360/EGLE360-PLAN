@@ -164,3 +164,20 @@ public class CalloutTests
         Assert.Equal(local, frame.ToLocal(frame.ToUser(local)));
     }
 }
+
+/// <summary>Schreibmaschinentext ohne Rahmen.</summary>
+public class TypewriterTests
+{
+    [Fact]
+    public void Schreibmaschine_ohne_Rahmen_als_FreeTextTypeWriter()
+    {
+        var drawing = new MarkupDrawing(MarkupKind.Typewriter, MarkupStyle.DefaultFor(MarkupKind.Typewriter), "Prüfer", 0, 4);
+        drawing.Press(new PdfPoint(100, 300));
+        var m = drawing.Release(new PdfPoint(100, 300))!.WithText("Maß vor Ort prüfen");
+        var shape = MarkupGeometry.BuildShape(m, new BlockTextOutliner());
+        Assert.All(shape.Layers.Where(l => !l.IsText), l => Assert.Null(l.Stroke));
+        Assert.Single(shape.Layers, l => l.IsText);
+        Assert.True(MarkupGeometry.HitTest(m, new PdfPoint(110, 290), 0.5));
+        Assert.Equal("<</IT /FreeTextTypeWriter>>", MarkupSerializer.StandardEntries(m));
+    }
+}

@@ -108,7 +108,7 @@ MKP-TOOL-010;Markups;Markup-Werkzeuge;Kurven;Segmente in Bögen umwandeln, autom
 MKP-TOOL-011;Markups;Markup-Werkzeuge;Revisionswolke;Wolke um Bereich;Werkzeug;Basics;C;Q4;Verifiziert (offizielle Bluebeam-Quelle);MVP;4;;Bogengröße einstellbar;Umgesetzt (Phase 4, Teil 2)
 MKP-TOOL-012;Markups;Markup-Werkzeuge;Wolke mit Legende (Cloud+);Wolke mit verbundenem Sprechblasentext;Werkzeug;Basics;K;Q4;Verifiziert (offizielle Bluebeam-Quelle);MVP;4;;;Offen
 MKP-TOOL-013;Markups;Markup-Werkzeuge;Textfeld;Textfeld, automatische Größe;Werkzeug;Basics;T / Alt+Z;Q4;Verifiziert (offizielle Bluebeam-Quelle);MVP;4;;Rich Text, Umlaute, Schriftarten eingebettet oder Fallback;Umgesetzt (Phase 4, Teil 2)
-MKP-TOOL-014;Markups;Markup-Werkzeuge;Schreibmaschine;Text ohne Rahmen direkt auf Plan;Werkzeug;Basics;W;Q4;Verifiziert (offizielle Bluebeam-Quelle);MVP;4;;;Offen
+MKP-TOOL-014;Markups;Markup-Werkzeuge;Schreibmaschine;Text ohne Rahmen direkt auf Plan;Werkzeug;Basics;W;Q4;Verifiziert (offizielle Bluebeam-Quelle);MVP;4;;;Umgesetzt (Phase 5, Teil 2): als FreeTextTypeWriter gespeichert
 MKP-TOOL-015;Markups;Markup-Werkzeuge;Sprechblase (Callout);Text mit Führungslinie;Werkzeug;Basics;Q;Q4;Verifiziert (offizielle Bluebeam-Quelle);MVP;4;;;Umgesetzt (Phase 5, Teil 2): Textfeld mit Pfeillinie, als FreeTextCallout gespeichert
 MKP-TOOL-016;Markups;Markup-Werkzeuge;Notiz;Notizsymbol mit Popup;Werkzeug;Basics;N;Q4;Verifiziert (offizielle Bluebeam-Quelle);MVP;4;;;Umgesetzt (Phase 4, Teil 2)
 MKP-TOOL-017;Markups;Markup-Werkzeuge;Bemaßung;Bemaßungslinie (nicht messend, beschriftend);Werkzeug;Basics;Umschalt+L;Q4;Verifiziert (offizielle Bluebeam-Quelle);Hoch;4;;;Umgesetzt (Phase 5, Teil 2): Maßlinie mit Pfeilen, Zahl über der Linie, nach Seitenmaßstab

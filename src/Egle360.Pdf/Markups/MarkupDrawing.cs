@@ -128,7 +128,7 @@ public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string aut
             MarkupKind.Note => Complete([new[] { start }]),
             MarkupKind.Stamp when !dragged => Complete([StampAt(start)]),
             MarkupKind.Callout => Complete(CalloutPaths(start, p, dragged)),
-            MarkupKind.TextBox when !dragged => Complete([new[] { start, new TextFrame(start, pageRotation, 0, 0).ToUser(new PdfPoint(DefaultTextBox.Width, DefaultTextBox.Height)) }]),
+            MarkupKind.TextBox or MarkupKind.Typewriter when !dragged => Complete([new[] { start, new TextFrame(start, pageRotation, 0, 0).ToUser(new PdfPoint(DefaultTextBox.Width, DefaultTextBox.Height)) }]),
             _ when !dragged => Complete(null),
             _ => Complete([new[] { start, p }]),
         };

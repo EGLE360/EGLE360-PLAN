@@ -131,6 +131,7 @@ public static class MarkupSerializer
             // Für Radius und Durchmesser gibt es keine eigene PDF-Messart; die gemessene Strecke ist eine Länge.
             MarkupKind.Radius or MarkupKind.Diameter when pts.Count >= 2 =>
                 $"<</Subtype /Line /L [{N(pts[0].X)} {N(pts[0].Y)} {N(pts[1].X)} {N(pts[1].Y)}] /IT /LineDimension{MeasureEntry(m)}>>",
+            MarkupKind.Typewriter => "<</IT /FreeTextTypeWriter>>",
             MarkupKind.Callout when pts.Count >= 2 && m.Paths.Count >= 2 && m.Paths[1].Count > 0 => CalloutEntries(m),
             MarkupKind.Angle => $"<</Subtype /PolyLine /Vertices {Vertices()}>>",
             MarkupKind.Polylength => $"<</Subtype /PolyLine /Vertices {Vertices()} /IT /PolyLineDimension{MeasureEntry(m)}>>",
