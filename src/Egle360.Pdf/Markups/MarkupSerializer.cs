@@ -63,8 +63,8 @@ public static class MarkupSerializer
             AppendPath(sb, layer.Path);
             sb.Append(layer switch
             {
-                { Fill: not null, Stroke: not null } => "B\n",
-                { Fill: not null } => "f\n",
+                { Fill: not null, Stroke: not null } => layer.EvenOdd ? "B*\n" : "B\n",
+                { Fill: not null } => layer.EvenOdd ? "f*\n" : "f\n",
                 _ => "S\n",
             });
             sb.Append("Q\n");

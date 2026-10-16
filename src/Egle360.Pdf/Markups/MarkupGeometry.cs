@@ -80,7 +80,13 @@ public static class MarkupGeometry
                 AddLabel(layers, m, PointAlong(pts, Measurement.PathLength(pts, false) / 2), outliner);
                 break;
             case MarkupKind.Perimeter or MarkupKind.Area when pts.Count >= 2:
-                layers.Add(new ShapeLayer(new PathData().Polyline(pts, true), stroke, w, fill));
+                // Bei Flächen sind weitere Pfade Ausschnitte, die abgezogen und ausgespart werden.
+                var contour = new PathData();
+                foreach (var path in m.Kind == MarkupKind.Area ? m.Paths.Where(p => p.Count >= 2) : [pts])
+                {
+                    contour.Polyline(path, true);
+                }
+                layers.Add(new ShapeLayer(contour, stroke, w, fill, EvenOdd: true));
                 AddLabel(layers, m, pts.Count >= 3 ? Centroid(pts) : PointAlong(pts, Measurement.PathLength(pts, false) / 2), outliner);
                 break;
             case MarkupKind.Count when pts.Count >= 1:
@@ -288,9 +294,14 @@ public static class MarkupGeometry
         var areaCounts = m.Kind is MarkupKind.TextBox or MarkupKind.Note or MarkupKind.Highlight or MarkupKind.Count;
         foreach (var layer in shape.Layers)
         {
-            foreach (var (points, closed) in layer.Path.Flatten())
+            var figures = layer.Path.Flatten().ToList();
+            if (layer.EvenOdd && layer.Fill is not null && figures.Count(f => f.Closed && PointInPolygon(f.Points, p)) % 2 == 1)
             {
-                if ((areaCounts || layer.Fill is not null) && closed && PointInPolygon(points, p))
+                return true;
+            }
+            foreach (var (points, closed) in figures)
+            {
+                if ((areaCounts || layer.Fill is not null) && !layer.EvenOdd && closed && PointInPolygon(points, p))
                 {
                     return true;
                 }
@@ -385,7 +396,7 @@ public static class MarkupGeometry
         }
         if (UsesVertexHandles(m.Kind))
         {
-            return m.Points;
+            return m.Paths.SelectMany(p => p).ToArray();
         }
         var r = HandleRect(m);
         return BoxHandles.Select(h => new PdfPoint(r.Left + h.X * r.Width, r.Bottom + h.Y * r.Height)).ToArray();
@@ -400,13 +411,22 @@ public static class MarkupGeometry
     {
         if (UsesVertexHandles(m.Kind))
         {
-            if (handle < 0 || handle >= m.Points.Count)
+            // Griffnummern laufen über alle Pfade (Ausschnitte einer Fläche folgen der Außenkontur).
+            var paths = m.Paths.Select(p => p.ToArray()).ToArray();
+            foreach (var path in paths)
             {
-                return m;
+                if (handle < path.Length)
+                {
+                    if (handle < 0)
+                    {
+                        return m;
+                    }
+                    path[handle] = to;
+                    return m.WithPaths(paths);
+                }
+                handle -= path.Length;
             }
-            var pts = m.Points.ToArray();
-            pts[handle] = to;
-            return m.WithPaths([pts]);
+            return m;
         }
         if (m.Kind == MarkupKind.Note || handle < 0 || handle >= BoxHandles.Length)
         {

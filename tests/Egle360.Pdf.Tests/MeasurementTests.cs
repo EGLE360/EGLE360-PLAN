@@ -188,4 +188,39 @@ public class MeasurementTests
         drawing.Release(new PdfPoint(10, 10));
         Assert.Equal(new PdfPoint(10, 10), drawing.Anchor);
     }
+
+    [Fact]
+    public void Flaeche_mit_Ausschnitt()
+    {
+        var s = MeasureScale.FromRatio(50);
+        PdfPoint P(double x, double y) => new(x * MeterAt50, y * MeterAt50);
+        IReadOnlyList<PdfPoint> outer = [P(0, 0), P(10, 0), P(10, 10), P(0, 10)];
+        IReadOnlyList<PdfPoint> hole = [P(2, 2), P(4, 2), P(4, 4), P(2, 4)];
+        var area = Markup.Create(MarkupKind.Area, [outer, hole], MarkupStyle.DefaultFor(MarkupKind.Area) with { Fill = new PdfColor(200, 220, 255) }, "Prüfer") with { Scale = s };
+        Assert.Equal(96.0, Measurement.Compute(area)!.Value.Value, 6);
+        Assert.Equal("96,00 m², Umfang 40,00 m, 1 Ausschnitt abgezogen", Measurement.Describe(area));
+
+        Assert.Equal(8, MarkupGeometry.Handles(area).Count);
+        var moved = MarkupGeometry.DragHandle(area, 5, P(5, 2));
+        Assert.Equal(P(5, 2), moved.Paths[1][1]);
+        Assert.Equal(outer, moved.Paths[0]);
+        Assert.Equal(95.0, Measurement.Compute(moved)!.Value.Value, 6);
+
+        // Im Ausschnitt trifft ein Klick die gefüllte Fläche nicht.
+        Assert.False(MarkupGeometry.HitTest(area, P(3, 3), 0.5));
+        Assert.True(MarkupGeometry.HitTest(area, P(7, 7), 0.5));
+        Assert.Contains("B*", MarkupSerializer.AppearanceStream(MarkupGeometry.BuildShape(area, null)));
+
+        using var dir = new TempDir();
+        using (var doc = PdfDocument.CreateNew())
+        {
+            doc.InsertBlankPage(0, 842, 595);
+            doc.SetMarkups(0, [area], Text);
+            doc.SaveAs(dir.File("ausschnitt.pdf"));
+        }
+        using var reopened = PdfDocument.Open(dir.File("ausschnitt.pdf"));
+        var read = Assert.Single(reopened.GetMarkups(0));
+        Assert.Equal(2, read.Paths.Count);
+        Assert.Equal(96.0, Measurement.Compute(read)!.Value.Value, 3);
+    }
 }

@@ -511,6 +511,7 @@ for prefix, bereich, modul, phase, rs in M:
 
 # Umsetzungsstand aus Phase 4 (Teil 2) und Phase 5 (Teil 1).
 STATUS = {
+    "PDF-DOC-031": "Teilweise (Phase 4, Teil 2): Drucken über den Windows-Druckdialog mit Seitenauswahl, eingepasst",
     "PDF-VIEW-015": "Umgesetzt (Phase 4, Teil 2): Suche über alle Seiten, Trefferliste, Hervorhebung, F3",
     "PDF-VIEW-012": "Teilweise (Phase 4, Teil 2): Seitenleiste mit Miniaturen, Lesezeichen und Suche; Markierungsliste unten",
     "PDF-VIEW-020": "Teilweise (Phase 4, Teil 2): Kontextmenüs für Miniaturen und Markierungen",
@@ -543,6 +544,7 @@ STATUS = {
     "QTO-003": "Umgesetzt (Phase 5, Teil 1)",
     "QTO-004": "Umgesetzt (Phase 5, Teil 1)",
     "QTO-005": "Umgesetzt (Phase 5, Teil 1): Fläche mit Umfang",
+    "QTO-009": "Umgesetzt (Phase 5, Teil 1): Ausschnitte per Rechtsklick auf eine Fläche",
     "QTO-012": "Umgesetzt (Phase 5, Teil 1)",
     "QTO-017": "Umgesetzt (Phase 5, Teil 1)",
     "QTO-019": "Teilweise (Phase 5, Teil 1): Summen in der Liste und für ausgewählte Messungen",

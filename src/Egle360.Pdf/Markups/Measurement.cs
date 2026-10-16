@@ -101,9 +101,17 @@ public static class Measurement
         {
             MarkupKind.Length or MarkupKind.Polylength => new MeasureValue(PathLength(pts, closed: false) * f, sym),
             MarkupKind.Perimeter => new MeasureValue(PathLength(pts, closed: true) * f, sym),
-            MarkupKind.Area => new MeasureValue(Math.Abs(MarkupGeometry.SignedArea(pts)) * f * f, sym + "²", PathLength(pts, closed: true) * f, sym),
+            MarkupKind.Area => new MeasureValue(NetArea(m) * f * f, sym + "²", PathLength(pts, closed: true) * f, sym),
             _ => null,
         };
+    }
+
+    /// <summary>Fläche in Punkt² ohne die Ausschnitte (weitere Pfade der Markierung).</summary>
+    public static double NetArea(Markup m)
+    {
+        var outer = Math.Abs(MarkupGeometry.SignedArea(m.Points));
+        var holes = m.Paths.Skip(1).Where(p => p.Count >= 3).Sum(p => Math.Abs(MarkupGeometry.SignedArea(p)));
+        return Math.Max(0, outer - holes);
     }
 
     public static double PathLength(IReadOnlyList<PdfPoint> pts, bool closed)
@@ -144,7 +152,9 @@ public static class Measurement
         var label = Label(m);
         if (Compute(m) is { Perimeter: { } p, PerimeterUnit: { } pu } && m.Scale is { } s)
         {
-            return $"{label}, Umfang {Number(p, Decimals(s.Unit))} {pu}";
+            var cutouts = m.Paths.Count - 1;
+            var suffix = cutouts switch { <= 0 => "", 1 => ", 1 Ausschnitt abgezogen", _ => $", {cutouts} Ausschnitte abgezogen" };
+            return $"{label}, Umfang {Number(p, Decimals(s.Unit))} {pu}{suffix}";
         }
         return label;
     }

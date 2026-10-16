@@ -48,6 +48,16 @@ public sealed partial class PdfViewer
     /// <summary>Kalibrierstrecke gesetzt: Seite und Länge der Strecke in Punkt.</summary>
     public event EventHandler<(int Page, double LengthPt)>? CalibrationMeasured;
 
+    /// <summary>Fläche, zu der gerade ein Ausschnitt gezeichnet wird.</summary>
+    private (int Page, string Id)? _cutout;
+
+    /// <summary>Zeichnet als Nächstes ein Polygon, das von der Fläche abgezogen wird.</summary>
+    public void StartCutout(int page, string id)
+    {
+        SetTool(ViewerTool.Draw, MarkupKind.Polygon);
+        _cutout = (page, id);
+    }
+
     /// <summary>Art, die beim aktuellen Werkzeug gezeichnet wird; beim Kalibrieren eine einfache Linie.</summary>
     private MarkupKind EffectiveKind => _tool == ViewerTool.Calibrate ? MarkupKind.Line : DrawKind;
 
@@ -75,6 +85,7 @@ public sealed partial class PdfViewer
     public void SetTool(ViewerTool tool, MarkupKind? kind = null)
     {
         CancelDrawing();
+        _cutout = null;
         _tool = tool;
         if (kind is { } k)
         {
@@ -562,6 +573,17 @@ public sealed partial class PdfViewer
             CalibrationMeasured?.Invoke(this, (page, markup.Points[0].DistanceTo(markup.Points[1])));
             return;
         }
+        if (_cutout is { } cut)
+        {
+            SetTool(ViewerTool.Select);
+            var area = _document?.GetMarkups(cut.Page).FirstOrDefault(m => m.Id == cut.Id);
+            if (area is not null && cut.Page == page)
+            {
+                Run(() => _history.Replace(page, area.WithPaths([.. area.Paths, markup.Points]), "Ausschnitt hinzufügen"));
+                Select(page, area.Id);
+            }
+            return;
+        }
         if (!Run(() => _history.Add(page, markup)))
         {
             return;
@@ -618,6 +640,15 @@ public sealed partial class PdfViewer
         }
         Add(MarkupKinds.HasText(markup.Kind) ? "Text bearbeiten …" : "Kommentar bearbeiten …", () => EditTextRequested?.Invoke(this, (page, markup)), editable);
         menu.Items.Add(new Separator());
+        if (markup.Kind == MarkupKind.Area)
+        {
+            Add("Ausschnitt hinzufügen", () => StartCutout(page, markup.Id), editable);
+            if (markup.Paths.Count > 1)
+            {
+                Add("Ausschnitte entfernen", () => Run(() => _history!.Replace(page, markup.WithPaths([markup.Points]), "Ausschnitte entfernen")), editable);
+            }
+            menu.Items.Add(new Separator());
+        }
         Add("Kopieren (Strg+C)", CopySelection);
         Add("Duplizieren (Strg+D)", DuplicateSelection, editable);
         menu.Items.Add(new Separator());

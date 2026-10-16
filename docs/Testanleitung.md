@@ -32,6 +32,7 @@ Im Startbildschirm „Beispielplan öffnen“ wählen. Das ist ein frei erfunden
 - Seiten drehen, verschieben, löschen, leere Seite einfügen, Seiten aus einem anderen PDF einfügen, Seiten als neues PDF speichern (Werkzeugleiste oben oder Rechtsklick auf eine Miniatur).
 - Dokumenteigenschaften ansehen.
 - Speichern (Strg+S), Speichern unter (Strg+Umschalt+S).
+- Drucken (Strg+P) über den Windows-Druckdialog, mit Seitenauswahl. Jede Seite wird auf das Papier eingepasst, quer liegende Pläne werden auf Hochformat gedreht. Zum Ausprobieren ohne Drucker eignet sich „Microsoft Print to PDF“.
 
 ### Textsuche
 - Strg+F öffnet die Suche in der Seitenleiste. Begriff eingeben, Eingabetaste.
@@ -71,6 +72,7 @@ Rechts in der Markierungsleiste sitzen die Messwerkzeuge und die Schaltfläche f
    - Länge: Strecke aufziehen.
    - Polylänge: Punkte klicken, beenden mit Doppelklick, Eingabetaste oder Rechtsklick.
    - Umfang und Fläche: Eckpunkte klicken, beenden wie bei der Polylänge. Die Fläche zeigt zusätzlich den Umfang in der Statuszeile.
+   - Ausschnitt: Rechtsklick auf den Rand oder die Beschriftung einer Fläche, „Ausschnitt hinzufügen“, dann das abzuziehende Polygon zeichnen (zum Beispiel einen Schacht). Der Wert wird um den Ausschnitt verringert.
    - Anzahl: jedes Objekt anklicken, mit Eingabetaste beenden. Braucht keinen Maßstab.
 3. Der Wert steht als Beschriftung im Plan und ändert sich live beim Ziehen an den Eckpunkten.
 4. Wird der Maßstab einer Seite geändert, übernehmen die vorhandenen Messungen auf dieser Seite ihn. Rückgängig nimmt das zurück.
@@ -88,9 +90,9 @@ Zum Ausprobieren im Beispielplan: Die Küche ist 10 m × 10 m, die Fläche muss 
 
 Diese Punkte sind geplant, aber noch nicht enthalten:
 
-- Drucken, geteilte und synchronisierte Ansichten, Metadaten bearbeiten.
+- Drucken in Originalgröße oder gekachelt, geteilte und synchronisierte Ansichten, Metadaten bearbeiten.
 - Stempel, Unterschriften, Unterstreichen und Durchstreichen von Text, Bemaßungslinien, Drehen von Markierungen.
-- Messungen: Volumen, Wandflächen, Ausschnitte (Abzüge), Winkel, Radius, Objektfang, Kostenansätze, Excel als XLSX und die Übernahme in EGLE360 AVA.
+- Messungen: Volumen, Wandflächen, Winkel, Radius, Objektfang, Kostenansätze, Excel als XLSX und die Übernahme in EGLE360 AVA.
 - Ob Bluebeam die gespeicherten Messungen als Messungen (mit Wert in der Markups-Liste) erkennt, ist noch nicht geprüft. Die Datei enthält dafür die genormten PDF-Messangaben; im Plan sind die Messungen in jedem Fall sichtbar.
 - BIM, 4D/5D, KI-Funktionen und die AVA-Anbindung folgen in späteren Phasen.
 - Programmsymbol, digitale Signatur und Installationsprogramm.

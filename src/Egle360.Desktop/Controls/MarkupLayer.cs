@@ -212,7 +212,7 @@ public sealed class MarkupLayer : FrameworkElement
             Shape = shape;
             foreach (var layer in shape.Layers)
             {
-                var geometry = ToGeometry(layer.Path);
+                var geometry = ToGeometry(layer.Path, layer.EvenOdd);
                 Pen? pen = layer.Stroke is { } s
                     ? new Pen(Brush(s), layer.StrokeWidth) { LineJoin = PenLineJoin.Round, StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round }
                     : null;
@@ -235,9 +235,9 @@ public sealed class MarkupLayer : FrameworkElement
             return b;
         }
 
-        private static Geometry ToGeometry(PathData path)
+        private static Geometry ToGeometry(PathData path, bool evenOdd)
         {
-            var g = new StreamGeometry { FillRule = FillRule.Nonzero };
+            var g = new StreamGeometry { FillRule = evenOdd ? FillRule.EvenOdd : FillRule.Nonzero };
             using (var ctx = g.Open())
             {
                 foreach (var f in path.Figures)

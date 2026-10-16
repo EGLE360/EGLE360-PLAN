@@ -168,7 +168,8 @@ public sealed class PathData
 
 /// <summary>Eine Zeichenebene einer Markierung: Pfad mit Linie und/oder Füllung.</summary>
 /// <param name="IsText">Textumrisse; zählen nicht zum Rahmen der Anmerkung und werden auf das Textfeld beschnitten.</param>
-public sealed record ShapeLayer(PathData Path, PdfColor? Stroke, double StrokeWidth, PdfColor? Fill, bool IsText = false, PdfRect? Clip = null);
+/// <param name="EvenOdd">Füllregel Gerade-Ungerade, damit innere Figuren (Ausschnitte) ausgespart bleiben.</param>
+public sealed record ShapeLayer(PathData Path, PdfColor? Stroke, double StrokeWidth, PdfColor? Fill, bool IsText = false, PdfRect? Clip = null, bool EvenOdd = false);
 
 /// <summary>Fertige Zeichnung einer Markierung in Benutzerkoordinaten.</summary>
 public sealed record MarkupShape(IReadOnlyList<ShapeLayer> Layers, double Opacity)
