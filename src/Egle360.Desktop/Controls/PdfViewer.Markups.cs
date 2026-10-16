@@ -34,6 +34,9 @@ public sealed partial class PdfViewer
     /// <summary>Darstellung für neue Markierungen einer Art.</summary>
     public Func<MarkupKind, MarkupStyle> StyleProvider { get; set; } = MarkupStyle.DefaultFor;
 
+    /// <summary>Anfangstext neuer Markierungen einer Art (Aufschrift des Stempels).</summary>
+    public Func<MarkupKind, string> TextProvider { get; set; } = _ => "";
+
     /// <summary>Autor neuer Markierungen (PDF-Schlüssel T).</summary>
     public string Author { get; set; } = Environment.UserName;
 
@@ -421,7 +424,7 @@ public sealed partial class PdfViewer
             var rotation = Transform(h.Page).Rotation;
             var minSize = DragThreshold / (_layout.Zoom * PageLayoutDipPerPoint);
             var style = _tool == ViewerTool.Calibrate ? CalibrationStyle : StyleProvider(kind);
-            _drawing = new MarkupDrawing(kind, style, Author, rotation, minSize, scale);
+            _drawing = new MarkupDrawing(kind, style, Author, rotation, minSize, scale, _tool == ViewerTool.Draw ? TextProvider(kind) : "");
             _drawingPage = h.Page;
         }
         _drawing.Press(Snap(h.User));

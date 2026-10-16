@@ -33,7 +33,9 @@ public static class MarkupReport
     public static IReadOnlyList<(string Name, double Sum, string Unit, int Count)> Sums(IEnumerable<MarkupReportRow> rows)
     {
         var list = rows.ToList();
-        var main = list.Where(r => r.Number is not null && r.Unit != "°")
+        // Winkel und Bemaßungen ergeben keine sinnvolle Summe.
+        var dimension = MarkupKinds.DisplayName(MarkupKind.Dimension);
+        var main = list.Where(r => r.Number is not null && r.Unit != "°" && r.Kind != dimension)
             .GroupBy(r => (r.Kind, r.Unit))
             .Select(g => (g.Key.Kind, g.Sum(r => r.Number!.Value), g.Key.Unit, g.Count()));
         var derived = list.Where(r => r.Derived is not null)

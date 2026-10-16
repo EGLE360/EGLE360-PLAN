@@ -1,6 +1,6 @@
 # EGLE360 PLAN – Testanleitung
 
-Stand: Entwicklungsversion 0.5 (PDF-Grundsystem, Markierungen, Textsuche, erste Mengenermittlung). Das ist eine frühe Testversion, keine fertige Software. Bitte mit Kopien von Plänen arbeiten, nicht mit den einzigen Originalen.
+Stand: Entwicklungsversion 0.6 (PDF-Grundsystem, Markierungen mit Stempeln und Bemaßung, Textsuche, Mengenermittlung mit Volumen, Wandflächen und Excel-Export). Das ist eine frühe Testversion, keine fertige Software. Bitte mit Kopien von Plänen arbeiten, nicht mit den einzigen Originalen.
 
 ## Starten
 
@@ -16,7 +16,7 @@ Zum Löschen genügt es, den Ordner zu entfernen. Einstellungen und die Liste de
 
 ## Schnellster Einstieg
 
-Im Startbildschirm „Beispielplan öffnen“ wählen. Das ist ein frei erfundener Grundriss im Maßstab 1:50 mit einigen Prüfvermerken und drei Beispielmessungen. Damit lässt sich alles unten Beschriebene ausprobieren, ohne eigene Pläne zu öffnen.
+Im Startbildschirm „Beispielplan öffnen“ wählen. Das ist ein frei erfundener Grundriss im Maßstab 1:50 mit einigen Prüfvermerken, einem Stempel und mehreren Beispielmessungen. Damit lässt sich alles unten Beschriebene ausprobieren, ohne eigene Pläne zu öffnen.
 
 ## Was sich testen lässt
 
@@ -57,6 +57,8 @@ Im Startbildschirm „Beispielplan öffnen“ wählen. Das ist ein frei erfunden
 | Textfeld | T | Aufziehen oder klicken, dann Text eingeben |
 | Notiz | K | Klicken, dann Text eingeben |
 | Hervorhebung | M | Bereich aufziehen |
+| Stempel | S | Aufschrift im Menü der Schaltfläche wählen (GEPRÜFT, FREIGEGEBEN, ABGELEHNT und andere oder eine eigene), dann klicken oder aufziehen. Darunter stehen automatisch Autor und Datum |
+| Bemaßung | D | Maßlinie aufziehen; braucht wie die Messungen einen Maßstab. Die Zahl steht über der Linie |
 
 - Mit gedrückter Umschalttaste rasten Linien waagrecht, senkrecht oder unter 45 Grad ein, Rechtecke werden quadratisch.
 - Farbe, Linienbreite, Deckkraft und Füllung gelten für neue Markierungen und für die Auswahl.
@@ -80,7 +82,7 @@ Rechts in der Markierungsleiste sitzen die Messwerkzeuge und die Schaltfläche f
 3. Der Wert steht als Beschriftung im Plan und ändert sich live beim Ziehen an den Eckpunkten.
 4. Wird der Maßstab einer Seite geändert, übernehmen die vorhandenen Messungen auf dieser Seite ihn. Rückgängig nimmt das zurück.
 
-Zum Ausprobieren im Beispielplan: Die Küche ist 10 m × 10 m, die Fläche muss also 100,00 m² ergeben. Der Abschnitt zwischen den Achsen A und C ist 10,00 m lang. Die Innenwand an Achse E ist 11,00 m lang und 2,80 m hoch, ihre Wandfläche also 30,80 m².
+Zum Ausprobieren im Beispielplan: Die Küche ist 10 m × 10 m, die Fläche muss also 100,00 m² ergeben. Der Abschnitt zwischen den Achsen A und C ist 10,00 m lang. Die Innenwand an Achse E ist 11,00 m lang und 2,80 m hoch, ihre Wandfläche also 30,80 m². Die Bemaßung unter dem Grundriss zeigt die Gebäudelänge von 30,00 m.
 
 ### Markierungs- und Mengenliste (neu)
 - Schaltfläche mit dem Listensymbol rechts oben in der Werkzeugleiste. Die Liste erscheint unter dem Plan und lässt sich in der Höhe ziehen.
@@ -94,7 +96,7 @@ Zum Ausprobieren im Beispielplan: Die Küche ist 10 m × 10 m, die Fläche muss 
 Diese Punkte sind geplant, aber noch nicht enthalten:
 
 - Drucken in Originalgröße oder gekachelt, geteilte und synchronisierte Ansichten, Metadaten bearbeiten.
-- Stempel, Unterschriften, Unterstreichen und Durchstreichen von Text, Bemaßungslinien, Drehen von Markierungen.
+- Stempel aus eigenen Bilddateien, Unterschriften, Unterstreichen und Durchstreichen von Text, Drehen von Markierungen.
 - Messungen: Radius, Objektfang, Kostenansätze und die Übernahme in EGLE360 AVA.
 - Ob Bluebeam die gespeicherten Messungen als Messungen (mit Wert in der Markups-Liste) erkennt, ist noch nicht geprüft. Die Datei enthält dafür die genormten PDF-Messangaben; im Plan sind die Messungen in jedem Fall sichtbar.
 - BIM, 4D/5D, KI-Funktionen und die AVA-Anbindung folgen in späteren Phasen.

@@ -142,10 +142,12 @@ internal static class SamplePlan
             Make(MarkupKind.Highlight, MarkupStyle.DefaultFor(MarkupKind.Highlight), "", new(bx + 8, 28 + 56), new(bx + 200, 28 + 82)),
             Make(MarkupKind.Polyline, new MarkupStyle(new PdfColor(30, 140, 60), null, 1, 2), "Fluchtweg",
                 new(ox + 5 * M, oy + 3 * M), new(ox + 5 * M, oy + 6.5 * M), new(ox + 25 * M, oy + 6.5 * M), new(ox + 25 * M, oy + 9 * M)),
+            Make(MarkupKind.Stamp, MarkupStyle.DefaultFor(MarkupKind.Stamp) with { Stroke = StampPreset.Defaults[3].Color }, StampPreset.Defaults[3].Title,
+                new(bx - 250, 60), new(bx - 30, 124)),
         ];
     }
 
-    /// <summary>Beispielmessungen im Maßstab 1:50: Fläche der Küche, Gebäudeabschnitt, Anzahl der Innentüren.</summary>
+    /// <summary>Beispielmessungen im Maßstab 1:50: Fläche der Küche, Gebäudeabschnitt, Wandfläche, Bemaßung, Anzahl der Innentüren.</summary>
     private static List<Markup> Measurements()
     {
         const double ox = 220, oy = 360;
@@ -160,6 +162,8 @@ internal static class SamplePlan
             Make(MarkupKind.Length, "Achse A bis C", new(ox, oy + 17 * M), new(ox + 10 * M, oy + 17 * M)),
             // Innenwand zwischen Achse E und dem Flur, 11 m lang, 2,80 m hoch: Wandfläche 30,80 m².
             Make(MarkupKind.Polylength, "Innenwand Achse E", new(ox + 20 * M, oy), new(ox + 20 * M, oy + 11 * M)) with { Depth = 2.8 },
+            // Gesamtlänge unter dem Grundriss: 30,00 m.
+            Make(MarkupKind.Dimension, "Gebäudelänge", new(ox, oy - 45), new(ox + 30 * M, oy - 45)),
             Make(MarkupKind.Count, "Innentüren", new(ox + 4.5 * M, oy + 6 * M), new(ox + 14.5 * M, oy + 6 * M), new(ox + 24.5 * M, oy + 6 * M)),
         ];
     }

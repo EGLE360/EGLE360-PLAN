@@ -103,7 +103,7 @@ public static class Measurement
         var sym = scale.UnitSymbol;
         return m.Kind switch
         {
-            MarkupKind.Length or MarkupKind.Polylength => new MeasureValue(PathLength(pts, closed: false) * f, sym),
+            MarkupKind.Length or MarkupKind.Polylength or MarkupKind.Dimension => new MeasureValue(PathLength(pts, closed: false) * f, sym),
             MarkupKind.Perimeter => new MeasureValue(PathLength(pts, closed: true) * f, sym),
             MarkupKind.Area => new MeasureValue(NetArea(m) * f * f, sym + "²", PathLength(pts, closed: true) * f, sym),
             _ => null,

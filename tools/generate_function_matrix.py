@@ -525,6 +525,8 @@ STATUS = {
     "MKP-TOOL-011": "Umgesetzt (Phase 4, Teil 2)",
     "MKP-TOOL-013": "Umgesetzt (Phase 4, Teil 2)",
     "MKP-TOOL-016": "Umgesetzt (Phase 4, Teil 2)",
+    "MKP-TOOL-017": "Umgesetzt (Phase 5, Teil 2): Maßlinie mit Pfeilen, Zahl über der Linie, nach Seitenmaßstab",
+    "MKP-TOOL-023": "Teilweise (Phase 5, Teil 2): sieben eigene Textstempel und eigene Aufschrift, mit Autor und Datum; Bildstempel offen",
     "MKP-TOOL-018": "Teilweise (Phase 4, Teil 2): Bereich hervorheben; an Textauswahl gebunden offen",
     "MKP-EDIT-001": "Umgesetzt (Phase 4, Teil 2): Klick, Strg+Klick, Strg+A",
     "MKP-EDIT-002": "Teilweise (Phase 4, Teil 2): Verschieben und Skalieren; Drehen offen",

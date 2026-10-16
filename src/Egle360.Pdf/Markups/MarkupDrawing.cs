@@ -3,9 +3,10 @@ namespace Egle360.Pdf.Markups;
 /// <summary>
 /// Ablauf beim Zeichnen einer neuen Markierung, unabhängig von der Oberfläche. Rahmenarten, Linie und Pfeil
 /// entstehen durch Ziehen, Freihand durch Zeichnen bei gedrückter Taste, Polylinie, Polygon und Wolke durch einzelne
-/// Klicks (Abschluss mit Doppelklick oder Eingabetaste), die Notiz durch einen Klick.
+/// Klicks (Abschluss mit Doppelklick oder Eingabetaste), die Notiz durch einen Klick. Der Stempel entsteht durch
+/// Aufziehen oder per Klick in Standardgröße; <paramref name="text"/> ist seine Aufschrift.
 /// </summary>
-public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string author, int pageRotation, double minSize, MeasureScale? scale = null)
+public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string author, int pageRotation, double minSize, MeasureScale? scale = null, string text = "")
 {
     private readonly List<PdfPoint> _points = [];
     private bool _pressed;
@@ -125,6 +126,7 @@ public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string aut
         return Kind switch
         {
             MarkupKind.Note => Complete([new[] { start }]),
+            MarkupKind.Stamp when !dragged => Complete([StampAt(start)]),
             MarkupKind.TextBox when !dragged => Complete([new[] { start, new TextFrame(start, pageRotation, 0, 0).ToUser(new PdfPoint(DefaultTextBox.Width, DefaultTextBox.Height)) }]),
             _ when !dragged => Complete(null),
             _ => Complete([new[] { start, p }]),
@@ -180,13 +182,21 @@ public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string aut
                 _ when MarkupKinds.IsMultiPoint(Kind) && pts.Count < 3 => MarkupKinds.IsMeasurement(Kind) ? MarkupKind.Polylength : MarkupKind.Polyline,
                 _ => Kind,
             };
-            return new Markup("preview", previewKind, [pts], style, "", author, DateTimeOffset.Now, DateTimeOffset.Now, pageRotation, scale);
+            return new Markup("preview", previewKind, [pts], style, text, author, DateTimeOffset.Now, DateTimeOffset.Now, pageRotation, scale);
         }
+    }
+
+    /// <summary>Stempel in Standardgröße, mittig auf dem Klickpunkt.</summary>
+    private PdfPoint[] StampAt(PdfPoint center)
+    {
+        var (w, h) = StampPreset.DefaultSize;
+        var frame = new TextFrame(center, pageRotation, 0, 0);
+        return [frame.ToUser(new PdfPoint(-w / 2, -h / 2)), frame.ToUser(new PdfPoint(w / 2, h / 2))];
     }
 
     private Markup? Complete(IReadOnlyList<IReadOnlyList<PdfPoint>>? paths)
     {
         Cancel();
-        return paths is null ? null : Markup.Create(Kind, paths, style, author, pageRotation) with { Scale = MarkupKinds.NeedsScale(Kind) ? scale : null };
+        return paths is null ? null : Markup.Create(Kind, paths, style, author, pageRotation, text) with { Scale = MarkupKinds.NeedsScale(Kind) ? scale : null };
     }
 }

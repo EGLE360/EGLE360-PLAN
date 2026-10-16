@@ -34,6 +34,7 @@ internal static unsafe class Pdfium
     public const int FPDF_ANNOT_SQUARE = 5;
     public const int FPDF_ANNOT_CIRCLE = 6;
     public const int FPDF_ANNOT_HIGHLIGHT = 9;
+    public const int FPDF_ANNOT_STAMP = 13;
     public const int FPDF_ANNOT_INK = 15;
     public const int FPDF_ANNOT_FLAG_HIDDEN = 1 << 1;
     public const int FPDF_ANNOT_FLAG_PRINT = 1 << 2;

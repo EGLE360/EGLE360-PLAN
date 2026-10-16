@@ -45,6 +45,8 @@ public partial class DocumentsView
         (nameof(MarkupKind.TextBox), "Textfeld", "M1.5,2.5 H14.5 V13.5 H1.5 Z M5,5.5 H11 M8,5.5 V11", Key.T),
         (nameof(MarkupKind.Note), "Notiz", "M2,2.5 H14 V10.5 H7 L4,13.5 L4.5,10.5 H2 Z M4.5,5 H11.5 M4.5,7.5 H9.5", Key.K),
         (nameof(MarkupKind.Highlight), "Hervorhebung", "M2.5,14 H13.5 M5,11 L10.5,2.5 L13,4 L7.5,12.5 Z", Key.M),
+        (nameof(MarkupKind.Stamp), "Stempel (Klick setzt, Aufziehen bestimmt die Größe)", "M1.5,4 H14.5 V12 H1.5 Z M3,5.5 H13 V10.5 H3 Z M5,8 H11", Key.S),
+        (nameof(MarkupKind.Dimension), "Bemaßung", "M1.5,10 H14.5 M1.5,7 V13 M14.5,7 V13 M4.5,8.5 L1.5,10 L4.5,11.5 M11.5,8.5 L14.5,10 L11.5,11.5 M6,5 H10", Key.D),
         (nameof(MarkupKind.Length), "Länge messen", "M2,10 H14 M2,7 V13 M14,7 V13 M5,10 V8.5 M8,10 V7.5 M11,10 V8.5", null),
         (nameof(MarkupKind.Polylength), "Polylänge messen (Abschluss mit Doppelklick oder Eingabetaste)", "M2,13.5 L6,5 L10,10 L14,2.5 M1,12 L3,15 M13,1.5 L15,3.5", null),
         (nameof(MarkupKind.Perimeter), "Umfang messen (Abschluss mit Doppelklick oder Eingabetaste)", "M3.5,3.5 H12.5 V12.5 H3.5 Z M1.5,1.5 L5.5,5.5 M10.5,10.5 L14.5,14.5", null),
@@ -68,6 +70,7 @@ public partial class DocumentsView
     private double _opacity = 1;
     private bool _fill;
     private bool _syncingTools;
+    private StampPreset _stamp = StampPreset.Defaults[0];
 
     private void BuildMarkupBar()
     {
@@ -83,6 +86,10 @@ public partial class DocumentsView
             };
             AutomationPropertiesHelper.SetName(button, name);
             button.Checked += OnToolChecked;
+            if (key == nameof(MarkupKind.Stamp))
+            {
+                button.Click += (_, _) => ShowStampMenu(button);
+            }
             _toolButtons[key] = button;
             if (key == nameof(MarkupKind.Length))
             {
@@ -179,6 +186,7 @@ public partial class DocumentsView
             MarkupKind.Highlight => d with { Stroke = _color, Fill = _color, Opacity = _opacity < 1 ? _opacity : 0.4 },
             MarkupKind.Note => d with { Fill = _color == Palette[0].Color ? d.Fill : _color, Opacity = _opacity },
             MarkupKind.TextBox => d with { Stroke = _color, LineWidth = _width, Opacity = _opacity, Fill = _fill ? PdfColor.White : null },
+            MarkupKind.Stamp => d with { Stroke = _stamp.Color, Opacity = _opacity < 1 ? _opacity : d.Opacity, Fill = _fill ? PdfColor.White : null },
             _ => d with { Stroke = _color, LineWidth = _width, Opacity = _opacity, Fill = _fill && MarkupKinds.CanFill(kind) ? Tint(_color) : null },
         };
     }
@@ -250,6 +258,38 @@ public partial class DocumentsView
         }
         ApplyTool(_active.Viewer, key);
         _active.Viewer.FocusView();
+    }
+
+    /// <summary>Auswahl der Stempelaufschrift unter der Schaltfläche; die Wahl gilt für die nächsten Stempel.</summary>
+    private void ShowStampMenu(RadioButton button)
+    {
+        var menu = new ContextMenu { PlacementTarget = button, Placement = PlacementMode.Bottom };
+        foreach (var preset in StampPreset.Defaults)
+        {
+            var item = new MenuItem
+            {
+                Header = preset.Title,
+                IsCheckable = true,
+                IsChecked = preset == _stamp,
+                Foreground = new SolidColorBrush(Color.FromRgb(preset.Color.R, preset.Color.G, preset.Color.B)),
+                FontWeight = FontWeights.SemiBold,
+            };
+            item.Click += (_, _) => _stamp = preset;
+            menu.Items.Add(item);
+        }
+        menu.Items.Add(new Separator());
+        var custom = new MenuItem { Header = "Eigene Aufschrift …", ToolTip = "Aufschrift frei eingeben; Farbe ist die gewählte Markierungsfarbe." };
+        custom.Click += (_, _) =>
+        {
+            var title = Dialogs.AskText(Owner, "Eigener Stempel", "Aufschrift des Stempels, zum Beispiel BAUSTELLE BESICHTIGT. Darunter stehen automatisch Autor und Datum.",
+                StampPreset.Defaults.Contains(_stamp) ? "" : _stamp.Title);
+            if (!string.IsNullOrWhiteSpace(title))
+            {
+                _stamp = new StampPreset(title.Trim(), _color);
+            }
+        };
+        menu.Items.Add(custom);
+        menu.IsOpen = true;
     }
 
     private static void ApplyTool(PdfViewer viewer, string key)

@@ -22,6 +22,10 @@ public enum MarkupKind
     Area,
     Count,
     Angle,
+
+    // Später ergänzt; neue Arten immer am Ende anfügen, die Zahlenwerte stehen in gespeicherten PDFs.
+    Dimension,
+    Stamp,
 }
 
 /// <summary>Punkt im PDF-Benutzerkoordinatensystem (Punkt, y nach oben, ohne Seitendrehung).</summary>
@@ -83,6 +87,7 @@ public sealed record MarkupStyle(PdfColor Stroke, PdfColor? Fill, double Opacity
         MarkupKind.Highlight => new MarkupStyle(new PdfColor(255, 220, 0), new PdfColor(255, 220, 0), 0.4, 0),
         MarkupKind.Note => new MarkupStyle(new PdfColor(40, 40, 40), new PdfColor(255, 214, 10), 1, 0.75),
         MarkupKind.TextBox => new MarkupStyle(new PdfColor(200, 30, 30), null, 1, 1, 12),
+        MarkupKind.Stamp => new MarkupStyle(StampPreset.Defaults[0].Color, null, 0.9, 2, 14),
         _ when MarkupKinds.IsMeasurement(kind) => new MarkupStyle(new PdfColor(22, 119, 210), null, 1, 1.5, 10),
         _ => new MarkupStyle(new PdfColor(200, 30, 30), null, 1, 1.5),
     };
@@ -157,11 +162,13 @@ public static class MarkupKinds
         MarkupKind.Area => "Fläche",
         MarkupKind.Count => "Anzahl",
         MarkupKind.Angle => "Winkel",
+        MarkupKind.Dimension => "Bemaßung",
+        MarkupKind.Stamp => "Stempel",
         _ => kind.ToString(),
     };
 
     /// <summary>Arten, die durch Aufziehen eines Rechtecks entstehen.</summary>
-    public static bool IsBox(MarkupKind kind) => kind is MarkupKind.Rectangle or MarkupKind.Ellipse or MarkupKind.TextBox or MarkupKind.Highlight;
+    public static bool IsBox(MarkupKind kind) => kind is MarkupKind.Rectangle or MarkupKind.Ellipse or MarkupKind.TextBox or MarkupKind.Highlight or MarkupKind.Stamp;
 
     /// <summary>Arten mit beliebig vielen Eckpunkten, die per Klick gesetzt werden.</summary>
     public static bool IsMultiPoint(MarkupKind kind) =>
@@ -173,8 +180,8 @@ public static class MarkupKinds
     public static bool CanFill(MarkupKind kind) =>
         kind is MarkupKind.Rectangle or MarkupKind.Ellipse or MarkupKind.Polygon or MarkupKind.Cloud or MarkupKind.TextBox or MarkupKind.Area;
 
-    /// <summary>Messwerkzeuge der Mengenermittlung.</summary>
-    public static bool IsMeasurement(MarkupKind kind) => kind is >= MarkupKind.Length and <= MarkupKind.Angle;
+    /// <summary>Messwerkzeuge der Mengenermittlung, dazu die Bemaßung (eine Länge mit Maßpfeilen).</summary>
+    public static bool IsMeasurement(MarkupKind kind) => kind is >= MarkupKind.Length and <= MarkupKind.Angle or MarkupKind.Dimension;
 
     /// <summary>Messungen, deren Wert vom Maßstab abhängt (nicht Anzahl und Winkel).</summary>
     public static bool NeedsScale(MarkupKind kind) => IsMeasurement(kind) && kind is not (MarkupKind.Count or MarkupKind.Angle);
@@ -187,8 +194,26 @@ public static class MarkupKinds
         _ => IsClosed(kind) ? 3 : 2,
     };
 
-    public static bool HasText(MarkupKind kind) => kind is MarkupKind.TextBox or MarkupKind.Note;
+    public static bool HasText(MarkupKind kind) => kind is MarkupKind.TextBox or MarkupKind.Note or MarkupKind.Stamp;
 
     /// <summary>Größe des Notizsymbols in Punkt.</summary>
     public const double NoteSize = 20;
+}
+
+/// <summary>Vorgefertigter Stempel: Aufschrift und Farbe. Eigene Aufschriften sind ebenfalls möglich.</summary>
+public sealed record StampPreset(string Title, PdfColor Color)
+{
+    public static IReadOnlyList<StampPreset> Defaults { get; } =
+    [
+        new("GEPRÜFT", new PdfColor(30, 140, 60)),
+        new("FREIGEGEBEN", new PdfColor(30, 140, 60)),
+        new("FREIGEGEBEN MIT ANMERKUNGEN", new PdfColor(200, 120, 0)),
+        new("ZUR PRÜFUNG", new PdfColor(200, 120, 0)),
+        new("ABGELEHNT", new PdfColor(200, 30, 30)),
+        new("ENTWURF", new PdfColor(90, 100, 115)),
+        new("NUR ZUR INFORMATION", new PdfColor(22, 119, 210)),
+    ];
+
+    /// <summary>Standardgröße eines per Klick gesetzten Stempels in Punkt (Breite, Höhe auf dem Bildschirm).</summary>
+    public static (double Width, double Height) DefaultSize => (190, 56);
 }

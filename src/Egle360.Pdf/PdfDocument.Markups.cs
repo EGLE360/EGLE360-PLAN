@@ -202,6 +202,7 @@ public sealed unsafe partial class PdfDocument
             MarkupKind.TextBox => Pdfium.FPDF_ANNOT_FREETEXT,
             MarkupKind.Note => Pdfium.FPDF_ANNOT_TEXT,
             MarkupKind.Highlight => Pdfium.FPDF_ANNOT_HIGHLIGHT,
+            MarkupKind.Stamp => Pdfium.FPDF_ANNOT_STAMP,
             _ => Pdfium.FPDF_ANNOT_INK,
         };
         var annot = Pdfium.FPDFPage_CreateAnnot(page, subtype);
@@ -237,7 +238,7 @@ public sealed unsafe partial class PdfDocument
                         AddInk(annot, path);
                     }
                     break;
-                case MarkupKind.Line or MarkupKind.Arrow or MarkupKind.Polyline or MarkupKind.Length or MarkupKind.Polylength or MarkupKind.Angle:
+                case MarkupKind.Line or MarkupKind.Arrow or MarkupKind.Polyline or MarkupKind.Length or MarkupKind.Polylength or MarkupKind.Angle or MarkupKind.Dimension:
                     AddInk(annot, m.Points);
                     break;
                 case MarkupKind.Polygon or MarkupKind.Cloud or MarkupKind.Perimeter or MarkupKind.Area:

@@ -96,6 +96,18 @@ public static class MarkupGeometry
                 layers.Add(new ShapeLayer(legs, s.Stroke, w, null));
                 AddLabel(layers, m, Bisector(pts[0], pts[1], pts[2], r + 4 + LabelSize(Measurement.Label(m), s.FontSize).Width / 2), outliner);
                 break;
+            case MarkupKind.Dimension when pts.Count >= 2:
+                var dim = new PathData().Polyline([pts[0], pts[1]], false);
+                dim.Append(ArrowHead(pts[1], pts[0], w));
+                dim.Append(ArrowHead(pts[0], pts[1], w));
+                dim.Append(EndTick(pts[1], pts[0], w));
+                dim.Append(EndTick(pts[0], pts[1], w));
+                layers.Add(new ShapeLayer(dim, s.Stroke, w, null));
+                AddLabel(layers, m, DimensionLabelCenter(m, pts[0], pts[1]), outliner);
+                break;
+            case MarkupKind.Stamp when pts.Count >= 2:
+                AddStamp(layers, m, PdfRect.FromPoints(pts[0], pts[1]), outliner);
+                break;
             case MarkupKind.Angle when pts.Count == 2:
                 layers.Add(new ShapeLayer(new PathData().Polyline(pts, false), s.Stroke, w, null));
                 break;
@@ -276,6 +288,109 @@ public static class MarkupGeometry
         layers.Add(new ShapeLayer(path, null, 0, m.Style.Stroke, IsText: true, Clip: rect));
     }
 
+    /// <summary>
+    /// Mitte der Bemaßungszahl: über der Maßlinie, also auf der Seite, die auf dem Bildschirm oben liegt (bei
+    /// senkrechten Linien links).
+    /// </summary>
+    private static PdfPoint DimensionLabelCenter(Markup m, PdfPoint a, PdfPoint b)
+    {
+        var d = b - a;
+        var len = d.Length;
+        var mid = a + d * 0.5;
+        if (len < 1e-9)
+        {
+            return mid;
+        }
+        var frame = new TextFrame(mid, m.TextRotation, 0, 0);
+        var up = frame.ToUser(new PdfPoint(0, 0)) - frame.ToUser(new PdfPoint(0, 1));
+        var left = frame.ToUser(new PdfPoint(0, 0)) - frame.ToUser(new PdfPoint(1, 0));
+        var normal = new PdfPoint(-d.Y / len, d.X / len);
+        var dotUp = normal.X * up.X + normal.Y * up.Y;
+        if (dotUp < -1e-6 || (Math.Abs(dotUp) <= 1e-6 && normal.X * left.X + normal.Y * left.Y < 0))
+        {
+            normal = normal * -1;
+        }
+        var (lw, lh) = LabelSize(Measurement.Label(m), m.Style.FontSize);
+        // Abstand so wählen, dass das Feld die Linie nicht verdeckt, auch wenn die Linie schräg liegt.
+        var across = Math.Abs(normal.X * up.X + normal.Y * up.Y) * lh / 2 + Math.Abs(normal.X * left.X + normal.Y * left.Y) * lw / 2;
+        return mid + normal * (across + 2 + m.Style.LineWidth);
+    }
+
+    /// <summary>
+    /// Stempel: doppelter, abgerundeter Rahmen, darin die Aufschrift groß und darunter Autor und Datum klein. Die
+    /// Schriftgröße richtet sich nach dem Rahmen, damit der Stempel beim Aufziehen mitwächst.
+    /// </summary>
+    private static void AddStamp(List<ShapeLayer> layers, Markup m, PdfRect box, ITextOutliner? outliner)
+    {
+        var w = Math.Max(0.5, m.Style.LineWidth);
+        var radius = Math.Min(8, Math.Min(box.Width, box.Height) / 4);
+        layers.Add(new ShapeLayer(RoundedRectangle(box, radius), m.Style.Stroke, w, m.Style.Fill));
+        var inset = w * 1.5 + 1;
+        if (box.Width > 4 * inset && box.Height > 4 * inset)
+        {
+            layers.Add(new ShapeLayer(RoundedRectangle(box.Inflate(-inset), Math.Max(0, radius - inset)), m.Style.Stroke, w / 2, null));
+        }
+        var title = m.Text.Trim().ReplaceLineEndings(" ");
+        if (outliner is null || title.Length == 0)
+        {
+            return;
+        }
+        var frame = TextFrame.ForBox(box, m.TextRotation);
+        var subtitle = StampSubtitle(m);
+        var avail = frame.Width - 2 * (inset + 4);
+        var titleSize = Math.Min(frame.Height * (subtitle.Length > 0 ? 0.42 : 0.55), avail / Math.Max(1, title.Length * 0.62));
+        titleSize = Math.Max(4, titleSize);
+        var titleOutline = outliner.Layout(title, titleSize, 10_000);
+        if (titleOutline.Width > avail && titleOutline.Width > 0)
+        {
+            titleSize *= avail / titleOutline.Width;
+            titleOutline = outliner.Layout(title, titleSize, 10_000);
+        }
+        var subSize = Math.Max(4, Math.Min(titleSize * 0.45, frame.Height * 0.2));
+        var subOutline = subtitle.Length > 0 ? outliner.Layout(subtitle, subSize, 10_000) : null;
+        if (subOutline is not null && subOutline.Width > avail && subOutline.Width > 0)
+        {
+            subOutline = outliner.Layout(subtitle, subSize * avail / subOutline.Width, 10_000);
+        }
+        var total = titleOutline.Height + (subOutline is null ? 0 : subOutline.Height + 1);
+        var y = (frame.Height - total) / 2;
+        var text = titleOutline.Path.Transform(p => frame.ToUser(new PdfPoint(p.X + (frame.Width - titleOutline.Width) / 2, p.Y + y)));
+        if (subOutline is not null)
+        {
+            var sy = y + titleOutline.Height + 1;
+            text.Append(subOutline.Path.Transform(p => frame.ToUser(new PdfPoint(p.X + (frame.Width - subOutline.Width) / 2, p.Y + sy))));
+        }
+        layers.Add(new ShapeLayer(text, null, 0, m.Style.Stroke, IsText: true, Clip: box));
+    }
+
+    /// <summary>Zweite Zeile des Stempels: Autor und Datum der Anlage.</summary>
+    public static string StampSubtitle(Markup m)
+    {
+        var date = m.Created.LocalDateTime.ToString("dd.MM.yyyy", System.Globalization.CultureInfo.InvariantCulture);
+        return string.IsNullOrWhiteSpace(m.Author) ? date : $"{m.Author.Trim()}, {date}";
+    }
+
+    private static PathData RoundedRectangle(PdfRect r, double radius)
+    {
+        if (radius <= 0.01)
+        {
+            return new PathData().Rectangle(r);
+        }
+        const double k = 0.5523; // Kontrollpunktabstand für einen Viertelkreis
+        var c = radius * k;
+        return new PathData()
+            .MoveTo(new(r.Left + radius, r.Bottom))
+            .LineTo(new(r.Right - radius, r.Bottom))
+            .CurveTo(new(r.Right - radius + c, r.Bottom), new(r.Right, r.Bottom + radius - c), new(r.Right, r.Bottom + radius))
+            .LineTo(new(r.Right, r.Top - radius))
+            .CurveTo(new(r.Right, r.Top - radius + c), new(r.Right - radius + c, r.Top), new(r.Right - radius, r.Top))
+            .LineTo(new(r.Left + radius, r.Top))
+            .CurveTo(new(r.Left + radius - c, r.Top), new(r.Left, r.Top - radius + c), new(r.Left, r.Top - radius))
+            .LineTo(new(r.Left, r.Bottom + radius))
+            .CurveTo(new(r.Left, r.Bottom + radius - c), new(r.Left + radius - c, r.Bottom), new(r.Left + radius, r.Bottom))
+            .Close();
+    }
+
     /// <summary>Bogenlänge der Wolke in Punkt, abhängig von der Linienbreite.</summary>
     public static double CloudArcLength(double lineWidth) => Math.Max(12, 8 * lineWidth);
 
@@ -348,7 +463,7 @@ public static class MarkupGeometry
         {
             return false;
         }
-        var areaCounts = m.Kind is MarkupKind.TextBox or MarkupKind.Note or MarkupKind.Highlight or MarkupKind.Count;
+        var areaCounts = m.Kind is MarkupKind.TextBox or MarkupKind.Note or MarkupKind.Highlight or MarkupKind.Count or MarkupKind.Stamp;
         foreach (var layer in shape.Layers)
         {
             var figures = layer.Path.Flatten().ToList();
