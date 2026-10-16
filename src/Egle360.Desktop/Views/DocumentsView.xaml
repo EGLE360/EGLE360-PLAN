@@ -58,6 +58,7 @@
                 <Button Style="{StaticResource ToolButton}" Content="&#xE8A5;" Click="OnNew" ToolTip="Neues PDF (Strg+N)" AutomationProperties.Name="Neues PDF" />
                 <Button x:Name="SaveButton" Style="{StaticResource ToolButton}" Content="&#xE74E;" Click="OnSave" ToolTip="Speichern (Strg+S)" AutomationProperties.Name="Speichern" />
                 <Button x:Name="SaveAsButton" Style="{StaticResource ToolButton}" Content="&#xE792;" Click="OnSaveAs" ToolTip="Speichern unter (Strg+Umschalt+S)" AutomationProperties.Name="Speichern unter" />
+                <Button x:Name="PrintButton" Style="{StaticResource ToolButton}" Content="&#xE749;" Click="OnPrint" ToolTip="Drucken (Strg+P)" AutomationProperties.Name="Drucken" />
                 <Border Style="{StaticResource ToolSeparator}" />
                 <Button x:Name="SidebarButton" Style="{StaticResource ToolButton}" Content="&#xE89F;" Click="OnToggleSidebar" ToolTip="Seitenleiste ein- oder ausblenden" AutomationProperties.Name="Seitenleiste" />
                 <Border Style="{StaticResource ToolSeparator}" />

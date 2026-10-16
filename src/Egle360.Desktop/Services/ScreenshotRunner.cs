@@ -77,6 +77,21 @@ internal static class ScreenshotRunner
                         window.Documents.SetMarkupListVisible(false);
                     }
 
+                    // Druck ohne Drucker prüfen: beide Seiten auf A4 hoch als XPS ausgeben.
+                    if (theme == ThemePreference.Light && window.Documents.ActiveDocument is { } printDoc)
+                    {
+                        var xpsPath = Path.Combine(outputDir, "druck-test.xps");
+                        using (var xps = new System.Windows.Xps.Packaging.XpsDocument(xpsPath, FileAccess.ReadWrite))
+                        {
+                            System.Windows.Xps.Packaging.XpsDocument.CreateXpsDocumentWriter(xps)
+                                .Write(PdfPrinter.CreatePaginator(printDoc, [0, 1], new Size(793.7, 1122.5)));
+                        }
+                        if (new FileInfo(xpsPath).Length < 10_000)
+                        {
+                            throw new InvalidOperationException("Die Druckausgabe ist leer.");
+                        }
+                    }
+
                     // Textsuche mit Trefferliste in der Seitenleiste.
                     var search = window.Documents.SearchAsync("Zimmer");
                     while (!search.IsCompleted)

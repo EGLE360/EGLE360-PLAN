@@ -208,7 +208,8 @@ public sealed unsafe partial class PdfDocument : IDisposable
     /// <param name="scale">Pixel je Punkt. 1 entspricht 72 dpi, 96/72 entspricht 100 % auf einem Standardbildschirm.</param>
     /// <param name="region">Ausschnitt innerhalb der Seite in Pixeln bei diesem Maßstab.</param>
     /// <param name="hideMarkups">EGLE360-Markierungen weglassen, weil die Oberfläche sie selbst zeichnet.</param>
-    public void Render(int pageIndex, double scale, PixelRect region, Span<byte> bgra, int stride, bool annotations = true, bool hideMarkups = false)
+    /// <param name="forPrinting">Druckdarstellung: Anmerkungen ohne Druck-Kennzeichen entfallen, wie in anderen Programmen.</param>
+    public void Render(int pageIndex, double scale, PixelRect region, Span<byte> bgra, int stride, bool annotations = true, bool hideMarkups = false, bool forPrinting = false)
     {
         if (region.Width <= 0 || region.Height <= 0)
         {
@@ -233,7 +234,7 @@ public sealed unsafe partial class PdfDocument : IDisposable
                 try
                 {
                     Pdfium.FPDFBitmap_FillRect(bitmap, 0, 0, region.Width, region.Height, 0xFFFFFFFF);
-                    var flags = annotations ? Pdfium.FPDF_ANNOT : 0;
+                    var flags = (annotations ? Pdfium.FPDF_ANNOT : 0) | (forPrinting ? Pdfium.FPDF_PRINTING : 0);
                     var hidden = annotations && hideMarkups ? HideMarkups(pageIndex, page) : null;
                     try
                     {

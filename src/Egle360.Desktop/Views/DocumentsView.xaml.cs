@@ -426,7 +426,7 @@ public partial class DocumentsView : UserControl, IDisposable
         EmptyState.Visibility = has ? Visibility.Collapsed : Visibility.Visible;
         TabStripBorder.Visibility = _documents.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         var canModify = has && _active!.Document.CanModify;
-        foreach (var b in new[] { SaveButton, SaveAsButton, SidebarButton, ZoomOutButton, ZoomInButton, FitWidthButton, FitPageButton, PrevButton, NextButton, PropertiesButton, ExtractButton, MarkupListButton })
+        foreach (var b in new[] { SaveButton, SaveAsButton, SidebarButton, ZoomOutButton, ZoomInButton, FitWidthButton, FitPageButton, PrevButton, NextButton, PropertiesButton, ExtractButton, MarkupListButton, PrintButton })
         {
             b.IsEnabled = has;
         }
@@ -533,6 +533,23 @@ public partial class DocumentsView : UserControl, IDisposable
         if (_active is not null)
         {
             Save(_active, saveAs: false);
+        }
+    }
+
+    private void OnPrint(object sender, RoutedEventArgs e)
+    {
+        if (_active is not { } open)
+        {
+            return;
+        }
+        open.Viewer.CancelDrawing();
+        try
+        {
+            PdfPrinter.Print(open.Document, open.Title, open.Viewer.CurrentPage);
+        }
+        catch (Exception ex) when (ex is PdfException or System.Printing.PrintSystemException or InvalidOperationException)
+        {
+            ShowError($"Drucken war nicht möglich: {ex.Message}");
         }
     }
 
@@ -782,6 +799,7 @@ public partial class DocumentsView : UserControl, IDisposable
         else if (KeyGestures.Ctrl(e, Key.F)) { ShowSearch(); }
         else if (e.Key == Key.F3 && Keyboard.Modifiers is ModifierKeys.None or ModifierKeys.Shift) { StepSearch(Keyboard.Modifiers == ModifierKeys.Shift ? -1 : 1); }
         else if (KeyGestures.Ctrl(e, Key.O)) { OnOpen(this, e); }
+        else if (KeyGestures.Ctrl(e, Key.P)) { OnPrint(this, e); }
         else if (KeyGestures.Ctrl(e, Key.N)) { OnNew(this, e); }
         else if (KeyGestures.Ctrl(e, Key.S)) { OnSave(this, e); }
         else if (KeyGestures.Ctrl(e, Key.S, shift: true)) { OnSaveAs(this, e); }
