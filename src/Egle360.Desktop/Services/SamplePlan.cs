@@ -33,9 +33,11 @@ internal static class SamplePlan
             Section(c, a3Long, a3Short);
             c.Commit();
         }
+        doc.SetPageScale(0, MeasureScale.FromRatio(50));
+        doc.SetPageScale(1, MeasureScale.FromRatio(100));
         if (outliner is not null)
         {
-            doc.SetMarkups(0, Markups(a1Long), outliner);
+            doc.SetMarkups(0, [.. Markups(a1Long), .. Measurements()], outliner);
         }
         doc.SaveAs(path);
     }
@@ -140,6 +142,23 @@ internal static class SamplePlan
             Make(MarkupKind.Highlight, MarkupStyle.DefaultFor(MarkupKind.Highlight), "", new(bx + 8, 28 + 56), new(bx + 200, 28 + 82)),
             Make(MarkupKind.Polyline, new MarkupStyle(new PdfColor(30, 140, 60), null, 1, 2), "Fluchtweg",
                 new(ox + 5 * M, oy + 3 * M), new(ox + 5 * M, oy + 6.5 * M), new(ox + 25 * M, oy + 6.5 * M), new(ox + 25 * M, oy + 9 * M)),
+        ];
+    }
+
+    /// <summary>Beispielmessungen im Maßstab 1:50: Fläche der Küche, Gebäudeabschnitt, Anzahl der Innentüren.</summary>
+    private static List<Markup> Measurements()
+    {
+        const double ox = 220, oy = 360;
+        var scale = MeasureScale.FromRatio(50);
+        var created = new DateTimeOffset(2026, 10, 16, 9, 45, 0, TimeSpan.FromHours(2));
+        Markup Make(MarkupKind kind, string text, params PdfPoint[] pts) =>
+            new($"e360-beispiel-{kind.ToString().ToLowerInvariant()}", kind, [pts], MarkupStyle.DefaultFor(kind), text, "Mengenermittlung", created, created,
+                Scale: kind == MarkupKind.Count ? null : scale);
+        return
+        [
+            Make(MarkupKind.Area, "0.02 Küche", new(ox + 10 * M, oy + 6 * M), new(ox + 20 * M, oy + 6 * M), new(ox + 20 * M, oy + 16 * M), new(ox + 10 * M, oy + 16 * M)),
+            Make(MarkupKind.Length, "Achse A bis C", new(ox, oy + 17 * M), new(ox + 10 * M, oy + 17 * M)),
+            Make(MarkupKind.Count, "Innentüren", new(ox + 4.5 * M, oy + 6 * M), new(ox + 14.5 * M, oy + 6 * M), new(ox + 24.5 * M, oy + 6 * M)),
         ];
     }
 

@@ -5,7 +5,7 @@ namespace Egle360.Pdf.Markups;
 /// entstehen durch Ziehen, Freihand durch Zeichnen bei gedrückter Taste, Polylinie, Polygon und Wolke durch einzelne
 /// Klicks (Abschluss mit Doppelklick oder Eingabetaste), die Notiz durch einen Klick.
 /// </summary>
-public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string author, int pageRotation, double minSize)
+public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string author, int pageRotation, double minSize, MeasureScale? scale = null)
 {
     private readonly List<PdfPoint> _points = [];
     private bool _pressed;
@@ -109,13 +109,12 @@ public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string aut
         var vertices = new List<PdfPoint>();
         foreach (var p in _points.Take(_points.Count - 1))
         {
-            if (vertices.Count == 0 || vertices[^1].DistanceTo(p) >= minSize / 4)
+            if (vertices.Count == 0 || vertices[^1].DistanceTo(p) >= minSize / 4 || (Kind == MarkupKind.Count && !vertices.Contains(p)))
             {
                 vertices.Add(p);
             }
         }
-        var needed = MarkupKinds.IsClosed(Kind) ? 3 : 2;
-        return Complete(vertices.Count >= needed ? [vertices.ToArray()] : null);
+        return Complete(vertices.Count >= MarkupKinds.MinimumPoints(Kind) ? [vertices.ToArray()] : null);
     }
 
     public void Cancel()
@@ -136,17 +135,24 @@ public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string aut
             IReadOnlyList<PdfPoint> pts = Kind switch
             {
                 MarkupKind.Note => [_points[0]],
-                _ when MarkupKinds.IsMultiPoint(Kind) && _points.Count == 2 => _points.ToArray(),
+                // Beim Zählen folgt kein Punkt dem Mauszeiger, sonst stimmt die angezeigte Anzahl nicht.
+                MarkupKind.Count => _points.Take(Math.Max(1, _points.Count - 1)).ToArray(),
                 _ => _points.ToArray(),
             };
-            var previewKind = MarkupKinds.IsMultiPoint(Kind) && pts.Count < 3 ? MarkupKind.Polyline : Kind;
-            return new Markup("preview", previewKind, [pts], style, "", author, DateTimeOffset.Now, DateTimeOffset.Now, pageRotation);
+            var previewKind = Kind switch
+            {
+                MarkupKind.Count => Kind,
+                MarkupKind.Perimeter or MarkupKind.Area when pts.Count < 3 => MarkupKind.Polylength,
+                _ when MarkupKinds.IsMultiPoint(Kind) && pts.Count < 3 => MarkupKinds.IsMeasurement(Kind) ? MarkupKind.Polylength : MarkupKind.Polyline,
+                _ => Kind,
+            };
+            return new Markup("preview", previewKind, [pts], style, "", author, DateTimeOffset.Now, DateTimeOffset.Now, pageRotation, scale);
         }
     }
 
     private Markup? Complete(IReadOnlyList<IReadOnlyList<PdfPoint>>? paths)
     {
         Cancel();
-        return paths is null ? null : Markup.Create(Kind, paths, style, author, pageRotation);
+        return paths is null ? null : Markup.Create(Kind, paths, style, author, pageRotation) with { Scale = MarkupKinds.IsMeasurement(Kind) ? scale : null };
     }
 }

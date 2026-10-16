@@ -14,6 +14,13 @@ public enum MarkupKind
     TextBox,
     Note,
     Highlight,
+
+    // Messungen (Mengenermittlung). Werte ergeben sich aus der Geometrie und dem Maßstab der Messung.
+    Length,
+    Polylength,
+    Perimeter,
+    Area,
+    Count,
 }
 
 /// <summary>Punkt im PDF-Benutzerkoordinatensystem (Punkt, y nach oben, ohne Seitendrehung).</summary>
@@ -75,6 +82,7 @@ public sealed record MarkupStyle(PdfColor Stroke, PdfColor? Fill, double Opacity
         MarkupKind.Highlight => new MarkupStyle(new PdfColor(255, 220, 0), new PdfColor(255, 220, 0), 0.4, 0),
         MarkupKind.Note => new MarkupStyle(new PdfColor(40, 40, 40), new PdfColor(255, 214, 10), 1, 0.75),
         MarkupKind.TextBox => new MarkupStyle(new PdfColor(200, 30, 30), null, 1, 1, 12),
+        _ when MarkupKinds.IsMeasurement(kind) => new MarkupStyle(new PdfColor(22, 119, 210), null, 1, 1.5, 10),
         _ => new MarkupStyle(new PdfColor(200, 30, 30), null, 1, 1.5),
     };
 }
@@ -90,6 +98,7 @@ public sealed record MarkupStyle(PdfColor Stroke, PdfColor? Fill, double Opacity
 /// </param>
 /// <param name="Text">Inhalt (Textfeld, Notiz) oder Kommentar (alle anderen).</param>
 /// <param name="TextRotation">Seitendrehung beim Anlegen (0, 90, 180, 270), damit Text auf dem Bildschirm aufrecht steht.</param>
+/// <param name="Scale">Maßstab einer Messung; bei anderen Markierungen null.</param>
 public sealed record Markup(
     string Id,
     MarkupKind Kind,
@@ -99,7 +108,8 @@ public sealed record Markup(
     string Author,
     DateTimeOffset Created,
     DateTimeOffset Modified,
-    int TextRotation = 0)
+    int TextRotation = 0,
+    MeasureScale? Scale = null)
 {
     public IReadOnlyList<PdfPoint> Points => Paths.Count > 0 ? Paths[0] : [];
 
@@ -117,6 +127,8 @@ public sealed record Markup(
     public Markup WithStyle(MarkupStyle style) => this with { Style = style, Modified = DateTimeOffset.Now };
 
     public Markup WithText(string text) => this with { Text = text, Modified = DateTimeOffset.Now };
+
+    public Markup WithScale(MeasureScale? scale) => this with { Scale = scale, Modified = DateTimeOffset.Now };
 }
 
 /// <summary>Eigenschaften der Markierungsarten.</summary>
@@ -136,6 +148,11 @@ public static class MarkupKinds
         MarkupKind.TextBox => "Textfeld",
         MarkupKind.Note => "Notiz",
         MarkupKind.Highlight => "Hervorhebung",
+        MarkupKind.Length => "Länge",
+        MarkupKind.Polylength => "Polylänge",
+        MarkupKind.Perimeter => "Umfang",
+        MarkupKind.Area => "Fläche",
+        MarkupKind.Count => "Anzahl",
         _ => kind.ToString(),
     };
 
@@ -143,11 +160,20 @@ public static class MarkupKinds
     public static bool IsBox(MarkupKind kind) => kind is MarkupKind.Rectangle or MarkupKind.Ellipse or MarkupKind.TextBox or MarkupKind.Highlight;
 
     /// <summary>Arten mit beliebig vielen Eckpunkten, die per Klick gesetzt werden.</summary>
-    public static bool IsMultiPoint(MarkupKind kind) => kind is MarkupKind.Polyline or MarkupKind.Polygon or MarkupKind.Cloud;
+    public static bool IsMultiPoint(MarkupKind kind) =>
+        kind is MarkupKind.Polyline or MarkupKind.Polygon or MarkupKind.Cloud
+            or MarkupKind.Polylength or MarkupKind.Perimeter or MarkupKind.Area or MarkupKind.Count;
 
-    public static bool IsClosed(MarkupKind kind) => kind is MarkupKind.Polygon or MarkupKind.Cloud;
+    public static bool IsClosed(MarkupKind kind) => kind is MarkupKind.Polygon or MarkupKind.Cloud or MarkupKind.Perimeter or MarkupKind.Area;
 
-    public static bool CanFill(MarkupKind kind) => kind is MarkupKind.Rectangle or MarkupKind.Ellipse or MarkupKind.Polygon or MarkupKind.Cloud or MarkupKind.TextBox;
+    public static bool CanFill(MarkupKind kind) =>
+        kind is MarkupKind.Rectangle or MarkupKind.Ellipse or MarkupKind.Polygon or MarkupKind.Cloud or MarkupKind.TextBox or MarkupKind.Area;
+
+    /// <summary>Messwerkzeuge der Mengenermittlung.</summary>
+    public static bool IsMeasurement(MarkupKind kind) => kind is >= MarkupKind.Length and <= MarkupKind.Count;
+
+    /// <summary>Mindestzahl an Punkten einer fertigen Markierung mit Einzelklicks.</summary>
+    public static int MinimumPoints(MarkupKind kind) => kind == MarkupKind.Count ? 1 : IsClosed(kind) ? 3 : 2;
 
     public static bool HasText(MarkupKind kind) => kind is MarkupKind.TextBox or MarkupKind.Note;
 

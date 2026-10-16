@@ -43,7 +43,7 @@ public partial class DocumentsView
             }
             else
             {
-                StartSearch(SearchBox.Text);
+                _ = SearchAsync(SearchBox.Text);
             }
             e.Handled = true;
         }
@@ -57,14 +57,23 @@ public partial class DocumentsView
 
     private string? _lastQuery;
 
-    private async void StartSearch(string query)
+    /// <summary>Durchsucht alle Seiten des aktiven Dokuments; Treffer erscheinen nach und nach in der Liste.</summary>
+    internal async Task SearchAsync(string query)
     {
+        if (SearchBox.Text != query)
+        {
+            SearchBox.Text = query;
+        }
         ResetSearch();
         if (_active is not { } open || string.IsNullOrWhiteSpace(query))
         {
             return;
         }
         _lastQuery = query;
+        if (SearchTab.IsChecked != true)
+        {
+            ShowSearch();
+        }
         var cancel = _searchCancel = new CancellationTokenSource();
         var document = open.Document;
         var pageCount = document.PageCount;
@@ -117,6 +126,14 @@ public partial class DocumentsView
         {
             SearchStatus.Text = $"Die Suche wurde abgebrochen: {ex.Message}";
         }
+    }
+
+    /// <summary>Für den Screenshot-Modus: Suche beenden und wieder die Seitenminiaturen zeigen.</summary>
+    internal void EndSearchForScreenshot()
+    {
+        ResetSearch();
+        SearchBox.Text = "";
+        PagesTab.IsChecked = true;
     }
 
     /// <summary>Springt zur nächsten oder vorherigen Fundstelle (F3, Umschalt+F3).</summary>

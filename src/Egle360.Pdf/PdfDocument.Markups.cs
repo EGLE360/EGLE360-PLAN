@@ -237,11 +237,17 @@ public sealed unsafe partial class PdfDocument
                         AddInk(annot, path);
                     }
                     break;
-                case MarkupKind.Line or MarkupKind.Arrow or MarkupKind.Polyline:
+                case MarkupKind.Line or MarkupKind.Arrow or MarkupKind.Polyline or MarkupKind.Length or MarkupKind.Polylength:
                     AddInk(annot, m.Points);
                     break;
-                case MarkupKind.Polygon or MarkupKind.Cloud:
+                case MarkupKind.Polygon or MarkupKind.Cloud or MarkupKind.Perimeter or MarkupKind.Area:
                     AddInk(annot, [.. m.Points, m.Points[0]]);
+                    break;
+                case MarkupKind.Count:
+                    foreach (var p in m.Points)
+                    {
+                        AddInk(annot, [p, p + new PdfPoint(0.01, 0)]);
+                    }
                     break;
                 case MarkupKind.Highlight:
                     var r = PdfRect.FromPoints(m.Points[0], m.Points[1]);
@@ -338,6 +344,100 @@ public sealed unsafe partial class PdfDocument
     private void ResetMarkupState()
     {
         _markups.Clear();
+        _scales.Clear();
         StructureVersion++;
+    }
+
+    // ---------- Seitenmaßstab ----------
+
+    /// <summary>Privater Schlüssel der verborgenen Anmerkung, die den Maßstab einer Seite trägt.</summary>
+    public const string ScaleKey = "E360Scale";
+
+    private readonly Dictionary<int, MeasureScale?> _scales = new();
+
+    /// <summary>Wird ausgelöst, wenn sich der Maßstab einer Seite ändert (Argument: Seitenindex).</summary>
+    public event EventHandler<int>? PageScaleChanged;
+
+    /// <summary>Maßstab der Seite für Messungen; null, solange keiner festgelegt ist.</summary>
+    public MeasureScale? GetPageScale(int pageIndex)
+    {
+        lock (PdfiumLibrary.Sync)
+        {
+            CheckIndex(pageIndex);
+            if (_scales.TryGetValue(pageIndex, out var cached))
+            {
+                return cached;
+            }
+            MeasureScale? scale = null;
+            var page = GetPage(pageIndex);
+            var count = Pdfium.FPDFPage_GetAnnotCount(page);
+            for (var i = 0; i < count && scale is null; i++)
+            {
+                var annot = Pdfium.FPDFPage_GetAnnot(page, i);
+                if (annot == 0)
+                {
+                    continue;
+                }
+                if (ReadString(annot, ScaleKey) is { } json)
+                {
+                    scale = MarkupSerializer.ScaleFromJson(json);
+                }
+                Pdfium.FPDFPage_CloseAnnot(annot);
+            }
+            _scales[pageIndex] = scale;
+            return scale;
+        }
+    }
+
+    /// <summary>
+    /// Legt den Maßstab der Seite fest. Er wird als verborgene Anmerkung in der Seite gespeichert, damit er nach dem
+    /// Speichern erhalten bleibt; andere Programme zeigen sie nicht an.
+    /// </summary>
+    public void SetPageScale(int pageIndex, MeasureScale? scale)
+    {
+        lock (PdfiumLibrary.Sync)
+        {
+            EnsureCanAnnotate();
+            CheckIndex(pageIndex);
+            var page = GetPage(pageIndex);
+            for (var i = Pdfium.FPDFPage_GetAnnotCount(page) - 1; i >= 0; i--)
+            {
+                var annot = Pdfium.FPDFPage_GetAnnot(page, i);
+                if (annot == 0)
+                {
+                    continue;
+                }
+                var isScale = ReadString(annot, ScaleKey) is not null;
+                Pdfium.FPDFPage_CloseAnnot(annot);
+                if (isScale)
+                {
+                    Pdfium.FPDFPage_RemoveAnnot(page, i);
+                }
+            }
+            if (scale is not null)
+            {
+                var annot = Pdfium.FPDFPage_CreateAnnot(page, Pdfium.FPDF_ANNOT_SQUARE);
+                if (annot == 0)
+                {
+                    throw new PdfException(PdfErrorKind.Unknown, "Der Maßstab konnte nicht gespeichert werden.");
+                }
+                try
+                {
+                    var rect = new Pdfium.FS_RECTF { left = 0, bottom = 0, right = 1, top = 1 };
+                    Pdfium.FPDFAnnot_SetRect(annot, &rect);
+                    Pdfium.FPDFAnnot_SetFlags(annot, Pdfium.FPDF_ANNOT_FLAG_HIDDEN);
+                    WriteString(annot, "NM", "e360-scale");
+                    WriteString(annot, "Subj", "EGLE360 Maßstab");
+                    WriteString(annot, ScaleKey, MarkupSerializer.ScaleToJson(scale));
+                }
+                finally
+                {
+                    Pdfium.FPDFPage_CloseAnnot(annot);
+                }
+            }
+            _scales[pageIndex] = scale;
+            IsModified = true;
+        }
+        PageScaleChanged?.Invoke(this, pageIndex);
     }
 }

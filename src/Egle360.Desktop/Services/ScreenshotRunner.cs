@@ -62,6 +62,29 @@ internal static class ScreenshotRunner
                         Save(window, Path.Combine(outputDir, name + "-markierungen.png"));
                         viewer.ClearSelection();
                     }
+                    // Mengenermittlung: Fläche der Küche ausgewählt, Wert in der Statuszeile.
+                    if (window.Documents.ActiveDocument?.GetMarkups(0).FirstOrDefault(m => m.Kind == Egle360.Pdf.Markups.MarkupKind.Area) is { } area)
+                    {
+                        viewer.SetZoom(0.75);
+                        WaitForRender(window);
+                        var r = Egle360.Pdf.Markups.MarkupGeometry.HandleRect(area);
+                        viewer.CenterOn(0, new Egle360.Pdf.Markups.PdfPoint((r.Left + r.Right) / 2, (r.Bottom + r.Top) / 2));
+                        viewer.Select(0, area.Id);
+                        WaitForDocuments(window);
+                        Save(window, Path.Combine(outputDir, name + "-messen.png"));
+                        viewer.ClearSelection();
+                    }
+
+                    // Textsuche mit Trefferliste in der Seitenleiste.
+                    var search = window.Documents.SearchAsync("Zimmer");
+                    while (!search.IsCompleted)
+                    {
+                        WaitForRender(window);
+                        Thread.Sleep(20);
+                    }
+                    WaitForDocuments(window);
+                    Save(window, Path.Combine(outputDir, name + "-suche.png"));
+                    window.Documents.EndSearchForScreenshot();
                     viewer.FitWidth();
                     continue;
                 }

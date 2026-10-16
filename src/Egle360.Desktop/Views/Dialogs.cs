@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using Egle360.Pdf;
+using Egle360.Pdf.Markups;
 
 namespace Egle360.Desktop.Views;
 
@@ -44,6 +45,33 @@ internal static class Dialogs
         };
         return Show(owner, title, hint + " Übernehmen mit Strg+Eingabe.", box, "Übernehmen", () => box.Text, () => { box.Focus(); box.CaretIndex = box.Text.Length; },
             submitOnCtrlEnter: box);
+    }
+
+    /// <summary>Wirkliches Maß der gezogenen Kalibrierstrecke mit Einheit; optional für alle Seiten.</summary>
+    public static (double Value, MeasureUnit Unit, bool AllPages)? AskCalibration(Window owner, MeasureUnit unit, bool offerAllPages)
+    {
+        var box = new TextBox { Style = (Style)owner.FindResource("InputBox"), Width = 140 };
+        var units = new ComboBox { ItemsSource = Enum.GetValues<MeasureUnit>().Select(Measurement.Symbol).ToList(), SelectedIndex = (int)unit, Width = 70, Margin = new Thickness(8, 0, 0, 0) };
+        var all = new CheckBox { Content = "Für alle Seiten übernehmen", Margin = new Thickness(0, 12, 0, 0), Visibility = offerAllPages ? Visibility.Visible : Visibility.Collapsed };
+        all.SetResourceReference(Control.ForegroundProperty, "TextBrush");
+        var error = new TextBlock { Style = (Style)owner.FindResource("TextCaption"), Margin = new Thickness(0, 6, 0, 0), Visibility = Visibility.Collapsed, Text = "Bitte eine Zahl größer als null eingeben, zum Beispiel 4,25." };
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 0) };
+        row.Children.Add(box);
+        row.Children.Add(units);
+        var content = new StackPanel();
+        content.Children.Add(row);
+        content.Children.Add(error);
+        content.Children.Add(all);
+        double value = 0;
+        var answer = Show(owner, "Maßstab kalibrieren", "Wie lang ist die gezogene Strecke in Wirklichkeit?", content, "Übernehmen",
+            () => Measurement.TryParseNumber(box.Text, out value) ? "ok" : "", () => box.Focus(),
+            validate: () =>
+            {
+                var ok = Measurement.TryParseNumber(box.Text, out _);
+                error.Visibility = ok ? Visibility.Collapsed : Visibility.Visible;
+                return ok;
+            });
+        return answer == "ok" ? (value, (MeasureUnit)units.SelectedIndex, all.IsChecked == true) : null;
     }
 
     public static void ShowProperties(Window owner, PdfDocument doc, string title)
@@ -105,7 +133,7 @@ internal static class Dialogs
     };
 
     /// <summary>Allgemeiner Dialog mit Titel, Hinweis, Inhalt und Schaltflächen. Liefert null bei Abbruch.</summary>
-    private static string? Show(Window owner, string title, string hint, UIElement content, string? okText, Func<string> result, Action focus, UIElement? submitOnCtrlEnter = null)
+    private static string? Show(Window owner, string title, string hint, UIElement content, string? okText, Func<string> result, Action focus, UIElement? submitOnCtrlEnter = null, Func<bool>? validate = null)
     {
         var window = new Window
         {
@@ -130,7 +158,15 @@ internal static class Dialogs
         if (okText is not null)
         {
             var ok = new Button { Content = okText, Style = (Style)owner.FindResource("ButtonPrimary"), IsDefault = true };
-            ok.Click += (_, _) => { answer = result(); window.DialogResult = true; };
+            ok.Click += (_, _) =>
+            {
+                if (validate is not null && !validate())
+                {
+                    return;
+                }
+                answer = result();
+                window.DialogResult = true;
+            };
             buttons.Children.Add(ok);
         }
         var cancel = new Button

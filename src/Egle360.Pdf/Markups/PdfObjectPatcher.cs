@@ -16,7 +16,7 @@ namespace Egle360.Pdf.Markups;
 internal static class PdfObjectPatcher
 {
     private static readonly byte[] Marker = Encoding.ASCII.GetBytes("/" + MarkupSerializer.StandardKey);
-    private static readonly HashSet<string> AllowedPayloadKeys = ["Subtype", "L", "LE", "Vertices", "BE", "IT", "Name"];
+    private static readonly HashSet<string> AllowedPayloadKeys = ["Subtype", "L", "LE", "Vertices", "BE", "IT", "Name", "Measure"];
     private const int MaxObjectSize = 64 * 1024 * 1024;
 
     /// <summary>Durchsucht den Datenstrom ab <paramref name="from"/> und schreibt alle betroffenen Objekte um.</summary>

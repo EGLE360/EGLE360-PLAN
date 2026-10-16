@@ -29,6 +29,9 @@ public enum ViewerTool
 
     /// <summary>Neue Markierung der Art <see cref="PdfViewer.DrawKind"/> zeichnen.</summary>
     Draw,
+
+    /// <summary>Zwei Punkte einer bekannten Strecke setzen, um den Maßstab zu kalibrieren.</summary>
+    Calibrate,
 }
 
 /// <summary>

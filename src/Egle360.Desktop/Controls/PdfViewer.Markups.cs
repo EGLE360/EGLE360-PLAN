@@ -39,6 +39,20 @@ public sealed partial class PdfViewer
 
     public MarkupKind DrawKind { get; private set; } = MarkupKind.Rectangle;
 
+    /// <summary>Maßstab einer Seite für neue Messungen.</summary>
+    public Func<int, MeasureScale?> ScaleProvider { get; set; } = _ => null;
+
+    /// <summary>Eine Messung soll auf einer Seite ohne Maßstab beginnen (Argument: Seitenindex).</summary>
+    public event EventHandler<int>? ScaleRequired;
+
+    /// <summary>Kalibrierstrecke gesetzt: Seite und Länge der Strecke in Punkt.</summary>
+    public event EventHandler<(int Page, double LengthPt)>? CalibrationMeasured;
+
+    /// <summary>Art, die beim aktuellen Werkzeug gezeichnet wird; beim Kalibrieren eine einfache Linie.</summary>
+    private MarkupKind EffectiveKind => _tool == ViewerTool.Calibrate ? MarkupKind.Line : DrawKind;
+
+    private static readonly MarkupStyle CalibrationStyle = new(new PdfColor(230, 120, 0), null, 1, 1.5);
+
     public ViewerTool Tool => _tool;
 
     /// <summary>Ausgelöst, wenn sich Auswahl oder Werkzeug ändern.</summary>
@@ -66,7 +80,7 @@ public sealed partial class PdfViewer
         {
             DrawKind = k;
         }
-        if (tool == ViewerTool.Draw)
+        if (tool is ViewerTool.Draw or ViewerTool.Calibrate)
         {
             ClearSelection();
         }
@@ -196,7 +210,7 @@ public sealed partial class PdfViewer
         Cursor = _tool switch
         {
             ViewerTool.Pan => Cursors.Hand,
-            ViewerTool.Draw => CanAnnotate ? Cursors.Cross : Cursors.No,
+            ViewerTool.Draw or ViewerTool.Calibrate => CanAnnotate ? Cursors.Cross : Cursors.No,
             _ => e is not null && MarkupAt(e, out _, out _) is not null ? Cursors.SizeAll : Cursors.Arrow,
         };
     }
@@ -271,10 +285,10 @@ public sealed partial class PdfViewer
             case ViewerTool.Pan:
                 StartPan(e);
                 break;
-            case ViewerTool.Draw when CanAnnotate:
+            case ViewerTool.Draw or ViewerTool.Calibrate when CanAnnotate:
                 DrawDown(e);
                 break;
-            case ViewerTool.Draw:
+            case ViewerTool.Draw or ViewerTool.Calibrate:
                 StartPan(e);
                 break;
             default:
@@ -285,7 +299,8 @@ public sealed partial class PdfViewer
 
     private void DrawDown(MouseButtonEventArgs e)
     {
-        var multi = MarkupKinds.IsMultiPoint(DrawKind);
+        var kind = EffectiveKind;
+        var multi = MarkupKinds.IsMultiPoint(kind);
         var hit = _drawing is { IsActive: true } && multi ? PageAt(e, clampTo: true, page: _drawingPage) : PageAt(e);
         if (hit is not { } h)
         {
@@ -298,9 +313,20 @@ public sealed partial class PdfViewer
         }
         if (_drawing is null || !_drawing.IsActive)
         {
+            MeasureScale? scale = null;
+            if (_tool == ViewerTool.Draw && MarkupKinds.IsMeasurement(kind) && kind != MarkupKind.Count)
+            {
+                scale = ScaleProvider(h.Page);
+                if (scale is null)
+                {
+                    ScaleRequired?.Invoke(this, h.Page);
+                    return;
+                }
+            }
             var rotation = Transform(h.Page).Rotation;
             var minSize = DragThreshold / (_layout.Zoom * PageLayoutDipPerPoint);
-            _drawing = new MarkupDrawing(DrawKind, StyleProvider(DrawKind), Author, rotation, minSize);
+            var style = _tool == ViewerTool.Calibrate ? CalibrationStyle : StyleProvider(kind);
+            _drawing = new MarkupDrawing(kind, style, Author, rotation, minSize, scale);
             _drawingPage = h.Page;
         }
         _drawing.Press(h.User);
@@ -443,6 +469,12 @@ public sealed partial class PdfViewer
         _scroll.ReleaseMouseCapture();
         if (markup is null || _history is null)
         {
+            return;
+        }
+        if (_tool == ViewerTool.Calibrate)
+        {
+            SetTool(ViewerTool.Select);
+            CalibrationMeasured?.Invoke(this, (page, markup.Points[0].DistanceTo(markup.Points[1])));
             return;
         }
         if (!Run(() => _history.Add(page, markup)))

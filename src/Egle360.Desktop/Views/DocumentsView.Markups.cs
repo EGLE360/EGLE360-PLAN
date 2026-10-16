@@ -45,12 +45,18 @@ public partial class DocumentsView
         (nameof(MarkupKind.TextBox), "Textfeld", "M1.5,2.5 H14.5 V13.5 H1.5 Z M5,5.5 H11 M8,5.5 V11", Key.T),
         (nameof(MarkupKind.Note), "Notiz", "M2,2.5 H14 V10.5 H7 L4,13.5 L4.5,10.5 H2 Z M4.5,5 H11.5 M4.5,7.5 H9.5", Key.K),
         (nameof(MarkupKind.Highlight), "Hervorhebung", "M2.5,14 H13.5 M5,11 L10.5,2.5 L13,4 L7.5,12.5 Z", Key.M),
+        (nameof(MarkupKind.Length), "Länge messen", "M2,10 H14 M2,7 V13 M14,7 V13 M5,10 V8.5 M8,10 V7.5 M11,10 V8.5", null),
+        (nameof(MarkupKind.Polylength), "Polylänge messen (Abschluss mit Doppelklick oder Eingabetaste)", "M2,13.5 L6,5 L10,10 L14,2.5 M1,12 L3,15 M13,1.5 L15,3.5", null),
+        (nameof(MarkupKind.Perimeter), "Umfang messen (Abschluss mit Doppelklick oder Eingabetaste)", "M3.5,3.5 H12.5 V12.5 H3.5 Z M1.5,1.5 L5.5,5.5 M10.5,10.5 L14.5,14.5", null),
+        (nameof(MarkupKind.Area), "Fläche messen (Abschluss mit Doppelklick oder Eingabetaste)", "M2.5,2.5 H13.5 V13.5 H2.5 Z M2.5,8 L8,2.5 M2.5,13.5 L13.5,2.5 M8,13.5 L13.5,8", null),
+        (nameof(MarkupKind.Count), "Anzahl zählen (Abschluss mit Eingabetaste)", "M2.5,5 A1.5,1.5 0 1 0 5.5,5 A1.5,1.5 0 1 0 2.5,5 Z M10.5,5 A1.5,1.5 0 1 0 13.5,5 A1.5,1.5 0 1 0 10.5,5 Z M6.5,11.5 A1.5,1.5 0 1 0 9.5,11.5 A1.5,1.5 0 1 0 6.5,11.5 Z", null),
     ];
 
     private readonly WpfTextOutliner _outliner = new();
     private readonly Dictionary<string, RadioButton> _toolButtons = new();
     private readonly List<RadioButton> _swatches = [];
     private Button _widthButton = null!;
+    private Button _scaleButton = null!;
     private Button _opacityButton = null!;
     private ToggleButton _fillButton = null!;
     private Button _undoButton = null!;
@@ -77,12 +83,18 @@ public partial class DocumentsView
             AutomationPropertiesHelper.SetName(button, name);
             button.Checked += OnToolChecked;
             _toolButtons[key] = button;
+            if (key == nameof(MarkupKind.Length))
+            {
+                MarkupBar.Children.Add(Separator());
+            }
             MarkupBar.Children.Add(button);
             if (key == "pan")
             {
                 MarkupBar.Children.Add(Separator());
             }
         }
+        _scaleButton = TextButton("Maßstab der Seite", OnScaleMenu);
+        MarkupBar.Children.Add(_scaleButton);
         _toolButtons["select"].IsChecked = true;
 
         MarkupBar.Children.Add(Separator());
@@ -295,9 +307,12 @@ public partial class DocumentsView
         StatusMarkup.Text = selected.Count switch
         {
             0 => "",
+            1 when MarkupKinds.IsMeasurement(selected[0].Kind) => $"{MarkupKinds.DisplayName(selected[0].Kind)}: {Measurement.Describe(selected[0])}"
+                + (selected[0].Scale is { } sc ? $", Maßstab {sc.Label}" : ""),
             1 => $"{MarkupKinds.DisplayName(selected[0].Kind)} ausgewählt, {selected[0].Author}, {selected[0].Modified.LocalDateTime:g}",
-            _ => $"{selected.Count} Markierungen ausgewählt",
+            _ => $"{selected.Count} Markierungen ausgewählt" + SelectionTotals(selected),
         };
+        RefreshScaleButton(canAnnotate);
         if (_active is not null && !canAnnotate)
         {
             StatusMarkup.Text = "Markierungen sind laut Berechtigungen des Dokuments nicht erlaubt.";
