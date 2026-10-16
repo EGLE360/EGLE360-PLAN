@@ -74,6 +74,38 @@ internal static class Dialogs
         return answer == "ok" ? (value, (MeasureUnit)units.SelectedIndex, all.IsChecked == true) : null;
     }
 
+    /// <summary>
+    /// Höhe (Wandfläche) oder Tiefe (Volumen) in Metern. Liefert null bei Abbruch, sonst den Wert; ein leeres Feld
+    /// ergibt 0 und entfernt die Angabe.
+    /// </summary>
+    public static double? AskDepth(Window owner, string title, string hint, double? current)
+    {
+        var box = new TextBox { Style = (Style)owner.FindResource("InputBox"), Width = 140, Text = current is { } c ? Measurement.Number(c, 2) : "" };
+        var unit = new TextBlock { Style = (Style)owner.FindResource("TextBody"), Text = "m", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
+        var error = new TextBlock { Style = (Style)owner.FindResource("TextCaption"), Margin = new Thickness(0, 6, 0, 0), Visibility = Visibility.Collapsed, Text = "Bitte eine Zahl größer als null eingeben, zum Beispiel 2,80, oder das Feld leeren." };
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 0) };
+        row.Children.Add(box);
+        row.Children.Add(unit);
+        var content = new StackPanel();
+        content.Children.Add(row);
+        content.Children.Add(error);
+        bool Valid(out double value)
+        {
+            value = 0;
+            return box.Text.Trim().Length == 0 || (Measurement.TryParseNumber(box.Text, out value) && value > 0 && value < 1e6);
+        }
+        double result = 0;
+        var answer = Show(owner, title, hint + " Leer lassen, um die Angabe zu entfernen.", content, "Übernehmen",
+            () => Valid(out result) ? "ok" : "", () => { box.Focus(); box.SelectAll(); },
+            validate: () =>
+            {
+                var ok = Valid(out _);
+                error.Visibility = ok ? Visibility.Collapsed : Visibility.Visible;
+                return ok;
+            });
+        return answer == "ok" ? result : null;
+    }
+
     public static void ShowProperties(Window owner, PdfDocument doc, string title)
     {
         var meta = doc.GetMetadata();

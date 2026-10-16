@@ -73,6 +73,9 @@ public sealed partial class PdfViewer
     /// <summary>Text einer Markierung soll bearbeitet werden (Doppelklick, neues Textfeld, Kontextmenü).</summary>
     public event EventHandler<(int Page, Markup Markup)>? EditTextRequested;
 
+    /// <summary>Höhe oder Tiefe einer Messung soll eingegeben werden (Kontextmenü).</summary>
+    public event EventHandler<(int Page, Markup Markup)>? DepthRequested;
+
     public int SelectedPage => _selected.Count > 0 ? _selectedPage : -1;
 
     public IReadOnlyList<Markup> SelectedMarkups =>
@@ -640,6 +643,15 @@ public sealed partial class PdfViewer
         }
         Add(MarkupKinds.HasText(markup.Kind) ? "Text bearbeiten …" : "Kommentar bearbeiten …", () => EditTextRequested?.Invoke(this, (page, markup)), editable);
         menu.Items.Add(new Separator());
+        if (Measurement.SupportsDepth(markup.Kind))
+        {
+            var depthHeader = markup.Kind == MarkupKind.Area ? "Tiefe für Volumen …" : "Höhe für Wandfläche …";
+            Add(depthHeader, () => DepthRequested?.Invoke(this, (page, markup)), editable && markup.Scale is not null);
+            if (markup.Kind != MarkupKind.Area)
+            {
+                menu.Items.Add(new Separator());
+            }
+        }
         if (markup.Kind == MarkupKind.Area)
         {
             Add("Ausschnitt hinzufügen", () => StartCutout(page, markup.Id), editable);

@@ -64,7 +64,7 @@ Im Startbildschirm „Beispielplan öffnen“ wählen. Das ist ein frei erfunden
 - Strg+C, Strg+V, Strg+D (Duplizieren), Strg+A (alle auf der Seite), Entf, Esc, Strg+Z, Strg+Y.
 - Nach dem Speichern sind Markierungen normale PDF-Anmerkungen. Zum Gegenprüfen die Datei in einem anderen Programm öffnen, zum Beispiel Bluebeam, Adobe Acrobat oder einem Browser. Sie sollten dort an derselben Stelle gleich aussehen.
 
-### Mengenermittlung (neu)
+### Mengenermittlung
 Rechts in der Markierungsleiste sitzen die Messwerkzeuge und die Schaltfläche für den Maßstab.
 
 1. Maßstab festlegen: auf „Kein Maßstab“ klicken und einen Maßstab wie 1:50 wählen. Alternativ „Kalibrieren …“: eine bekannte Strecke im Plan aufziehen (zum Beispiel eine Bemaßung) und das wirkliche Maß eingeben, etwa „10“ oder „4,25“. Einheit m, cm oder mm. Der Maßstab gilt je Seite und lässt sich auf alle Seiten übertragen.
@@ -75,17 +75,19 @@ Rechts in der Markierungsleiste sitzen die Messwerkzeuge und die Schaltfläche f
    - Ausschnitt: Rechtsklick auf den Rand oder die Beschriftung einer Fläche, „Ausschnitt hinzufügen“, dann das abzuziehende Polygon zeichnen (zum Beispiel einen Schacht). Der Wert wird um den Ausschnitt verringert.
    - Anzahl: jedes Objekt anklicken, mit Eingabetaste beenden. Braucht keinen Maßstab.
    - Winkel: erst einen Punkt auf dem ersten Schenkel, dann den Scheitel, dann einen Punkt auf dem zweiten Schenkel klicken. Braucht keinen Maßstab.
+   - Volumen: Rechtsklick auf eine Fläche, „Tiefe für Volumen …“, zum Beispiel 0,25 für eine Bodenplatte. Die Beschriftung zeigt dann Fläche und Volumen.
+   - Wandfläche: Rechtsklick auf eine Länge, Polylänge oder einen Umfang, „Höhe für Wandfläche …“, zum Beispiel 2,80. Ein leeres Feld entfernt die Angabe wieder.
 3. Der Wert steht als Beschriftung im Plan und ändert sich live beim Ziehen an den Eckpunkten.
 4. Wird der Maßstab einer Seite geändert, übernehmen die vorhandenen Messungen auf dieser Seite ihn. Rückgängig nimmt das zurück.
 
-Zum Ausprobieren im Beispielplan: Die Küche ist 10 m × 10 m, die Fläche muss also 100,00 m² ergeben. Der Abschnitt zwischen den Achsen A und C ist 10,00 m lang.
+Zum Ausprobieren im Beispielplan: Die Küche ist 10 m × 10 m, die Fläche muss also 100,00 m² ergeben. Der Abschnitt zwischen den Achsen A und C ist 10,00 m lang. Die Innenwand an Achse E ist 11,00 m lang und 2,80 m hoch, ihre Wandfläche also 30,80 m².
 
 ### Markierungs- und Mengenliste (neu)
 - Schaltfläche mit dem Listensymbol rechts oben in der Werkzeugleiste. Die Liste erscheint unter dem Plan und lässt sich in der Höhe ziehen.
 - Sie zeigt alle Markierungen des Dokuments mit Seite, Art, Messwert, Text, Maßstab, Autor und Datum. Spalten lassen sich durch Klick auf die Überschrift sortieren.
-- Filterfeld und „Nur Messungen“ grenzen die Liste ein. Oben stehen die Summen je Messart, zum Beispiel alle Flächen zusammen.
+- Filterfeld und „Nur Messungen“ grenzen die Liste ein. Oben stehen die Summen je Messart, zum Beispiel alle Flächen zusammen, dazu Volumen und Wandflächen.
 - Klick auf eine Zeile springt zur Markierung und wählt sie aus.
-- „Als CSV exportieren“ speichert die (gefilterte) Liste. Die Datei öffnet sich mit Doppelklick in Excel, mit deutschem Zahlenformat.
+- „Exportieren (Excel) …“ speichert die (gefilterte) Liste als Excel-Arbeitsmappe (XLSX) mit echten Zahlen und Datumswerten, einem Filter in der Kopfzeile und einem zweiten Blatt mit den Summen. Im Speichern-Dialog lässt sich stattdessen CSV wählen.
 
 ## Was noch fehlt
 
@@ -93,7 +95,7 @@ Diese Punkte sind geplant, aber noch nicht enthalten:
 
 - Drucken in Originalgröße oder gekachelt, geteilte und synchronisierte Ansichten, Metadaten bearbeiten.
 - Stempel, Unterschriften, Unterstreichen und Durchstreichen von Text, Bemaßungslinien, Drehen von Markierungen.
-- Messungen: Volumen, Wandflächen, Radius, Objektfang, Kostenansätze, Excel als XLSX und die Übernahme in EGLE360 AVA.
+- Messungen: Radius, Objektfang, Kostenansätze und die Übernahme in EGLE360 AVA.
 - Ob Bluebeam die gespeicherten Messungen als Messungen (mit Wert in der Markups-Liste) erkennt, ist noch nicht geprüft. Die Datei enthält dafür die genormten PDF-Messangaben; im Plan sind die Messungen in jedem Fall sichtbar.
 - BIM, 4D/5D, KI-Funktionen und die AVA-Anbindung folgen in späteren Phasen.
 - Programmsymbol, digitale Signatur und Installationsprogramm.

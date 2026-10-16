@@ -110,6 +110,29 @@ public static class Measurement
         };
     }
 
+    /// <summary>
+    /// Abgeleiteter Wert aus Höhe oder Tiefe: Volumen in m³ bei Flächen, Wandfläche in m² bei Längen, Polylängen
+    /// und Umfängen. Immer in Metern, unabhängig von der Anzeigeeinheit, weil Mengen so abgerechnet werden.
+    /// </summary>
+    public static (double Value, string Unit, string Name)? Derived(Markup m)
+    {
+        if (m.Depth is not { } depth || depth <= 0 || m.Scale is not { } s)
+        {
+            return null;
+        }
+        var mpp = s.MetersPerPoint;
+        return m.Kind switch
+        {
+            MarkupKind.Area => (NetArea(m) * mpp * mpp * depth, "m³", "Volumen"),
+            MarkupKind.Length or MarkupKind.Polylength => (PathLength(m.Points, false) * mpp * depth, "m²", "Wandfläche"),
+            MarkupKind.Perimeter => (PathLength(m.Points, true) * mpp * depth, "m²", "Wandfläche"),
+            _ => null,
+        };
+    }
+
+    /// <summary>Messarten, die eine Höhe oder Tiefe haben können.</summary>
+    public static bool SupportsDepth(MarkupKind kind) => kind is MarkupKind.Area or MarkupKind.Length or MarkupKind.Polylength or MarkupKind.Perimeter;
+
     /// <summary>Winkel am Scheitel <paramref name="vertex"/> zwischen den Schenkeln zu <paramref name="a"/> und <paramref name="b"/>, 0 bis 180 Grad.</summary>
     public static double AngleDegrees(PdfPoint a, PdfPoint vertex, PdfPoint b)
     {
@@ -164,20 +187,32 @@ public static class Measurement
             return $"{Number(v.Value, 1)}°";
         }
         var d = Decimals(m.Scale!.Unit);
-        return $"{Number(v.Value, d)} {v.Unit}";
+        var main = $"{Number(v.Value, d)} {v.Unit}";
+        return Derived(m) is { } x ? $"{main}, {Number(x.Value, 2)} {x.Unit}" : main;
     }
 
     /// <summary>Ausführlicher Text für Listen und Statuszeile, bei Flächen mit Umfang.</summary>
     public static string Describe(Markup m)
     {
-        var label = Label(m);
-        if (Compute(m) is { Perimeter: { } p, PerimeterUnit: { } pu } && m.Scale is { } s)
+        if (Compute(m) is not { } v || m.Scale is not { } s || m.Kind is MarkupKind.Count or MarkupKind.Angle)
         {
-            var cutouts = m.Paths.Count - 1;
-            var suffix = cutouts switch { <= 0 => "", 1 => ", 1 Ausschnitt abgezogen", _ => $", {cutouts} Ausschnitte abgezogen" };
-            return $"{label}, Umfang {Number(p, Decimals(s.Unit))} {pu}{suffix}";
+            return Label(m);
         }
-        return label;
+        var text = $"{Number(v.Value, Decimals(s.Unit))} {v.Unit}";
+        if (v is { Perimeter: { } p, PerimeterUnit: { } pu })
+        {
+            text += $", Umfang {Number(p, Decimals(s.Unit))} {pu}";
+        }
+        if (Derived(m) is { } x)
+        {
+            text += $", {x.Name} {Number(x.Value, 2)} {x.Unit} bei {(m.Kind == MarkupKind.Area ? "Tiefe" : "Höhe")} {Number(m.Depth!.Value, 2)} m";
+        }
+        var cutouts = m.Paths.Count - 1;
+        if (m.Kind == MarkupKind.Area && cutouts > 0)
+        {
+            text += cutouts == 1 ? ", 1 Ausschnitt abgezogen" : $", {cutouts} Ausschnitte abgezogen";
+        }
+        return text;
     }
 
     /// <summary>Liest eine Zahl in deutscher oder englischer Schreibweise („2,5“, „2.5“, „1.250,5“).</summary>

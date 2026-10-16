@@ -129,6 +129,7 @@ public partial class DocumentsView : UserControl, IDisposable
         viewer.SelectionChanged += (_, _) => { if (open == _active) { RefreshMarkupBar(); } };
         viewer.ToolChanged += (_, _) => { if (open == _active) { SyncToolButtons(viewer); } };
         viewer.EditTextRequested += (_, args) => OnEditText(open, args.Page, args.Markup);
+        viewer.DepthRequested += (_, args) => OnEditDepth(open, args.Page, args.Markup);
         AttachMeasure(open);
         viewer.CurrentPageChanged += (_, _) => { if (open == _active) { SyncCurrentPage(); } };
         viewer.ZoomChanged += (_, _) => { if (open == _active) { RefreshZoom(); } };

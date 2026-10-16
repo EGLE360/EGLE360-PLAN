@@ -186,6 +186,7 @@ public static class MarkupSerializer
             Rot = m.TextRotation,
             Created = m.Created,
             Scale = m.Scale is { } sc ? new ScaleDto { Mpp = sc.MetersPerPoint, Unit = sc.Unit, Label = sc.Label } : null,
+            Depth = m.Depth,
         };
         return JsonSerializer.Serialize(dto, Json);
     }
@@ -211,7 +212,8 @@ public static class MarkupSerializer
             var style = new MarkupStyle(ParseHex(dto.Stroke) ?? PdfColor.Black, ParseHex(dto.Fill), Math.Clamp(dto.Opacity, 0, 1), Math.Max(0, dto.Width), dto.Font > 0 ? dto.Font : 12);
             var created = dto.Created ?? modified ?? DateTimeOffset.Now;
             var scale = dto.Scale is { Mpp: > 0 and < double.PositiveInfinity } sd ? new MeasureScale(sd.Mpp, sd.Unit, sd.Label ?? "") : null;
-            return new Markup(id, dto.Kind, paths, style, text, author, created, modified ?? created, TextFrame.Normalize(dto.Rot), scale);
+            var depth = dto.Depth is > 0 and < 1e6 ? dto.Depth : null;
+            return new Markup(id, dto.Kind, paths, style, text, author, created, modified ?? created, TextFrame.Normalize(dto.Rot), scale, depth);
         }
         catch (JsonException)
         {
@@ -239,6 +241,7 @@ public static class MarkupSerializer
         [JsonPropertyName("rot")] public int Rot { get; set; }
         [JsonPropertyName("created")] public DateTimeOffset? Created { get; set; }
         [JsonPropertyName("scale")] public ScaleDto? Scale { get; set; }
+        [JsonPropertyName("depth")] public double? Depth { get; set; }
     }
 
     private sealed class ScaleDto

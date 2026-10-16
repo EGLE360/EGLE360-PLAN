@@ -200,7 +200,7 @@
                 <DockPanel x:Name="MarkupListPanel" Grid.Row="2" Background="{DynamicResource Surface1Brush}" Visibility="Collapsed">
                     <DockPanel DockPanel.Dock="Top" Margin="8,6" LastChildFill="False">
                         <Button DockPanel.Dock="Right" Style="{StaticResource ToolButton}" Content="&#xE711;" Click="OnToggleMarkupList" ToolTip="Liste schließen" AutomationProperties.Name="Liste schließen" />
-                        <Button DockPanel.Dock="Right" Style="{StaticResource ButtonSecondary}" Content="Als CSV exportieren" Click="OnExportMarkups" Margin="8,0" VerticalAlignment="Center"
+                        <Button DockPanel.Dock="Right" Style="{StaticResource ButtonSecondary}" Content="Exportieren (Excel) …" Click="OnExportMarkups" Margin="8,0" VerticalAlignment="Center"
                                 ToolTip="Liste als CSV-Datei mit Semikolon speichern; öffnet sich direkt in Excel" />
                         <CheckBox x:Name="MeasurementsOnly" DockPanel.Dock="Right" Content="Nur Messungen" VerticalAlignment="Center" Margin="8,0"
                                   Foreground="{DynamicResource TextBrush}" Click="OnMarkupListFilter" />

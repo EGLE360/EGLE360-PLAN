@@ -539,11 +539,13 @@ STATUS = {
     "MKP-LIST-002": "Teilweise (Phase 5, Teil 1): Seite, Art, Wert, Text, Maßstab, Autor, Datum",
     "MKP-LIST-003": "Teilweise (Phase 5, Teil 1): Sortieren und Filtern; Gruppieren offen",
     "MKP-LIST-008": "Teilweise (Phase 5, Teil 1): Summen je Messart in der Liste",
-    "MKP-LIST-009": "Teilweise (Phase 5, Teil 1): CSV-Export für Excel; XLSX offen",
+    "MKP-LIST-009": "Umgesetzt (Phase 5, Teil 2): XLSX mit Summenblatt, alternativ CSV",
     "QTO-002": "Umgesetzt (Phase 5, Teil 1)",
     "QTO-003": "Umgesetzt (Phase 5, Teil 1)",
     "QTO-004": "Umgesetzt (Phase 5, Teil 1)",
     "QTO-005": "Umgesetzt (Phase 5, Teil 1): Fläche mit Umfang",
+    "QTO-006": "Umgesetzt (Phase 5, Teil 2): Tiefe je Fläche, Volumen in m³",
+    "QTO-007": "Umgesetzt (Phase 5, Teil 2): Höhe je Länge, Polylänge oder Umfang, Wandfläche in m²",
     "QTO-009": "Umgesetzt (Phase 5, Teil 1): Ausschnitte per Rechtsklick auf eine Fläche",
     "QTO-012": "Umgesetzt (Phase 5, Teil 1)",
     "QTO-015": "Umgesetzt (Phase 5, Teil 1)",
@@ -552,7 +554,7 @@ STATUS = {
     "QTO-SCL-001": "Umgesetzt (Phase 5, Teil 1): übliche Maßstäbe 1:1 bis 1:2000 je Seite",
     "QTO-SCL-002": "Umgesetzt (Phase 5, Teil 1)",
     "QTO-SCL-005": "Teilweise (Phase 5, Teil 1): m, cm, mm",
-    "QTO-EVAL-001": "Teilweise (Phase 5, Teil 1): Mengenliste mit Summen und CSV-Export",
+    "QTO-EVAL-001": "Teilweise (Phase 5, Teil 2): Mengenliste mit Summen, Volumen und Wandflächen, Export als XLSX oder CSV",
 }
 for _id, _status in STATUS.items():
     PATCHES.setdefault(_id, {})["Implementierungsstatus"] = _status

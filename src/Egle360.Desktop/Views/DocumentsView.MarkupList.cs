@@ -1,9 +1,9 @@
-using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using Egle360.Pdf;
+using Egle360.Pdf.Export;
 using Egle360.Pdf.Markups;
 using Microsoft.Win32;
 
@@ -14,13 +14,8 @@ public partial class DocumentsView
 {
     private const double DefaultListHeight = 220;
 
-    private List<MarkupRow> _markupRows = [];
+    private List<MarkupReportRow> _markupRows = [];
     private bool _syncingMarkupGrid;
-
-    /// <summary>Eine Zeile der Liste. Number ist der Messwert für die Sortierung.</summary>
-    public sealed record MarkupRow(
-        int PageIndex, string Id, int Page, string Kind, string Value, double? Number, string Unit, double? Perimeter,
-        string Text, string Scale, string Author, string Modified, DateTimeOffset ModifiedValue, DateTimeOffset Created, bool IsMeasurement);
 
     private bool MarkupListVisible => MarkupListPanel.Visibility == Visibility.Visible;
 
@@ -52,14 +47,14 @@ public partial class DocumentsView
         {
             return;
         }
-        var rows = new List<MarkupRow>();
+        var rows = new List<MarkupReportRow>();
         if (_active is { } open)
         {
             for (var page = 0; page < open.Document.PageCount; page++)
             {
                 foreach (var m in open.Document.GetMarkups(page))
                 {
-                    rows.Add(ToRow(page, m));
+                    rows.Add(MarkupReport.ToRow(page, m));
                 }
             }
         }
@@ -67,19 +62,9 @@ public partial class DocumentsView
         ApplyMarkupFilter();
     }
 
-    private static MarkupRow ToRow(int page, Markup m)
-    {
-        var v = Measurement.Compute(m);
-        var isMeasure = MarkupKinds.IsMeasurement(m.Kind);
-        var value = isMeasure ? Measurement.Describe(m) : "";
-        return new MarkupRow(page, m.Id, page + 1, MarkupKinds.DisplayName(m.Kind), value, v?.Value, v?.Unit ?? "", v?.Perimeter,
-            m.Text.ReplaceLineEndings(" "), m.Scale?.Label ?? "", m.Author, m.Modified.LocalDateTime.ToString("g", CultureInfo.CurrentCulture),
-            m.Modified, m.Created, isMeasure);
-    }
-
     private void OnMarkupListFilter(object sender, RoutedEventArgs e) => ApplyMarkupFilter();
 
-    private IEnumerable<MarkupRow> FilteredRows()
+    private IEnumerable<MarkupReportRow> FilteredRows()
     {
         var filter = MarkupFilter?.Text.Trim() ?? "";
         return _markupRows.Where(r =>
@@ -100,27 +85,12 @@ public partial class DocumentsView
         _syncingMarkupGrid = true;
         MarkupGrid.ItemsSource = rows;
         _syncingMarkupGrid = false;
-        MarkupTotals.Text = Totals(rows);
-    }
-
-    /// <summary>Summen je Messart und Einheit, z. B. „Fläche 112,50 m² (3)“.</summary>
-    internal static string Totals(IReadOnlyList<MarkupRow> rows)
-    {
-        var parts = rows.Where(r => r.Number is not null && r.Unit != "°")
-            .GroupBy(r => (r.Kind, r.Unit))
-            .Select(g =>
-            {
-                var decimals = g.Key.Unit switch { "Stk." => 0, "m" or "m²" => 2, "cm" or "cm²" => 1, _ => 0 };
-                return $"{g.Key.Kind} {Measurement.Number(g.Sum(r => r.Number!.Value), decimals)} {g.Key.Unit} ({g.Count()})";
-            })
-            .ToList();
-        var count = rows.Count == 1 ? "1 Markierung" : $"{rows.Count} Markierungen";
-        return parts.Count == 0 ? count : $"{count}. Summen: {string.Join(", ", parts)}";
+        MarkupTotals.Text = MarkupReport.Totals(rows);
     }
 
     private void OnMarkupRowSelected(object sender, SelectionChangedEventArgs e)
     {
-        if (_syncingMarkupGrid || MarkupGrid.SelectedItem is not MarkupRow row || _active is not { } open)
+        if (_syncingMarkupGrid || MarkupGrid.SelectedItem is not MarkupReportRow row || _active is not { } open)
         {
             return;
         }
@@ -143,39 +113,28 @@ public partial class DocumentsView
         var baseName = Path.GetFileNameWithoutExtension(open.Document.FilePath ?? open.Title);
         var dialog = new SaveFileDialog
         {
-            Filter = "CSV-Datei für Excel (*.csv)|*.csv",
-            FileName = $"{baseName} Markierungen.csv",
+            Filter = "Excel-Arbeitsmappe (*.xlsx)|*.xlsx|CSV-Datei für Excel (*.csv)|*.csv",
+            FileName = $"{baseName} Markierungen.xlsx",
         };
         if (dialog.ShowDialog(Owner) != true)
         {
             return;
         }
+        var rows = FilteredRows().ToList();
         try
         {
-            File.WriteAllText(dialog.FileName, ToCsv(FilteredRows().ToList()), new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+            if (Path.GetExtension(dialog.FileName).Equals(".csv", StringComparison.OrdinalIgnoreCase))
+            {
+                File.WriteAllText(dialog.FileName, MarkupReport.ToCsv(rows), new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+            }
+            else
+            {
+                File.WriteAllBytes(dialog.FileName, MarkupReport.ToXlsx(rows, $"Mengen aus {baseName}"));
+            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             ShowError($"Die Liste konnte nicht gespeichert werden: {ex.Message}");
         }
     }
-
-    /// <summary>CSV mit Semikolon und deutschem Zahlenformat, wie Excel es in Österreich und Deutschland erwartet.</summary>
-    internal static string ToCsv(IReadOnlyList<MarkupRow> rows)
-    {
-        var de = CultureInfo.GetCultureInfo("de-DE");
-        var sb = new StringBuilder();
-        sb.AppendLine("Seite;Art;Wert;Einheit;Umfang;Text oder Kommentar;Maßstab;Autor;Erstellt;Geändert");
-        foreach (var r in rows)
-        {
-            string Num(double? v) => v is { } x ? x.ToString("0.####", de) : "";
-            sb.AppendLine(string.Join(';',
-                r.Page.ToString(de), Csv(r.Kind), Num(r.Number), Csv(r.Unit), Num(r.Perimeter), Csv(r.Text), Csv(r.Scale), Csv(r.Author),
-                r.Created.LocalDateTime.ToString("dd.MM.yyyy HH:mm", de), r.ModifiedValue.LocalDateTime.ToString("dd.MM.yyyy HH:mm", de)));
-        }
-        return sb.ToString();
-    }
-
-    private static string Csv(string s) =>
-        s.IndexOfAny([';', '"', '\n', '\r']) >= 0 ? "\"" + s.Replace("\"", "\"\"") + "\"" : s;
 }

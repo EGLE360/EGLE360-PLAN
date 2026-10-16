@@ -177,4 +177,37 @@ public partial class DocumentsView
         var scale = MeasureScale.Calibrated(lengthPt, meters, r.Unit);
         ApplyScale(open, r.AllPages ? Enumerable.Range(0, open.Document.PageCount).ToList() : [page], scale);
     }
+
+    /// <summary>Höhe (Wandfläche) oder Tiefe (Volumen) einer Messung festlegen oder entfernen.</summary>
+    private void OnEditDepth(OpenDocument open, int page, Markup markup)
+    {
+        if (!open.Document.CanAnnotate || !Measurement.SupportsDepth(markup.Kind))
+        {
+            return;
+        }
+        var area = markup.Kind == MarkupKind.Area;
+        var value = Dialogs.AskDepth(Owner,
+            area ? "Tiefe für Volumen" : "Höhe für Wandfläche",
+            area ? "Tiefe oder Stärke in Metern, zum Beispiel 0,25 für eine Bodenplatte. Das Volumen ist Fläche mal Tiefe."
+                 : "Wandhöhe in Metern, zum Beispiel 2,80. Die Wandfläche ist Länge mal Höhe.",
+            markup.Depth);
+        if (value is null)
+        {
+            return;
+        }
+        double? depth = value > 0 ? value : null;
+        var current = open.Document.GetMarkups(page).FirstOrDefault(m => m.Id == markup.Id);
+        if (current is null || current.Depth == depth)
+        {
+            return;
+        }
+        try
+        {
+            open.History.Replace(page, current with { Depth = depth, Modified = DateTimeOffset.Now }, area ? "Tiefe ändern" : "Höhe ändern");
+        }
+        catch (PdfException ex)
+        {
+            ShowError(ex.Message);
+        }
+    }
 }

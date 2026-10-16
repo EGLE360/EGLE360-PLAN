@@ -100,6 +100,7 @@ public sealed record MarkupStyle(PdfColor Stroke, PdfColor? Fill, double Opacity
 /// <param name="Text">Inhalt (Textfeld, Notiz) oder Kommentar (alle anderen).</param>
 /// <param name="TextRotation">Seitendrehung beim Anlegen (0, 90, 180, 270), damit Text auf dem Bildschirm aufrecht steht.</param>
 /// <param name="Scale">Maßstab einer Messung; bei anderen Markierungen null.</param>
+/// <param name="Depth">Höhe oder Tiefe in Metern: Flächen ergeben damit ein Volumen, Längen eine Wandfläche.</param>
 public sealed record Markup(
     string Id,
     MarkupKind Kind,
@@ -110,7 +111,8 @@ public sealed record Markup(
     DateTimeOffset Created,
     DateTimeOffset Modified,
     int TextRotation = 0,
-    MeasureScale? Scale = null)
+    MeasureScale? Scale = null,
+    double? Depth = null)
 {
     public IReadOnlyList<PdfPoint> Points => Paths.Count > 0 ? Paths[0] : [];
 
