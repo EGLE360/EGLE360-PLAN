@@ -128,7 +128,9 @@ public sealed class PlanSetCompareWindow : Window
         dock.Children.Add(head);
         dock.Children.Add(buttons);
         dock.Children.Add(grid);
-        Content = dock;
+        var root = new Border { Child = dock };
+        root.SetResourceReference(Border.BackgroundProperty, "Surface1Brush");
+        Content = root;
         Loaded += async (_, _) => await RunAsync();
         Closed += (_, _) => _stop.Cancel();
     }
@@ -176,7 +178,7 @@ public sealed class PlanSetCompareWindow : Window
         _progress.Value = 1;
         var changed = _results.Count(r => r.TotalChanges > 0);
         var failed = _results.Count(r => r.Error is not null);
-        _status.Text = (_results.Count < _plans.Count ? $"Abgebrochen nach {_results.Count} von {_plans.Count} Plänen. " : $"{_results.Count} Pläne verglichen. ")
+        _status.Text = (_results.Count < _plans.Count ? $"Abgebrochen nach {_results.Count} von {_plans.Count} Plänen. " : _results.Count == 1 ? "1 Plan verglichen. " : $"{_results.Count} Pläne verglichen. ")
             + $"{changed} mit Änderungen" + (failed > 0 ? $", {failed} mit Fehlern." : ".");
         _clouds.IsEnabled = changed > 0;
         _export.IsEnabled = _results.Count > 0;
