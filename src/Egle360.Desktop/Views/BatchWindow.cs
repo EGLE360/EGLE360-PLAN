@@ -154,7 +154,9 @@ public sealed class BatchWindow : Window
         Grid.SetRow(logBorder, 2);
         Grid.SetColumnSpan(logBorder, 2);
         grid.Children.Add(logBorder);
-        Content = grid;
+        var root = new Border { Child = grid };
+        root.SetResourceReference(Border.BackgroundProperty, "Surface1Brush");
+        Content = root;
 
         foreach (var f in files)
         {

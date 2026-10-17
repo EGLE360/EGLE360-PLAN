@@ -226,6 +226,8 @@ internal static class ScreenshotRunner
                 }
             }
         }
+        // Die Unterschrift hat den temporären Beispielplan verändert; ohne Speichern käme beim Beenden eine Rückfrage.
+        window.Documents.SaveAllForScreenshot();
         return 0;
     }
 

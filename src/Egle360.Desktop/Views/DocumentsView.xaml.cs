@@ -226,6 +226,15 @@ public partial class DocumentsView : UserControl, IDisposable
         return true;
     }
 
+    /// <summary>Für den Screenshot-Modus: geänderte (temporäre) Dateien speichern, damit beim Beenden keine Rückfrage kommt.</summary>
+    internal void SaveAllForScreenshot()
+    {
+        foreach (var document in _documents.Where(d => d.Document.IsModified && d.Document.FilePath is not null))
+        {
+            document.Document.Save();
+        }
+    }
+
     /// <summary>Für das Schließen des Hauptfensters. Liefert false, wenn der Benutzer abbricht.</summary>
     public bool ConfirmCloseAll()
     {
