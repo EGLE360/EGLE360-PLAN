@@ -144,7 +144,7 @@ public partial class PlansView : UserControl
         var has = _project is not null;
         ProjectTitle.Text = has && _project!.Register.Name.Length > 0 ? _project.Register.Name : "Pläne";
         ProjectInfo.Text = has ? $"{_project!.Register.Plans.Count} Pläne in {_project.Root}" : "";
-        AddButton.IsEnabled = ExportButton.IsEnabled = BatchButton.IsEnabled = has;
+        AddButton.IsEnabled = ExportButton.IsEnabled = BatchButton.IsEnabled = CompareAllButton.IsEnabled = has;
 
         if (_disciplineFilter.Length > 0 && _project?.Register.Plans.Any(p => p.Discipline == _disciplineFilter) != true)
         {
@@ -465,6 +465,23 @@ public partial class PlansView : UserControl
         {
             Compare(plan, plan.Revisions[^2], plan.Current);
         }
+    }
+
+    /// <summary>Vergleich aller angezeigten Pläne mit mehreren Ständen.</summary>
+    private void OnCompareAll(object sender, RoutedEventArgs e) => OpenPlanSetCompare();
+
+    internal PlanSetCompareWindow? OpenPlanSetCompare()
+    {
+        if (_project is null)
+        {
+            return null;
+        }
+        var main = (MainWindow)Owner;
+        var window = new PlanSetCompareWindow(Owner, _project, [.. PlanGrid.Items.OfType<PlanRow>().Select(r => r.Plan)],
+            plan => Compare(plan, plan.Revisions[^2], plan.Current),
+            (path, page, markups) => main.Documents.TryAddMarkups(path, page, markups, "Änderungen eintragen"));
+        window.Show();
+        return window;
     }
 
     /// <summary>Für den Screenshot-Modus: Vergleich des ausgewählten Plans öffnen.</summary>

@@ -26,6 +26,8 @@
                         ToolTip="Plan aus der Planliste entfernen (die Dateien bleiben im Projektordner)" AutomationProperties.Name="Plan entfernen" />
                 <Button x:Name="CompareButton" Style="{StaticResource ButtonSecondary}" Content="Mit Vorstand vergleichen" Click="OnCompare" Margin="4,0"
                         ToolTip="Aktuellen Stand des ausgewählten Plans mit dem vorherigen Index vergleichen: farbige Überlagerung, Wolken um die Änderungen" />
+                <Button x:Name="CompareAllButton" Style="{StaticResource ButtonSecondary}" Content="Plansatz vergleichen …" Click="OnCompareAll" Margin="4,0"
+                        ToolTip="Alle angezeigten Pläne mit mehreren Ständen vergleichen, mit Änderungsbericht und Wolken für alle auf einmal" />
                 <Border Style="{StaticResource ToolSeparator}" />
                 <CheckBox x:Name="TakeOverBox" IsChecked="True" VerticalAlignment="Center" Margin="4,0,12,0" Foreground="{DynamicResource TextBrush}"
                           Content="Markierungen in neuen Index übernehmen"

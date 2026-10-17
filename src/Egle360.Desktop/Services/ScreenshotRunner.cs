@@ -192,6 +192,21 @@ internal static class ScreenshotRunner
                         Save(compare, Path.Combine(outputDir, name + "-vergleich.png"));
                         compare.Close();
                     }
+                    if (window.Plans.OpenPlanSetCompare() is { } set)
+                    {
+                        set.Width = 1100;
+                        set.Height = 700;
+                        WaitForRender(set);
+                        var until = DateTime.UtcNow.AddSeconds(60);
+                        while (set.Running is not { IsCompleted: true } && DateTime.UtcNow < until)
+                        {
+                            WaitForRender(set);
+                            Thread.Sleep(50);
+                        }
+                        WaitForRender(set);
+                        Save(set, Path.Combine(outputDir, name + "-plansatz.png"));
+                        set.Close();
+                    }
                     var batchFiles = project.Register.Plans.Select(p => project.FullPath(p.Current)).ToList();
                     var batch = new Egle360.Desktop.Views.BatchWindow(window, batchFiles, Path.Combine(planRoot, "Ausgabe")) { Width = 1100, Height = 760, ShowActivated = false };
                     batch.Show();
