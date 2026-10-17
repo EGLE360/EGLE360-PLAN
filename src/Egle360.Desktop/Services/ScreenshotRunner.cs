@@ -32,7 +32,20 @@ internal static class ScreenshotRunner
         var project = Egle360.Pdf.Plans.PlanProject.Create(planRoot, "Beispielprojekt Wohnanlage (Testdaten)");
         project.Import([sample], "Prüfer", takeOverMarkups: false, new WpfTextOutliner());
         var eg = project.Register.Plans[0];
-        project.AddRevision(eg.Id, sample, "B", "Prüfer", "Türen Bad geändert", takeOverMarkups: false, new WpfTextOutliner());
+        // Index B: dieselbe Zeichnung mit einer zusätzlichen Trennwand, damit der Vergleich etwas findet.
+        var sampleB = Path.Combine(Path.GetTempPath(), $"EGLE360-Beispielplan-B-{Environment.ProcessId}.pdf");
+        using (var b = Egle360.Pdf.PdfDocument.Open(sample))
+        {
+            var t = b.GetPageTransform(0);
+            using (var c = b.EditContent(0))
+            {
+                var x = t.Box.Left + t.Box.Width * 0.45;
+                c.Line(x, t.Box.Bottom + t.Box.Height * 0.3, x, t.Box.Bottom + t.Box.Height * 0.55, Egle360.Pdf.PdfColor.Black, 4);
+                c.Commit();
+            }
+            b.SaveAs(sampleB);
+        }
+        project.AddRevision(eg.Id, sampleB, "B", "Prüfer", "Trennwand ergänzt", takeOverMarkups: false, new WpfTextOutliner());
         var og = project.AddPlan(sample, new Egle360.Pdf.Plans.PlanInfo("GR-OG-01", "A", "Grundriss Obergeschoss"), "Prüfer");
         project.Update(project.Register
             .Replace(project.Register.Find(eg.Id)! with { Discipline = "AR", Floor = "EG", Status = "Zur Ausführung", Author = "Planungsbüro (Testdaten)" })
@@ -147,6 +160,17 @@ internal static class ScreenshotRunner
                 {
                     window.Plans.SelectFirstForScreenshot();
                     WaitForRender(window);
+                    Save(window, Path.Combine(outputDir, name + ".png"));
+                    var compare = window.Plans.OpenCompareForScreenshot();
+                    if (compare is not null)
+                    {
+                        compare.Width = 1200;
+                        compare.Height = 800;
+                        WaitForRender(compare);
+                        Save(compare, Path.Combine(outputDir, name + "-vergleich.png"));
+                        compare.Close();
+                    }
+                    continue;
                 }
                 Save(window, Path.Combine(outputDir, name + ".png"));
 

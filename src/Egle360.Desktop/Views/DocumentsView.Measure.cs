@@ -240,4 +240,23 @@ public partial class DocumentsView
             ShowError(ex.Message);
         }
     }
+
+    /// <summary>Drehwinkel abfragen: positiv gegen den Uhrzeigersinn, negativ im Uhrzeigersinn.</summary>
+    private void OnRotateAngle(PdfViewer viewer)
+    {
+        var text = Dialogs.AskText(Owner, "Um Winkel drehen",
+            "Winkel in Grad. Positive Werte drehen gegen den Uhrzeigersinn, negative im Uhrzeigersinn (z. B. 30 oder -12,5).", "15");
+        if (text is null)
+        {
+            return;
+        }
+        var t = text.Trim().Replace("°", "").Replace(" ", "");
+        if (!double.TryParse(t, System.Globalization.NumberStyles.Float, t.Contains(',') ? System.Globalization.CultureInfo.GetCultureInfo("de-DE") : System.Globalization.CultureInfo.InvariantCulture, out var degrees)
+            || !double.IsFinite(degrees))
+        {
+            ShowError($"„{text}“ ist kein Winkel.");
+            return;
+        }
+        viewer.RotateSelectionFree(degrees);
+    }
 }

@@ -68,6 +68,7 @@ Im Startbildschirm „Beispielplan öffnen“ wählen. Das ist ein frei erfunden
 - Mit gedrückter Umschalttaste rasten Linien waagrecht, senkrecht oder unter 45 Grad ein, Rechtecke werden quadratisch.
 - Objektfang (Schaltfläche mit dem Fadenkreuz neben dem Maßstab, standardmäßig an): Beim Zeichnen und beim Ziehen von Eckpunkten rastet der Punkt an Linienenden und Linienmitten des Plans und an Eckpunkten anderer Markierungen ein. Ein grünes Quadrat zeigt den Fangpunkt. Das funktioniert nur bei Vektorplänen (aus CAD exportiert), nicht bei gescannten. Die Umschalttaste schaltet den Fang vorübergehend ab.
 - Farbe, Linienbreite, Deckkraft und Füllung gelten für neue Markierungen und für die Auswahl.
+- Rechtsklick, „Drehen“: um 90 Grad nach rechts oder links oder um 180 Grad, bei mehreren ausgewählten Markierungen gemeinsam. Linien, Polylinien, Flächen und andere Punktformen lassen sich mit „Um Winkel drehen …“ auch beliebig drehen. Rechtecke, Textfelder und Stempel bleiben achsenparallel.
 - Doppelklick bearbeitet Text oder Kommentar. Rechtsklick öffnet ein Menü (Text, Kopieren, Duplizieren, Vordergrund, Hintergrund, Löschen).
 - Strg+C, Strg+V, Strg+D (Duplizieren), Strg+A (alle auf der Seite), Entf, Esc, Strg+Z, Strg+Y.
 - Mehrere ausgewählte Markierungen lassen sich per Rechtsklick ausrichten (links, rechts, oben, unten, zentriert) und ab drei gleichmäßig verteilen.
@@ -119,6 +120,7 @@ Zum Ausprobieren im Beispielplan: Die Küche ist 10 m × 10 m, die Fläche muss 
 - Plannummer, Index und Bezeichnung werden aus dem Plankopf („Plannummer …“, „Plan-Nr. …“, „Index …“) oder aus dem Dateinamen erkannt, z. B. `AR-101_Grundriss EG_Index B.pdf`. Die Erkennung arbeitet mit Mustern und kann danebenliegen. Rechts lassen sich alle Angaben korrigieren, dazu Gewerk, Geschoss, Gebäude, Bauabschnitt, Status, Verfasser und Freigabe.
 - Hat eine neue Datei dieselbe Plannummer wie ein vorhandener Plan, aber einen anderen Index, wird sie als neuer Stand eingetragen. Mit dem Häkchen „Markierungen in neuen Index übernehmen“ wandern Markierungen und Maßstäbe des bisherigen Stands auf dieselben Seiten der neuen Datei. Bitte vorher Änderungen am alten Stand speichern, übernommen wird, was in der Datei steht.
 - „Neuer Index“ trägt für den ausgewählten Plan gezielt eine Datei ein, mit Änderungsvermerk. Unter „Verlauf“ stehen alle Stände, ein Doppelklick öffnet auch ältere.
+- „Mit Vorstand vergleichen“ legt den aktuellen und den vorherigen Index übereinander: Rot ist nur im alten Stand, Blau nur im neuen, Grau unverändert. Über den Verlauf (Rechtsklick auf einen älteren Index) lässt sich auch mit anderen Ständen vergleichen. „Änderungen als Wolken eintragen“ setzt rote Wolken um jeden geänderten Bereich in den neuen Stand. Der Vergleich legt die Seiten an der linken oberen Ecke übereinander; ist der Planinhalt zwischen den Ständen verschoben, erscheint alles als geändert.
 - „Planliste exportieren (Excel)“ schreibt die (gefilterte) Liste und den Verlauf aller Stände in eine Arbeitsmappe.
 
 ## Was noch fehlt
@@ -126,7 +128,7 @@ Zum Ausprobieren im Beispielplan: Die Küche ist 10 m × 10 m, die Fläche muss 
 Diese Punkte sind geplant, aber noch nicht enthalten:
 
 - Drucken in Originalgröße oder gekachelt, geteilte und synchronisierte Ansichten, Metadaten bearbeiten.
-- Stempel aus eigenen Bilddateien, Unterschriften, Drehen von Markierungen.
+- Stempel aus eigenen Bilddateien und Unterschriften.
 - Messungen: Gefälle, Schnittpunktfang, Preislisten je Werkzeug und die Übernahme in EGLE360 AVA.
 - Ob Bluebeam die gespeicherten Messungen als Messungen (mit Wert in der Markups-Liste) erkennt, ist noch nicht geprüft. Die Datei enthält dafür die genormten PDF-Messangaben; im Plan sind die Messungen in jedem Fall sichtbar.
 - BIM, 4D/5D, KI-Funktionen und die AVA-Anbindung folgen in späteren Phasen.

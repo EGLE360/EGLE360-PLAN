@@ -19,6 +19,7 @@ public partial class PlansView : UserControl
 
     private readonly WpfTextOutliner _outliner = new();
     private PlanProject? _project;
+    private string _disciplineFilter = "";
     private bool _loading;
 
     /// <summary>Zeile der Planliste.</summary>
@@ -52,14 +53,6 @@ public partial class PlansView : UserControl
     public PlansView()
     {
         InitializeComponent();
-        foreach (var d in PlanDiscipline.Defaults)
-        {
-            DisciplineBox.Items.Add(d.Code);
-        }
-        foreach (var s in PlanRegister.StatusNames)
-        {
-            StatusBox.Items.Add(s);
-        }
         if (App.Theme.Settings.PlanProjectPath is { } path && PlanProject.Exists(path))
         {
             TryOpen(path, quiet: true);
@@ -153,16 +146,11 @@ public partial class PlansView : UserControl
         ProjectInfo.Text = has ? $"{_project!.Register.Plans.Count} Pläne in {_project.Root}" : "";
         AddButton.IsEnabled = ExportButton.IsEnabled = has;
 
-        _loading = true;
-        var current = DisciplineFilter.SelectedItem as string ?? AllDisciplines;
-        DisciplineFilter.Items.Clear();
-        DisciplineFilter.Items.Add(AllDisciplines);
-        foreach (var d in _project?.Register.Plans.Select(p => p.Discipline).Where(d => d.Length > 0).Distinct().Order() ?? Enumerable.Empty<string>())
+        if (_disciplineFilter.Length > 0 && _project?.Register.Plans.Any(p => p.Discipline == _disciplineFilter) != true)
         {
-            DisciplineFilter.Items.Add(d);
+            _disciplineFilter = "";
         }
-        DisciplineFilter.SelectedItem = DisciplineFilter.Items.Contains(current) ? current : AllDisciplines;
-        _loading = false;
+        DisciplineFilter.Content = _disciplineFilter.Length > 0 ? $"Gewerk {_disciplineFilter}" : AllDisciplines;
 
         var plans = FilteredPlans();
         PlanGrid.ItemsSource = plans.Select(p => new PlanRow(p)).ToList();
@@ -182,8 +170,7 @@ public partial class PlansView : UserControl
         {
             return [];
         }
-        var discipline = DisciplineFilter.SelectedItem as string is { } d && d != AllDisciplines ? d : "";
-        return [.. _project.Register.Filter(FilterBox.Text, discipline)];
+        return [.. _project.Register.Filter(FilterBox.Text, _disciplineFilter)];
     }
 
     private void OnFilterChanged(object sender, EventArgs e)
@@ -194,6 +181,44 @@ public partial class PlansView : UserControl
         }
     }
 
+    private void OnDisciplineFilterMenu(object sender, RoutedEventArgs e)
+    {
+        var choices = _project?.Register.Plans.Select(p => p.Discipline).Where(d => d.Length > 0).Distinct().Order().ToList() ?? [];
+        ShowChoices(DisciplineFilter, [AllDisciplines, .. choices], _disciplineFilter.Length > 0 ? _disciplineFilter : AllDisciplines, choice =>
+        {
+            _disciplineFilter = choice == AllDisciplines ? "" : choice;
+            Refresh();
+        });
+    }
+
+    /// <summary>Auswahlliste neben Gewerk und Status; die Felder bleiben frei beschreibbar.</summary>
+    private void OnChoiceMenu(object sender, RoutedEventArgs e)
+    {
+        var button = (Button)sender;
+        var box = (string)button.Tag == nameof(StatusBox) ? StatusBox : DisciplineBox;
+        IReadOnlyList<string> choices = box == StatusBox
+            ? PlanRegister.StatusNames
+            : [.. PlanDiscipline.Defaults.Select(d => $"{d.Code} {d.Name}")];
+        ShowChoices(button, choices, box.Text, choice =>
+        {
+            // Beim Gewerk wird nur das Kürzel eingetragen.
+            box.Text = box == DisciplineBox ? choice.Split(' ')[0] : choice;
+            OnDetailChanged(box, new RoutedEventArgs());
+        });
+    }
+
+    private static void ShowChoices(FrameworkElement target, IReadOnlyList<string> choices, string current, Action<string> chosen)
+    {
+        var menu = new ContextMenu { PlacementTarget = target, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom };
+        foreach (var c in choices)
+        {
+            var item = new MenuItem { Header = c, IsCheckable = true, IsChecked = c == current || c.Split(' ')[0] == current };
+            item.Click += (_, _) => chosen(c);
+            menu.Items.Add(item);
+        }
+        menu.IsOpen = true;
+    }
+
     private void OnPlanSelected(object sender, SelectionChangedEventArgs e) => ShowDetails();
 
     private void ShowDetails()
@@ -201,6 +226,7 @@ public partial class PlansView : UserControl
         var plan = SelectedPlan;
         DetailsPanel.IsEnabled = plan is not null;
         RevisionButton.IsEnabled = OpenPlanButton.IsEnabled = RemoveButton.IsEnabled = plan is not null;
+        CompareButton.IsEnabled = plan is { Revisions.Count: > 1 };
         _loading = true;
         NumberBox.Text = plan?.Number ?? "";
         TitleBox.Text = plan?.Title ?? "";
@@ -415,6 +441,62 @@ public partial class PlansView : UserControl
             return;
         }
         ((MainWindow)Owner).OpenDocuments([path]);
+    }
+
+    private void OnRevisionOpen(object sender, RoutedEventArgs e)
+    {
+        if (RevisionList.SelectedItem is RevisionRow row)
+        {
+            OpenFile(row.Revision);
+        }
+    }
+
+    private void OnRevisionCompare(object sender, RoutedEventArgs e)
+    {
+        if (SelectedPlan is { } plan && RevisionList.SelectedItem is RevisionRow { IsCurrent: false } row)
+        {
+            Compare(plan, row.Revision, plan.Current);
+        }
+    }
+
+    private void OnCompare(object sender, RoutedEventArgs e)
+    {
+        if (SelectedPlan is { Revisions.Count: > 1 } plan)
+        {
+            Compare(plan, plan.Revisions[^2], plan.Current);
+        }
+    }
+
+    /// <summary>Für den Screenshot-Modus: Vergleich des ausgewählten Plans öffnen.</summary>
+    internal Window? OpenCompareForScreenshot() =>
+        SelectedPlan is { Revisions.Count: > 1 } plan ? Compare(plan, plan.Revisions[^2], plan.Current) : null;
+
+    private Window? Compare(PlanEntry plan, PlanRevision older, PlanRevision newer)
+    {
+        if (_project is null)
+        {
+            return null;
+        }
+        var oldPath = _project.FullPath(older);
+        var newPath = _project.FullPath(newer);
+        if (!File.Exists(oldPath) || !File.Exists(newPath))
+        {
+            ShowError("Eine der beiden Dateien fehlt im Projektordner.");
+            return null;
+        }
+        try
+        {
+            var main = (MainWindow)Owner;
+            var window = new CompareWindow(Owner, oldPath, $"Index {PlanProject.Display(older.Index)}", newPath, $"Index {PlanProject.Display(newer.Index)}",
+                (path, page, markups) => main.Documents.TryAddMarkups(path, page, markups, "Änderungen eintragen"));
+            window.Show();
+            return window;
+        }
+        catch (PdfException ex)
+        {
+            ShowError($"Die Pläne konnten nicht verglichen werden: {ex.Message}");
+            return null;
+        }
     }
 
     private void OnRemovePlan(object sender, RoutedEventArgs e)

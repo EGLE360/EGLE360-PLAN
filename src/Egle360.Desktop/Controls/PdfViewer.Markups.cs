@@ -107,6 +107,33 @@ public sealed partial class PdfViewer
         }
     }
 
+    /// <summary>Dreht die ausgewählten, nicht gesperrten Markierungen gemeinsam um 90-Grad-Schritte im Uhrzeigersinn.</summary>
+    public void RotateSelection(int quarterTurns)
+    {
+        var list = SelectedMarkups.Where(m => !m.Locked && MarkupRotation.CanRotate(m.Kind)).ToList();
+        if (!CanAnnotate || list.Count == 0)
+        {
+            return;
+        }
+        var center = MarkupRotation.Center(list);
+        Run(() => _history!.ReplaceMany(_selectedPage, [.. list.Select(m => MarkupRotation.RotateQuarter(m, quarterTurns, center))], "Drehen"));
+    }
+
+    /// <summary>Dreht die ausgewählten Markierungen um einen beliebigen Winkel gegen den Uhrzeigersinn.</summary>
+    public void RotateSelectionFree(double degrees)
+    {
+        var list = SelectedMarkups.Where(m => !m.Locked && MarkupRotation.CanRotateFreely(m.Kind)).ToList();
+        if (!CanAnnotate || list.Count == 0)
+        {
+            return;
+        }
+        var center = MarkupRotation.Center(list);
+        Run(() => _history!.ReplaceMany(_selectedPage, [.. list.Select(m => MarkupRotation.RotateFree(m, degrees, center))], "Drehen"));
+    }
+
+    /// <summary>Ein Drehwinkel für die Auswahl soll eingegeben werden (Kontextmenü).</summary>
+    public event EventHandler? RotateAngleRequested;
+
     /// <summary>Objektfang beim Zeichnen und beim Ziehen von Eckpunkten.</summary>
     public bool SnapEnabled { get; set; } = true;
 
@@ -951,6 +978,16 @@ public sealed partial class PdfViewer
             menu.Items.Add(align);
             menu.Items.Add(new Separator());
         }
+        var rotatable = SelectedMarkups.Where(m => !m.Locked && MarkupRotation.CanRotate(m.Kind)).ToList();
+        var rotate = new MenuItem { Header = "Drehen", IsEnabled = CanAnnotate && rotatable.Count > 0 };
+        Add("90° im Uhrzeigersinn", () => RotateSelection(1), parent: rotate);
+        Add("90° gegen den Uhrzeigersinn", () => RotateSelection(3), parent: rotate);
+        Add("180°", () => RotateSelection(2), parent: rotate);
+        rotate.Items.Add(new Separator());
+        Add("Um Winkel drehen …", () => RotateAngleRequested?.Invoke(this, EventArgs.Empty),
+            rotatable.Count > 0 && rotatable.All(m => MarkupRotation.CanRotateFreely(m.Kind)), rotate);
+        menu.Items.Add(rotate);
+        menu.Items.Add(new Separator());
         Add("Als Werkzeug speichern …", () => SaveAsToolRequested?.Invoke(this, markup));
         Add("Darstellung kopieren (Strg+Umschalt+C)", CopyStyle);
         Add("Darstellung einfügen (Strg+Umschalt+V)", PasteStyle, CanAnnotate && HasStyleClipboard);

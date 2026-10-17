@@ -105,3 +105,83 @@ public static class MarkupArrange
         }
     }
 }
+
+/// <summary>Drehen von Markierungen um einen Mittelpunkt.</summary>
+public static class MarkupRotation
+{
+    /// <summary>
+    /// Arten, die sich um beliebige Winkel drehen lassen: alles, was aus Punkten besteht. Rechteckige Arten (Rechteck,
+    /// Ellipse, Textfeld, Stempel, Sprechblase) bleiben achsenparallel und drehen nur in 90-Grad-Schritten.
+    /// </summary>
+    public static bool CanRotateFreely(MarkupKind kind) =>
+        !MarkupKinds.IsBox(kind) && kind is not (MarkupKind.Callout or MarkupKind.Note);
+
+    /// <summary>Text-Hervorhebungen folgen dem Text und werden nicht gedreht.</summary>
+    public static bool CanRotate(MarkupKind kind) => !MarkupKinds.IsTextMarkup(kind);
+
+    /// <summary>Mittelpunkt der Griffrahmen aller Markierungen.</summary>
+    public static PdfPoint Center(IEnumerable<Markup> markups)
+    {
+        var r = markups.Select(MarkupGeometry.HandleRect).Aggregate((a, b) => a.Union(b));
+        return new PdfPoint((r.Left + r.Right) / 2, (r.Bottom + r.Top) / 2);
+    }
+
+    /// <summary>
+    /// Dreht um <paramref name="quarterTurns"/> Vierteldrehungen im Uhrzeigersinn (auf dem Bildschirm, unabhängig von
+    /// der Seitendrehung). Texte von Textfeldern, Sprechblasen und Stempeln drehen mit.
+    /// </summary>
+    public static Markup RotateQuarter(Markup m, int quarterTurns, PdfPoint center)
+    {
+        var turns = ((quarterTurns % 4) + 4) % 4;
+        if (turns == 0 || !CanRotate(m.Kind))
+        {
+            return m;
+        }
+        // Im Uhrzeigersinn heißt in PDF-Koordinaten (y nach oben) ein negativer Winkel.
+        PdfPoint Turn(PdfPoint p)
+        {
+            var d = p - center;
+            return turns switch
+            {
+                1 => new PdfPoint(center.X + d.Y, center.Y - d.X),
+                2 => new PdfPoint(center.X - d.X, center.Y - d.Y),
+                _ => new PdfPoint(center.X - d.Y, center.Y + d.X),
+            };
+        }
+        IReadOnlyList<IReadOnlyList<PdfPoint>> paths = [.. m.Paths.Select(p => (IReadOnlyList<PdfPoint>)[.. p.Select(Turn)])];
+        if ((MarkupKinds.IsBox(m.Kind) || m.Kind == MarkupKind.Callout) && paths[0].Count >= 2)
+        {
+            // Die gedrehten Ecken wieder als linke untere und rechte obere Ecke ablegen.
+            var box = PdfRect.FromPoints(paths[0][0], paths[0][1]);
+            paths = [[new PdfPoint(box.Left, box.Bottom), new PdfPoint(box.Right, box.Top)], .. paths.Skip(1)];
+        }
+        if (m.Kind == MarkupKind.Note && paths[0].Count >= 1)
+        {
+            // Die Notiz ist ein Symbol mit fester Größe; nur ihre Lage dreht sich um den Mittelpunkt des Symbols.
+            var r = MarkupGeometry.HandleRect(m);
+            var c = Turn(new PdfPoint((r.Left + r.Right) / 2, (r.Bottom + r.Top) / 2));
+            paths = [[m.Points[0] + (c - new PdfPoint((r.Left + r.Right) / 2, (r.Bottom + r.Top) / 2))]];
+            return m with { Paths = paths, Modified = DateTimeOffset.Now };
+        }
+        // Texte von Textfeldern und Stempeln drehen mit; Beschriftungen von Messungen bleiben lesbar wie bisher.
+        var textRotation = MarkupKinds.HasText(m.Kind) ? TextFrame.Normalize(m.TextRotation - 90 * turns) : m.TextRotation;
+        return m with { Paths = paths, TextRotation = textRotation, Modified = DateTimeOffset.Now };
+    }
+
+    /// <summary>Dreht um einen beliebigen Winkel gegen den Uhrzeigersinn (in Grad, wie auf dem Bildschirm); nur für punktförmige Arten.</summary>
+    public static Markup RotateFree(Markup m, double degreesCounterClockwise, PdfPoint center)
+    {
+        if (!CanRotateFreely(m.Kind) || degreesCounterClockwise % 360 == 0)
+        {
+            return m;
+        }
+        var a = degreesCounterClockwise * Math.PI / 180;
+        var (sin, cos) = Math.SinCos(a);
+        PdfPoint Turn(PdfPoint p)
+        {
+            var d = p - center;
+            return new PdfPoint(center.X + d.X * cos - d.Y * sin, center.Y + d.X * sin + d.Y * cos);
+        }
+        return m with { Paths = [.. m.Paths.Select(p => (IReadOnlyList<PdfPoint>)[.. p.Select(Turn)])], Modified = DateTimeOffset.Now };
+    }
+}

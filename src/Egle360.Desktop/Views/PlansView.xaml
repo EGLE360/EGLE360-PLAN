@@ -24,6 +24,8 @@
                         ToolTip="Aktuellen Stand des Plans öffnen (Doppelklick)" AutomationProperties.Name="Plan öffnen" />
                 <Button x:Name="RemoveButton" Style="{StaticResource ToolButton}" Content="&#xE74D;" Click="OnRemovePlan"
                         ToolTip="Plan aus der Planliste entfernen (die Dateien bleiben im Projektordner)" AutomationProperties.Name="Plan entfernen" />
+                <Button x:Name="CompareButton" Style="{StaticResource ButtonSecondary}" Content="Mit Vorstand vergleichen" Click="OnCompare" Margin="4,0"
+                        ToolTip="Aktuellen Stand des ausgewählten Plans mit dem vorherigen Index vergleichen: farbige Überlagerung, Wolken um die Änderungen" />
                 <Border Style="{StaticResource ToolSeparator}" />
                 <CheckBox x:Name="TakeOverBox" IsChecked="True" VerticalAlignment="Center" Margin="4,0,12,0" Foreground="{DynamicResource TextBrush}"
                           Content="Markierungen in neuen Index übernehmen"
@@ -34,18 +36,16 @@
         </Border>
 
         <!-- Kopf mit Projektname und Filter -->
-        <DockPanel Grid.Row="1" Margin="16,12,16,8">
-            <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
-                <TextBlock x:Name="ProjectTitle" Style="{StaticResource TextTitle}" Text="Pläne" />
-                <TextBlock x:Name="ProjectInfo" Style="{StaticResource TextCaption}" TextTrimming="CharacterEllipsis" />
-            </StackPanel>
-            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
-                <ComboBox x:Name="DisciplineFilter" Width="160" Margin="0,0,8,0" SelectionChanged="OnFilterChanged" AutomationProperties.Name="Gewerk filtern" />
-                <TextBox x:Name="FilterBox" Style="{StaticResource InputBox}" Width="220" TextChanged="OnFilterChanged"
+        <StackPanel Grid.Row="1" Margin="16,12,16,8">
+            <TextBlock x:Name="ProjectTitle" Style="{StaticResource TextTitle}" Text="Pläne" TextTrimming="CharacterEllipsis" />
+            <TextBlock x:Name="ProjectInfo" Style="{StaticResource TextCaption}" TextTrimming="CharacterEllipsis" />
+            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                <TextBox x:Name="FilterBox" Style="{StaticResource InputBox}" Width="240" TextChanged="OnFilterChanged"
                          ToolTip="Planliste filtern (Nummer, Bezeichnung, Geschoss, Status …)" AutomationProperties.Name="Planliste filtern" />
+                <Button x:Name="DisciplineFilter" Style="{StaticResource ButtonSecondary}" Margin="8,0,0,0" Content="Alle Gewerke" Click="OnDisciplineFilterMenu"
+                        ToolTip="Nach Gewerk filtern" AutomationProperties.Name="Gewerk filtern" />
             </StackPanel>
-            <Border />
-        </DockPanel>
+        </StackPanel>
 
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
@@ -88,11 +88,19 @@
                     <UniformGrid Columns="2">
                         <StackPanel Margin="0,0,4,0">
                             <TextBlock Style="{StaticResource TextCaption}" Text="Gewerk" />
-                            <ComboBox x:Name="DisciplineBox" IsEditable="True" Margin="0,2,0,8" LostFocus="OnDetailChanged" />
+                            <DockPanel Margin="0,2,0,8">
+                                <Button DockPanel.Dock="Right" Style="{StaticResource ToolButton}" Content="&#xE70D;" Click="OnChoiceMenu" Tag="DisciplineBox"
+                                        ToolTip="Auswahl" AutomationProperties.Name="Auswahl" />
+                                <TextBox x:Name="DisciplineBox" Style="{StaticResource InputBox}" LostFocus="OnDetailChanged" />
+                            </DockPanel>
                         </StackPanel>
                         <StackPanel Margin="4,0,0,0">
                             <TextBlock Style="{StaticResource TextCaption}" Text="Status" />
-                            <ComboBox x:Name="StatusBox" IsEditable="True" Margin="0,2,0,8" LostFocus="OnDetailChanged" />
+                            <DockPanel Margin="0,2,0,8">
+                                <Button DockPanel.Dock="Right" Style="{StaticResource ToolButton}" Content="&#xE70D;" Click="OnChoiceMenu" Tag="StatusBox"
+                                        ToolTip="Auswahl" AutomationProperties.Name="Auswahl" />
+                                <TextBox x:Name="StatusBox" Style="{StaticResource InputBox}" LostFocus="OnDetailChanged" />
+                            </DockPanel>
                         </StackPanel>
                         <StackPanel Margin="0,0,4,0">
                             <TextBlock Style="{StaticResource TextCaption}" Text="Geschoss" />
@@ -118,6 +126,12 @@
                     <TextBlock Style="{StaticResource TextCaption}" TextWrapping="Wrap" Margin="0,0,0,6"
                                Text="Alle Stände bleiben als eigene Datei erhalten. Doppelklick öffnet einen Stand." />
                     <ListBox x:Name="RevisionList" Style="{StaticResource PlainList}" MouseDoubleClick="OnRevisionDoubleClick" AutomationProperties.Name="Planstände">
+                        <ListBox.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Öffnen" Click="OnRevisionOpen" />
+                                <MenuItem Header="Mit aktuellem Stand vergleichen" Click="OnRevisionCompare" />
+                            </ContextMenu>
+                        </ListBox.ContextMenu>
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel>

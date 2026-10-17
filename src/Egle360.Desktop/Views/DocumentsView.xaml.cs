@@ -45,6 +45,21 @@ public partial class DocumentsView : UserControl, IDisposable
 
     internal PdfDocument? ActiveDocument => _active?.Document;
 
+    /// <summary>
+    /// Trägt Markierungen in ein geöffnetes Dokument ein, rückgängig machbar. False, wenn die Datei nicht geöffnet ist.
+    /// </summary>
+    internal bool TryAddMarkups(string path, int page, IReadOnlyList<Markup> markups, string description)
+    {
+        var full = Path.GetFullPath(path);
+        if (_documents.FirstOrDefault(d => string.Equals(d.Document.FilePath, full, StringComparison.OrdinalIgnoreCase)) is not { } open
+            || page >= open.Document.PageCount)
+        {
+            return false;
+        }
+        open.History.Apply(page, [.. open.Document.GetMarkups(page), .. markups], description);
+        return true;
+    }
+
     internal bool IsBusy => _renderer.Pending > 0 || _documents.Any(d => d.Viewer.IsBusy);
 
     private Window Owner => Window.GetWindow(this)!;
@@ -133,6 +148,7 @@ public partial class DocumentsView : UserControl, IDisposable
         viewer.DepthRequested += (_, args) => OnEditDepth(open, args.Page, args.Markup);
         viewer.PriceRequested += (_, args) => OnEditPrice(open, args.Page, args.Markup);
         viewer.SaveAsToolRequested += (_, markup) => OnSaveAsTool(markup);
+        viewer.RotateAngleRequested += (_, _) => OnRotateAngle(viewer);
         viewer.ViewHistoryChanged += (_, _) => { if (open == _active) { RefreshViewHistory(); } };
         viewer.MarkupsVisibilityChanged += (_, _) => { if (open == _active) { RefreshMarkupBar(); } };
         AttachMeasure(open);

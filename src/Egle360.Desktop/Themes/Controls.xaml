@@ -439,6 +439,13 @@
         </Setter>
     </Style>
     <Style x:Key="ListRow" TargetType="DataGridRow">
+        <Style.Resources>
+            <!-- Die Systemfarben für Auswahl würden im dunklen Modus helle Zeilen mit heller Schrift ergeben. -->
+            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent" />
+            <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="Transparent" />
+            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="{DynamicResource AccentColor}" />
+            <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="{DynamicResource AccentColor}" />
+        </Style.Resources>
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
         <Style.Triggers>
