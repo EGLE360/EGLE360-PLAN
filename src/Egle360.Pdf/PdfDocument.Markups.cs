@@ -202,7 +202,7 @@ public sealed unsafe partial class PdfDocument
             MarkupKind.TextBox or MarkupKind.Callout or MarkupKind.Typewriter => Pdfium.FPDF_ANNOT_FREETEXT,
             MarkupKind.Note => Pdfium.FPDF_ANNOT_TEXT,
             MarkupKind.Highlight => Pdfium.FPDF_ANNOT_HIGHLIGHT,
-            MarkupKind.Stamp => Pdfium.FPDF_ANNOT_STAMP,
+            MarkupKind.Stamp or MarkupKind.Image => Pdfium.FPDF_ANNOT_STAMP,
             MarkupKind.Underline => Pdfium.FPDF_ANNOT_UNDERLINE,
             MarkupKind.StrikeOut => Pdfium.FPDF_ANNOT_STRIKEOUT,
             _ => Pdfium.FPDF_ANNOT_INK,
@@ -290,10 +290,65 @@ public sealed unsafe partial class PdfDocument
                     throw new PdfException(PdfErrorKind.Unknown, "Die Darstellung der Markierung konnte nicht geschrieben werden.");
                 }
             }
+            if (shape.Image is { } image)
+            {
+                AppendImage(annot, image);
+            }
         }
         finally
         {
             Pdfium.FPDFPage_CloseAnnot(annot);
+        }
+    }
+
+    /// <summary>
+    /// Hängt das Bild als Bildobjekt an die Darstellung der Anmerkung an. PDFium legt dabei ein Bild-XObject an und
+    /// für die Transparenz eine Soft-Maske.
+    /// </summary>
+    private void AppendImage(nint annot, ShapeImage image)
+    {
+        var img = image.Image;
+        var obj = Pdfium.FPDFPageObj_NewImageObj(Handle);
+        if (obj == 0)
+        {
+            throw new PdfException(PdfErrorKind.Unknown, "Das Bild konnte nicht angelegt werden.");
+        }
+        var appended = false;
+        try
+        {
+            fixed (byte* pixels = img.Bgra)
+            {
+                var bitmap = Pdfium.FPDFBitmap_CreateEx(img.Width, img.Height, Pdfium.FPDFBitmap_BGRA, pixels, img.Width * 4);
+                if (bitmap == 0)
+                {
+                    throw new PdfException(PdfErrorKind.Unknown, "Das Bild konnte nicht angelegt werden.");
+                }
+                try
+                {
+                    if (Pdfium.FPDFImageObj_SetBitmap(null, 0, obj, bitmap) == 0)
+                    {
+                        throw new PdfException(PdfErrorKind.Unknown, "Das Bild konnte nicht übernommen werden.");
+                    }
+                }
+                finally
+                {
+                    Pdfium.FPDFBitmap_Destroy(bitmap);
+                }
+            }
+            Pdfium.FPDFPageObj_Transform(obj, image.A, image.B, image.C, image.D, image.E, image.F);
+            if (Pdfium.FPDFAnnot_AppendObject(annot, obj) == 0)
+            {
+                throw new PdfException(PdfErrorKind.Unknown, "Das Bild konnte nicht in die Markierung übernommen werden.");
+            }
+            appended = true;
+        }
+        finally
+        {
+            // Nach dem Anhängen gehört das Objekt der Anmerkung.
+            if (!appended)
+            {
+                Pdfium.FPDFPageObj_Destroy(obj);
+            }
         }
     }
 

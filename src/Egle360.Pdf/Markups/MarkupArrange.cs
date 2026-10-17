@@ -163,8 +163,8 @@ public static class MarkupRotation
             paths = [[m.Points[0] + (c - new PdfPoint((r.Left + r.Right) / 2, (r.Bottom + r.Top) / 2))]];
             return m with { Paths = paths, Modified = DateTimeOffset.Now };
         }
-        // Texte von Textfeldern und Stempeln drehen mit; Beschriftungen von Messungen bleiben lesbar wie bisher.
-        var textRotation = MarkupKinds.HasText(m.Kind) ? TextFrame.Normalize(m.TextRotation - 90 * turns) : m.TextRotation;
+        // Texte von Textfeldern und Stempeln drehen mit, ebenso Bilder; Beschriftungen von Messungen bleiben lesbar wie bisher.
+        var textRotation = MarkupKinds.HasText(m.Kind) || m.Kind == MarkupKind.Image ? TextFrame.Normalize(m.TextRotation - 90 * turns) : m.TextRotation;
         return m with { Paths = paths, TextRotation = textRotation, Modified = DateTimeOffset.Now };
     }
 

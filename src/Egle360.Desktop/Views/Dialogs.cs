@@ -168,6 +168,10 @@ internal static class Dialogs
         _ => $"{bytes / 1024.0 / 1024.0:0.0} MB",
     };
 
+    /// <summary>Dialog mit eigenem Inhalt; true, wenn bestätigt und <paramref name="validate"/> zugestimmt hat.</summary>
+    public static bool ShowContent(Window owner, string title, string hint, UIElement content, string okText, Func<bool> validate) =>
+        Show(owner, title, hint, content, okText, () => "ok", () => { }, validate: validate) == "ok";
+
     /// <summary>Allgemeiner Dialog mit Titel, Hinweis, Inhalt und Schaltflächen. Liefert null bei Abbruch.</summary>
     private static string? Show(Window owner, string title, string hint, UIElement content, string? okText, Func<string> result, Action focus, UIElement? submitOnCtrlEnter = null, Func<bool>? validate = null)
     {

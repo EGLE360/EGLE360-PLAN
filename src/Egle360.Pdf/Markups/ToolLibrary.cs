@@ -11,15 +11,18 @@ namespace Egle360.Pdf.Markups;
 /// <param name="Text">Aufschrift (Stempel, Textfeld) oder Kommentar, den neue Markierungen bekommen.</param>
 /// <param name="Depth">Höhe oder Tiefe in Metern für Flächen, Längen und Umfänge.</param>
 /// <param name="UnitPrice">Einheitspreis in Euro für Messungen.</param>
+/// <param name="Slope">Neigung in Prozent für Längen, Polylängen und Flächen.</param>
+/// <param name="Image">Bild eines Bildwerkzeugs, z. B. ein Unterschriftsbild oder Logo.</param>
 public sealed record ToolPreset(string Id, string Name, MarkupKind Kind, MarkupStyle Style, string Text = "", double? Depth = null,
-    double? UnitPrice = null, bool Favorite = false)
+    double? UnitPrice = null, bool Favorite = false, double? Slope = null, MarkupImage? Image = null)
 {
     public static string NewId() => "tool-" + Guid.NewGuid().ToString("N");
 
-    /// <summary>Werkzeug aus einer vorhandenen Markierung: Art, Darstellung, Text, Höhe und Preis werden übernommen.</summary>
+    /// <summary>Werkzeug aus einer vorhandenen Markierung: Art, Darstellung, Text, Höhe, Neigung, Preis und Bild werden übernommen.</summary>
     public static ToolPreset FromMarkup(Markup m, string name) =>
         new(NewId(), name, m.Kind, m.Style, m.Text, Measurement.SupportsDepth(m.Kind) ? m.Depth : null,
-            MarkupKinds.IsSummable(m.Kind) ? m.UnitPrice : null);
+            MarkupKinds.IsSummable(m.Kind) ? m.UnitPrice : null, Slope: Measurement.SupportsSlope(m.Kind) ? m.Slope : null,
+            Image: m.Kind == MarkupKind.Image ? m.Image : null);
 
     /// <summary>Überträgt die Vorgaben auf eine eben gezeichnete Markierung derselben Art.</summary>
     public Markup ApplyTo(Markup m)
@@ -34,6 +37,8 @@ public sealed record ToolPreset(string Id, string Name, MarkupKind Kind, MarkupS
             Text = m.Text.Length > 0 ? m.Text : Text,
             Depth = Measurement.SupportsDepth(Kind) ? Depth ?? m.Depth : m.Depth,
             UnitPrice = MarkupKinds.IsSummable(Kind) ? UnitPrice ?? m.UnitPrice : m.UnitPrice,
+            Slope = Measurement.SupportsSlope(Kind) ? Slope ?? m.Slope : m.Slope,
+            Image = Kind == MarkupKind.Image ? Image ?? m.Image : m.Image,
         };
     }
 
@@ -46,6 +51,14 @@ public sealed record ToolPreset(string Id, string Name, MarkupKind Kind, MarkupS
             if (Depth is { } d)
             {
                 parts.Add($"{(Kind == MarkupKind.Area ? "Tiefe" : "Höhe")} {Measurement.Number(d, 2)} m");
+            }
+            if (Slope is { } sl)
+            {
+                parts.Add($"Neigung {Measurement.Number(sl, sl % 1 == 0 ? 0 : 1)} %");
+            }
+            if (Image is { } img)
+            {
+                parts.Add($"{img.Width} × {img.Height} Pixel");
             }
             if (UnitPrice is { } p)
             {
@@ -195,7 +208,8 @@ public sealed record ToolLibrary(IReadOnlyList<ToolSet> Sets)
                 Id = t.Id, Name = t.Name, Kind = t.Kind.ToString(), Text = t.Text.Length > 0 ? t.Text : null,
                 Stroke = MarkupSerializer.Hex(t.Style.Stroke), Fill = t.Style.Fill is { } f ? MarkupSerializer.Hex(f) : null,
                 Opacity = t.Style.Opacity, Width = t.Style.LineWidth, Font = t.Style.FontSize,
-                Depth = t.Depth, Price = t.UnitPrice, Favorite = t.Favorite ? true : null,
+                Depth = t.Depth, Price = t.UnitPrice, Favorite = t.Favorite ? true : null, Slope = t.Slope,
+                Img = t.Image is { } img ? MarkupSerializer.ImageToDto(img) : null,
             })],
         })],
     }, Json);
@@ -225,11 +239,15 @@ public sealed record ToolLibrary(IReadOnlyList<ToolSet> Sets)
             }
             var tools = (s.Tools ?? [])
                 .Where(t => !string.IsNullOrWhiteSpace(t.Id) && !string.IsNullOrWhiteSpace(t.Name)
-                    && Enum.TryParse<MarkupKind>(t.Kind, out var k) && Enum.IsDefined(k) && !int.TryParse(t.Kind, out _))
+                    && Enum.TryParse<MarkupKind>(t.Kind, out var k) && Enum.IsDefined(k) && !int.TryParse(t.Kind, out _)
+                    // Bildwerkzeuge ohne lesbares Bild wären nutzlos.
+                    && (k != MarkupKind.Image || MarkupSerializer.ImageFromDto(t.Img) is not null))
                 .Select(t => new ToolPreset(t.Id!, t.Name!.Trim(), Enum.Parse<MarkupKind>(t.Kind!),
                     new MarkupStyle(MarkupSerializer.ParseHex(t.Stroke) ?? PdfColor.Black, MarkupSerializer.ParseHex(t.Fill),
                         Math.Clamp(t.Opacity, 0, 1), Math.Clamp(t.Width, 0, 100), t.Font is > 0 and < 500 ? t.Font : 12),
-                    t.Text ?? "", t.Depth is > 0 and < 1e6 ? t.Depth : null, t.Price is >= 0 and < 1e9 ? t.Price : null, t.Favorite == true))
+                    t.Text ?? "", t.Depth is > 0 and < 1e6 ? t.Depth : null, t.Price is >= 0 and < 1e9 ? t.Price : null, t.Favorite == true,
+                    t.Slope is > 0 and <= Measurement.MaxSlope ? t.Slope : null,
+                    Enum.Parse<MarkupKind>(t.Kind!) == MarkupKind.Image ? MarkupSerializer.ImageFromDto(t.Img) : null))
                 .ToList();
             sets.Add(new ToolSet(s.Name.Trim(), tools));
         }
@@ -263,5 +281,7 @@ public sealed record ToolLibrary(IReadOnlyList<ToolSet> Sets)
         [JsonPropertyName("depth")] public double? Depth { get; set; }
         [JsonPropertyName("price")] public double? Price { get; set; }
         [JsonPropertyName("favorite")] public bool? Favorite { get; set; }
+        [JsonPropertyName("slope")] public double? Slope { get; set; }
+        [JsonPropertyName("img")] public MarkupSerializer.ImageDto? Img { get; set; }
     }
 }

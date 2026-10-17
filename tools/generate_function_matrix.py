@@ -538,6 +538,7 @@ STATUS = {
     "CMP-001": "Teilweise (Phase 6, Teil 1): Seitenweiser Vergleich zweier Stände, Änderungen als Wolken im neuen Stand; stapelweise offen",
     "CMP-002": "Teilweise (Phase 6, Teil 1): Überlagerung rot (alt), blau (neu), grau (gleich); Ebenen und Transparenz offen",
     "QTO-008": "Umgesetzt (Phase 5): Neigung in Prozent bei Länge, Polylänge und Fläche; geneigte Länge oder Fläche und Höhenunterschied in Liste und Export. Ob die Rechenweise der Referenz entspricht, ist ungeprüft",
+    "MKP-TOOL-025": "Umgesetzt (Phase 5): Bild aus Datei oder Zwischenablage, gezeichnetes Unterschriftsbild (keine digitale Signatur), speicherbar in der Werkzeugbibliothek; Scanner offen",
     "CMP-003": "Teilweise (Phase 6, Teil 1): Verschiebung wird automatisch erkannt und ausgeglichen; Drehung, Maßstab und manuelle Ausrichtung offen",
     "TOOL-001": "Umgesetzt (Phase 5, Teil 3): Werkzeugsätze in der Seitenleiste, Werkzeug aus Markierung speichern, bleibt beim Zeichnen aktiv",
     "TOOL-003": "Teilweise (Phase 5, Teil 3): Import und Export im eigenen Format e360-tools (JSON); BTX-Import offen",

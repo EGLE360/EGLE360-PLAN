@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -206,6 +207,7 @@ public static class MarkupSerializer
             Locked = m.Locked ? true : null,
             Price = m.UnitPrice,
             Slope = m.Slope,
+            Img = m.Image is { } img ? ImageToDto(img) : null,
         };
         return JsonSerializer.Serialize(dto, Json);
     }
@@ -236,7 +238,7 @@ public static class MarkupSerializer
             var price = dto.Price is >= 0 and < 1e9 ? dto.Price : null;
             var slope = dto.Slope is > 0 and <= Measurement.MaxSlope && Measurement.SupportsSlope(dto.Kind) ? dto.Slope : null;
             return new Markup(id, dto.Kind, paths, style, text, author, created, modified ?? created, TextFrame.Normalize(dto.Rot), scale, depth,
-                status, dto.Locked == true, price, slope);
+                status, dto.Locked == true, price, slope, dto.Kind == MarkupKind.Image ? ImageFromDto(dto.Img) : null);
         }
         catch (JsonException)
         {
@@ -269,6 +271,56 @@ public static class MarkupSerializer
         [JsonPropertyName("locked")] public bool? Locked { get; set; }
         [JsonPropertyName("price")] public double? Price { get; set; }
         [JsonPropertyName("slope")] public double? Slope { get; set; }
+        [JsonPropertyName("img")] public ImageDto? Img { get; set; }
+    }
+
+    /// <summary>Bild als Breite, Höhe und zlib-gepackte BGRA-Pixel in Base64.</summary>
+    internal sealed class ImageDto
+    {
+        [JsonPropertyName("w")] public int W { get; set; }
+        [JsonPropertyName("h")] public int H { get; set; }
+        [JsonPropertyName("data")] public string? Data { get; set; }
+    }
+
+    internal static ImageDto ImageToDto(MarkupImage img)
+    {
+        using var buffer = new MemoryStream();
+        using (var z = new ZLibStream(buffer, CompressionLevel.Optimal, leaveOpen: true))
+        {
+            z.Write(img.Bgra);
+        }
+        return new ImageDto { W = img.Width, H = img.Height, Data = Convert.ToBase64String(buffer.GetBuffer(), 0, (int)buffer.Length) };
+    }
+
+    /// <summary>Liest ein Bild; null bei fehlerhaften oder unplausiblen Daten.</summary>
+    internal static MarkupImage? ImageFromDto(ImageDto? dto)
+    {
+        if (dto is not { W: > 0 and <= MarkupImage.MaxSide, H: > 0 and <= MarkupImage.MaxSide, Data: { } data })
+        {
+            return null;
+        }
+        try
+        {
+            var expected = dto.W * dto.H * 4;
+            var pixels = new byte[expected];
+            using var z = new ZLibStream(new MemoryStream(Convert.FromBase64String(data)), CompressionMode.Decompress);
+            var read = 0;
+            while (read < expected)
+            {
+                var n = z.Read(pixels, read, expected - read);
+                if (n == 0)
+                {
+                    return null;
+                }
+                read += n;
+            }
+            // Mehr Daten als angegeben gelten ebenfalls als fehlerhaft.
+            return z.ReadByte() == -1 ? new MarkupImage(dto.W, dto.H, pixels) : null;
+        }
+        catch (Exception ex) when (ex is FormatException or InvalidDataException)
+        {
+            return null;
+        }
     }
 
     private sealed class StatusDto

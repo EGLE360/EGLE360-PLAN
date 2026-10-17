@@ -4,9 +4,11 @@ namespace Egle360.Pdf.Markups;
 /// Ablauf beim Zeichnen einer neuen Markierung, unabhängig von der Oberfläche. Rahmenarten, Linie und Pfeil
 /// entstehen durch Ziehen, Freihand durch Zeichnen bei gedrückter Taste, Polylinie, Polygon und Wolke durch einzelne
 /// Klicks (Abschluss mit Doppelklick oder Eingabetaste), die Notiz durch einen Klick. Der Stempel entsteht durch
-/// Aufziehen oder per Klick in Standardgröße; <paramref name="text"/> ist seine Aufschrift.
+/// Aufziehen oder per Klick in Standardgröße; <paramref name="text"/> ist seine Aufschrift. Ebenso das Bild
+/// <paramref name="image"/>, ohne Bild entsteht keine Bildmarkierung.
 /// </summary>
-public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string author, int pageRotation, double minSize, MeasureScale? scale = null, string text = "")
+public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string author, int pageRotation, double minSize, MeasureScale? scale = null, string text = "",
+    MarkupImage? image = null)
 {
     private readonly List<PdfPoint> _points = [];
     private bool _pressed;
@@ -127,6 +129,8 @@ public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string aut
         {
             MarkupKind.Note => Complete([new[] { start }]),
             MarkupKind.Stamp when !dragged => Complete([StampAt(start)]),
+            MarkupKind.Image when image is null => Complete(null),
+            MarkupKind.Image when !dragged => Complete([BoxAt(start, image.DefaultSize)]),
             MarkupKind.Callout => Complete(CalloutPaths(start, p, dragged)),
             MarkupKind.TextBox or MarkupKind.Typewriter when !dragged => Complete([new[] { start, new TextFrame(start, pageRotation, 0, 0).ToUser(new PdfPoint(DefaultTextBox.Width, DefaultTextBox.Height)) }]),
             _ when !dragged => Complete(null),
@@ -184,7 +188,7 @@ public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string aut
                 _ => Kind,
             };
             IReadOnlyList<IReadOnlyList<PdfPoint>> paths = Kind == MarkupKind.Callout && pts.Count >= 2 ? CalloutPaths(pts[0], pts[^1], true) : [pts];
-            return new Markup("preview", previewKind, paths, style, text, author, DateTimeOffset.Now, DateTimeOffset.Now, pageRotation, scale);
+            return new Markup("preview", previewKind, paths, style, text, author, DateTimeOffset.Now, DateTimeOffset.Now, pageRotation, scale, Image: image);
         }
     }
 
@@ -203,9 +207,12 @@ public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string aut
     }
 
     /// <summary>Stempel in Standardgröße, mittig auf dem Klickpunkt.</summary>
-    private PdfPoint[] StampAt(PdfPoint center)
+    private PdfPoint[] StampAt(PdfPoint center) => BoxAt(center, StampPreset.DefaultSize);
+
+    /// <summary>Rahmen mit Breite und Höhe auf dem Bildschirm, mittig auf dem Klickpunkt.</summary>
+    private PdfPoint[] BoxAt(PdfPoint center, (double Width, double Height) size)
     {
-        var (w, h) = StampPreset.DefaultSize;
+        var (w, h) = size;
         var frame = new TextFrame(center, pageRotation, 0, 0);
         return [frame.ToUser(new PdfPoint(-w / 2, -h / 2)), frame.ToUser(new PdfPoint(w / 2, h / 2))];
     }
@@ -213,6 +220,10 @@ public sealed class MarkupDrawing(MarkupKind kind, MarkupStyle style, string aut
     private Markup? Complete(IReadOnlyList<IReadOnlyList<PdfPoint>>? paths)
     {
         Cancel();
-        return paths is null ? null : Markup.Create(Kind, paths, style, author, pageRotation, text) with { Scale = MarkupKinds.NeedsScale(Kind) ? scale : null };
+        return paths is null ? null : Markup.Create(Kind, paths, style, author, pageRotation, text) with
+        {
+            Scale = MarkupKinds.NeedsScale(Kind) ? scale : null,
+            Image = Kind == MarkupKind.Image ? image : null,
+        };
     }
 }

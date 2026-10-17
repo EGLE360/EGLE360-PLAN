@@ -32,6 +32,7 @@ public enum MarkupKind
     Typewriter,
     Underline,
     StrikeOut,
+    Image,
 }
 
 /// <summary>Punkt im PDF-Benutzerkoordinatensystem (Punkt, y nach oben, ohne Seitendrehung).</summary>
@@ -96,6 +97,8 @@ public sealed record MarkupStyle(PdfColor Stroke, PdfColor? Fill, double Opacity
         MarkupKind.Typewriter => new MarkupStyle(new PdfColor(30, 30, 30), null, 1, 0, 12),
         MarkupKind.Callout => new MarkupStyle(new PdfColor(200, 30, 30), PdfColor.White, 1, 1, 12),
         MarkupKind.Stamp => new MarkupStyle(StampPreset.Defaults[0].Color, null, 0.9, 2, 14),
+        // Bilder ohne Rahmen; eine Linienbreite über die Werkzeugleiste ergibt einen Rahmen in der Markierungsfarbe.
+        MarkupKind.Image => new MarkupStyle(new PdfColor(200, 30, 30), null, 1, 0),
         _ when MarkupKinds.IsMeasurement(kind) => new MarkupStyle(new PdfColor(22, 119, 210), null, 1, 1.5, 10),
         _ => new MarkupStyle(new PdfColor(200, 30, 30), null, 1, 1.5),
     };
@@ -122,6 +125,7 @@ public sealed record MarkupStyle(PdfColor Stroke, PdfColor? Fill, double Opacity
 /// Neigung oder Gefälle in Prozent (Höhenunterschied je 100 Einheiten Grundrissmaß) bei Längen, Polylängen und
 /// Flächen; daraus ergeben sich die geneigte Länge oder Fläche und der Höhenunterschied.
 /// </param>
+/// <param name="Image">Bildinhalt einer Bildmarkierung (Foto, Logo, Unterschriftsbild); sonst null.</param>
 public sealed record Markup(
     string Id,
     MarkupKind Kind,
@@ -137,7 +141,8 @@ public sealed record Markup(
     MarkupStatus? Status = null,
     bool Locked = false,
     double? UnitPrice = null,
-    double? Slope = null)
+    double? Slope = null,
+    MarkupImage? Image = null)
 {
     public IReadOnlyList<PdfPoint> Points => Paths.Count > 0 ? Paths[0] : [];
 
@@ -192,12 +197,13 @@ public static class MarkupKinds
         MarkupKind.Typewriter => "Schreibmaschine",
         MarkupKind.Underline => "Unterstreichung",
         MarkupKind.StrikeOut => "Durchstreichung",
+        MarkupKind.Image => "Bild",
         _ => kind.ToString(),
     };
 
     /// <summary>Arten, die durch Aufziehen eines Rechtecks entstehen.</summary>
     public static bool IsBox(MarkupKind kind) => kind is MarkupKind.Rectangle or MarkupKind.Ellipse or MarkupKind.TextBox or MarkupKind.Highlight or MarkupKind.Stamp or MarkupKind.Typewriter
-            or MarkupKind.Underline or MarkupKind.StrikeOut;
+            or MarkupKind.Underline or MarkupKind.StrikeOut or MarkupKind.Image;
 
     /// <summary>Arten mit beliebig vielen Eckpunkten, die per Klick gesetzt werden.</summary>
     public static bool IsMultiPoint(MarkupKind kind) =>
@@ -256,6 +262,29 @@ public sealed record StampPreset(string Title, PdfColor Color)
 
     /// <summary>Standardgröße eines per Klick gesetzten Stempels in Punkt (Breite, Höhe auf dem Bildschirm).</summary>
     public static (double Width, double Height) DefaultSize => (190, 56);
+}
+
+/// <summary>
+/// Bild einer Bildmarkierung als 32-Bit-Pixel (Blau, Grün, Rot, Alpha je Byte, Alpha nicht vormultipliziert),
+/// Zeile für Zeile von oben nach unten.
+/// </summary>
+public sealed record MarkupImage(int Width, int Height, byte[] Bgra)
+{
+    /// <summary>Größte Kantenlänge in Pixel; größere Bilder werden beim Einfügen verkleinert.</summary>
+    public const int MaxSide = 2000;
+
+    public static bool IsValid(int width, int height, byte[]? bgra) =>
+        width is > 0 and <= MaxSide && height is > 0 and <= MaxSide && bgra is not null && bgra.Length == width * height * 4;
+
+    /// <summary>Standardgröße beim Einsetzen per Klick in Punkt: längere Seite 150 pt, Seitenverhältnis wie das Bild.</summary>
+    public (double Width, double Height) DefaultSize
+    {
+        get
+        {
+            const double longSide = 150;
+            return Width >= Height ? (longSide, longSide * Height / Width) : (longSide * Width / Height, longSide);
+        }
+    }
 }
 
 /// <summary>Status einer Markierung: Bezeichnung, wer ihn gesetzt hat und wann.</summary>

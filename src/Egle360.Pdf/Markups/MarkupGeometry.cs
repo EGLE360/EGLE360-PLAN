@@ -17,6 +17,7 @@ public static class MarkupGeometry
         var s = m.Style;
         var w = s.LineWidth;
         var layers = new List<ShapeLayer>();
+        ShapeImage? image = null;
         PdfColor? stroke = w > 0 ? s.Stroke : null;
         PdfColor? fill = MarkupKinds.CanFill(m.Kind) ? s.Fill : null;
         var pts = m.Points;
@@ -169,6 +170,15 @@ public static class MarkupGeometry
             case MarkupKind.Stamp when pts.Count >= 2:
                 AddStamp(layers, m, PdfRect.FromPoints(pts[0], pts[1]), outliner);
                 break;
+            case MarkupKind.Image when pts.Count >= 2:
+                var frameBox = PdfRect.FromPoints(pts[0], pts[1]);
+                // Unsichtbare Fläche für die Trefferprüfung, auf Wunsch ein Rahmen.
+                layers.Add(new ShapeLayer(new PathData().Rectangle(frameBox), stroke, w, null));
+                if (m.Image is { } img)
+                {
+                    image = ImagePlacement(img, frameBox, m.TextRotation);
+                }
+                break;
             case MarkupKind.Angle when pts.Count == 2:
                 layers.Add(new ShapeLayer(new PathData().Polyline(pts, false), s.Stroke, w, null));
                 break;
@@ -185,7 +195,32 @@ public static class MarkupGeometry
                 AddLabel(layers, m, frame0.ToUser(new PdfPoint(marker + 2 + lw / 2, -(marker + 2 + lh / 2))), outliner);
                 break;
         }
-        return new MarkupShape(layers, Math.Clamp(s.Opacity, 0, 1));
+        return new MarkupShape(layers, Math.Clamp(s.Opacity, 0, 1), image);
+    }
+
+    /// <summary>
+    /// Bild im Rahmen <paramref name="box"/>, so groß wie möglich bei gleichem Seitenverhältnis und mittig. Die
+    /// Bildoberkante zeigt auf dem Bildschirm nach oben: bei gedrehter Seite (<paramref name="rotation"/> wie beim Text,
+    /// gegen den Uhrzeigersinn in Benutzerkoordinaten) ist das Bild entsprechend gedreht.
+    /// </summary>
+    public static ShapeImage ImagePlacement(MarkupImage img, PdfRect box, int rotation)
+    {
+        var r = TextFrame.Normalize(rotation);
+        var sideways = r is 90 or 270;
+        // Ausdehnung des Bildes in Benutzerkoordinaten.
+        var (iw, ih) = sideways ? ((double)img.Height, (double)img.Width) : (img.Width, (double)img.Height);
+        var f = Math.Min(box.Width / iw, box.Height / ih);
+        var (w, h) = (iw * f, ih * f);
+        var left = box.Left + (box.Width - w) / 2;
+        var bottom = box.Bottom + (box.Height - h) / 2;
+        var (right, top) = (left + w, bottom + h);
+        return r switch
+        {
+            90 => new ShapeImage(img, 0, h, -w, 0, right, bottom),
+            180 => new ShapeImage(img, -w, 0, 0, -h, right, top),
+            270 => new ShapeImage(img, 0, -h, w, 0, left, top),
+            _ => new ShapeImage(img, w, 0, 0, h, left, bottom),
+        };
     }
 
     /// <summary>Zeichnung ohne Text, je unveränderlicher Markierung nur einmal berechnet (Trefferprüfung bei jeder Mausbewegung).</summary>
@@ -539,7 +574,7 @@ public static class MarkupGeometry
         {
             return false;
         }
-        var areaCounts = m.Kind is MarkupKind.TextBox or MarkupKind.Note or MarkupKind.Highlight or MarkupKind.Count or MarkupKind.Stamp or MarkupKind.Callout or MarkupKind.Typewriter
+        var areaCounts = m.Kind is MarkupKind.Image or MarkupKind.TextBox or MarkupKind.Note or MarkupKind.Highlight or MarkupKind.Count or MarkupKind.Stamp or MarkupKind.Callout or MarkupKind.Typewriter
             or MarkupKind.Underline or MarkupKind.StrikeOut;
         foreach (var layer in shape.Layers)
         {

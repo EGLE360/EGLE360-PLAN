@@ -108,6 +108,28 @@ internal static class ScreenshotRunner
                         viewer.SetZoom(1.0);
                         WaitForRender(window);
                         var r = Egle360.Pdf.Markups.MarkupGeometry.HandleRect(stamp);
+                        if (theme == ThemePreference.Light)
+                        {
+                            // Unterschriftsbild unter dem Stempel (gezeichnete Testdaten).
+                            var strokes = new System.Windows.Ink.StrokeCollection();
+                            foreach (var line in new[]
+                            {
+                                new[] { (0.0, 30.0), (10, 5), (18, 35), (26, 8), (34, 30), (48, 20), (60, 28) },
+                                new[] { (62.0, 30.0), (75, 12), (82, 30), (95, 18), (110, 26), (130, 22) },
+                            })
+                            {
+                                var points = new System.Windows.Input.StylusPointCollection(line.Select(p => new System.Windows.Input.StylusPoint(p.Item1, p.Item2)));
+                                strokes.Add(new System.Windows.Ink.Stroke(points, new System.Windows.Ink.DrawingAttributes
+                                {
+                                    Color = Color.FromRgb(20, 40, 110), Width = 2.6, Height = 2.6, FitToCurve = true,
+                                }));
+                            }
+                            var image = Egle360.Desktop.Views.DocumentsView.RenderStrokes(strokes);
+                            var signature = Egle360.Pdf.Markups.Markup.Create(Egle360.Pdf.Markups.MarkupKind.Image,
+                                [new[] { new Egle360.Pdf.Markups.PdfPoint(r.Left, r.Bottom - 70), new Egle360.Pdf.Markups.PdfPoint(r.Left + 150, r.Bottom - 10) }],
+                                Egle360.Pdf.Markups.MarkupStyle.DefaultFor(Egle360.Pdf.Markups.MarkupKind.Image), "Prüfer") with { Image = image };
+                            window.Documents.TryAddMarkups(sample, 0, [signature], "Unterschrift");
+                        }
                         viewer.CenterOn(0, new Egle360.Pdf.Markups.PdfPoint((r.Left + r.Right) / 2 + 100, (r.Bottom + r.Top) / 2 + 80));
                         WaitForDocuments(window);
                         Save(window, Path.Combine(outputDir, name + "-stempel.png"));

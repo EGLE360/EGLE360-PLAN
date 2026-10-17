@@ -172,7 +172,7 @@ public sealed class PathData
 public sealed record ShapeLayer(PathData Path, PdfColor? Stroke, double StrokeWidth, PdfColor? Fill, bool IsText = false, PdfRect? Clip = null, bool EvenOdd = false);
 
 /// <summary>Fertige Zeichnung einer Markierung in Benutzerkoordinaten.</summary>
-public sealed record MarkupShape(IReadOnlyList<ShapeLayer> Layers, double Opacity)
+public sealed record MarkupShape(IReadOnlyList<ShapeLayer> Layers, double Opacity, ShapeImage? Image = null)
 {
     /// <summary>Rahmen der Anmerkung (PDF-Schlüssel Rect): alle Nicht-Text-Ebenen plus halbe Linienbreite und 1 pt Rand.</summary>
     public PdfRect Bounds()
@@ -183,8 +183,24 @@ public sealed record MarkupShape(IReadOnlyList<ShapeLayer> Layers, double Opacit
             var b = layer.Path.Bounds().Inflate((layer.Stroke is null ? 0 : layer.StrokeWidth / 2) + 1);
             result = result is { } r ? r.Union(b) : b;
         }
+        if (Image is { } image)
+        {
+            var b = image.Bounds.Inflate(1);
+            result = result is { } r ? r.Union(b) : b;
+        }
         return result ?? default;
     }
+}
+
+/// <summary>
+/// Bild in einer Zeichnung. Die Matrix (A, B, C, D, E, F) bildet das Einheitsquadrat des Bildes (0 bis 1, y nach oben,
+/// Bildoberkante bei y = 1) auf Benutzerkoordinaten ab, wie die Bildmatrix im PDF-Inhaltsstrom.
+/// </summary>
+public sealed record ShapeImage(MarkupImage Image, double A, double B, double C, double D, double E, double F)
+{
+    public PdfPoint Map(double x, double y) => new(A * x + C * y + E, B * x + D * y + F);
+
+    public PdfRect Bounds => PdfRect.Bounds([Map(0, 0), Map(1, 0), Map(0, 1), Map(1, 1)]);
 }
 
 /// <summary>Setzt Text in Umrisse um. Die Oberfläche liefert eine Umsetzung mit echter Schrift.</summary>

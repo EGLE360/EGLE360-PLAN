@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Egle360.Pdf;
 using Egle360.Pdf.Markups;
 using Egle360.Pdf.Viewing;
@@ -194,6 +195,15 @@ public sealed class MarkupLayer : FrameworkElement
                 dc.Pop();
             }
         }
+        if (visual.Image is { } image && visual.Shape.Image is { } placement)
+        {
+            // Einheitsquadrat des Bildes in Benutzerkoordinaten; WPF zeichnet Bilder mit y nach unten, daher gespiegelt.
+            dc.PushTransform(new MatrixTransform(placement.A, placement.B, placement.C, placement.D, placement.E, placement.F));
+            dc.PushTransform(new MatrixTransform(1, 0, 0, -1, 0, 1));
+            dc.DrawImage(image, new Rect(0, 0, 1, 1));
+            dc.Pop();
+            dc.Pop();
+        }
         if (visual.Shape.Opacity < 1)
         {
             dc.Pop();
@@ -259,7 +269,15 @@ public sealed class MarkupLayer : FrameworkElement
                 clip?.Freeze();
                 Layers.Add((geometry, pen, brush, clip));
             }
+            if (shape.Image is { Image: var img })
+            {
+                var bitmap = BitmapSource.Create(img.Width, img.Height, 96, 96, PixelFormats.Bgra32, null, img.Bgra, img.Width * 4);
+                bitmap.Freeze();
+                Image = bitmap;
+            }
         }
+
+        public BitmapSource? Image { get; }
 
         public MarkupShape Shape { get; }
 

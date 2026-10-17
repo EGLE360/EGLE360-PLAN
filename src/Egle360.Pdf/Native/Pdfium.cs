@@ -191,6 +191,10 @@ internal static unsafe class Pdfium
     [DllImport(Lib, ExactSpelling = true)] public static extern nint FPDFPageObj_NewTextObj(nint document, byte* font, float fontSize);
     [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFText_SetText(nint textObject, char* text);
     [DllImport(Lib, ExactSpelling = true)] public static extern void FPDFPage_InsertObject(nint page, nint obj);
+    [DllImport(Lib, ExactSpelling = true)] public static extern nint FPDFPageObj_NewImageObj(nint document);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFImageObj_SetBitmap(nint* pages, int count, nint imageObject, nint bitmap);
+    [DllImport(Lib, ExactSpelling = true)] public static extern void FPDFPageObj_Destroy(nint obj);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFAnnot_AppendObject(nint annot, nint obj);
     [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPage_GenerateContent(nint page);
 
     // Text lesen

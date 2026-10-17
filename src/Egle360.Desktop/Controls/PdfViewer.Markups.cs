@@ -165,6 +165,20 @@ public sealed partial class PdfViewer
         ToolChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>Bild, das mit dem Bildwerkzeug als Nächstes eingesetzt wird.</summary>
+    public MarkupImage? PendingImage { get; private set; }
+
+    /// <summary>
+    /// Bild einsetzen: ein Klick setzt es in Standardgröße, Aufziehen bestimmt den Rahmen. Danach ist das Bild
+    /// ausgewählt und das Auswahlwerkzeug aktiv.
+    /// </summary>
+    public void StartImage(MarkupImage image)
+    {
+        SetTool(ViewerTool.Draw, MarkupKind.Image);
+        PendingImage = image;
+        ToolChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     /// <summary>Aus einer Markierung soll ein Werkzeug der Bibliothek werden (Kontextmenü).</summary>
     public event EventHandler<Markup>? SaveAsToolRequested;
 
@@ -225,6 +239,7 @@ public sealed partial class PdfViewer
         ShowSnapMarker(-1, null);
         _cutout = null;
         ActivePreset = null;
+        PendingImage = null;
         if (tool is ViewerTool.Draw or ViewerTool.Calibrate && !_markupsVisible)
         {
             MarkupsVisible = true;
@@ -579,7 +594,8 @@ public sealed partial class PdfViewer
             var preset = _tool == ViewerTool.Draw && ActivePreset?.Kind == kind ? ActivePreset : null;
             var style = _tool == ViewerTool.Calibrate ? CalibrationStyle : preset?.Style ?? StyleProvider(kind);
             var text = _tool != ViewerTool.Draw ? "" : preset is { Text.Length: > 0 } ? preset.Text : TextProvider(kind);
-            _drawing = new MarkupDrawing(kind, style, Author, rotation, minSize, scale, text);
+            var image = kind == MarkupKind.Image ? preset?.Image ?? PendingImage : null;
+            _drawing = new MarkupDrawing(kind, style, Author, rotation, minSize, scale, text, image);
             _drawingPage = h.Page;
         }
         _drawing.Press(Snap(h.Page, h.User));
