@@ -1,0 +1,582 @@
+using System.IO;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using Egle360.Desktop.Services;
+using Egle360.Pdf;
+using Egle360.Pdf.Plans;
+using Microsoft.Win32;
+
+namespace Egle360.Desktop.Views;
+
+/// <summary>
+/// Planverwaltung: Planliste eines Projektordners mit Plannummer, Index und Angaben je Plan, dazu der Verlauf aller
+/// Stände. Pläne werden in den Projektordner kopiert; neue Indizes können die Markierungen des Vorgängers übernehmen.
+/// </summary>
+public partial class PlansView : UserControl
+{
+    private const string AllDisciplines = "Alle Gewerke";
+
+    private readonly WpfTextOutliner _outliner = new();
+    private PlanProject? _project;
+    private string _disciplineFilter = "";
+    private bool _loading;
+
+    /// <summary>Zeile der Planliste.</summary>
+    private sealed record PlanRow(PlanEntry Plan)
+    {
+        public string Number => Plan.Number;
+        public string Title => Plan.Title;
+        public string Index => Plan.Index;
+        public DateTime Added => Plan.Current.Added.LocalDateTime;
+        public string Discipline => Plan.Discipline;
+        public string Floor => Plan.Floor;
+        public string Status => Plan.Status;
+        public int RevisionCount => Plan.Revisions.Count;
+    }
+
+    /// <summary>Eintrag im Verlauf.</summary>
+    private sealed record RevisionRow(PlanRevision Revision, bool IsCurrent)
+    {
+        public string Title => $"Index {PlanProject.Display(Revision.Index)}{(IsCurrent ? " (aktuell)" : "")}";
+
+        public string Detail
+        {
+            get
+            {
+                var text = $"{Revision.Added.LocalDateTime:dd.MM.yyyy HH:mm}{(Revision.AddedBy.Length > 0 ? ", " + Revision.AddedBy : "")}";
+                return Revision.Note.Length > 0 ? $"{text}\n{Revision.Note}" : text;
+            }
+        }
+    }
+
+    public PlansView()
+    {
+        InitializeComponent();
+        Controls.Ribbon.ApplyAll(RibbonPanel);
+        Controls.Ribbon.FitOnResize(RibbonScroll);
+        if (App.Theme.Settings.PlanProjectPath is { } path && PlanProject.Exists(path))
+        {
+            TryOpen(path, quiet: true);
+        }
+        Refresh();
+    }
+
+    private Window Owner => Window.GetWindow(this)!;
+
+    private PlanEntry? SelectedPlan => (PlanGrid.SelectedItem as PlanRow)?.Plan is { } p ? _project?.Register.Find(p.Id) : null;
+
+    /// <summary>Für den Screenshot-Modus: ein vorbereitetes Projekt anzeigen.</summary>
+    internal void ShowProject(string root) => TryOpen(root, quiet: false);
+
+    internal void SelectFirstForScreenshot() => PlanGrid.SelectedIndex = PlanGrid.Items.Count > 0 ? 0 : -1;
+
+    // ---------- Projekt ----------
+
+    private void OnNewProject(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFolderDialog { Title = "Ordner für das neue Planprojekt wählen" };
+        if (dialog.ShowDialog(Owner) != true)
+        {
+            return;
+        }
+        if (PlanProject.Exists(dialog.FolderName))
+        {
+            TryOpen(dialog.FolderName, quiet: false);
+            return;
+        }
+        var name = Dialogs.AskText(Owner, "Neues Planprojekt", "Name des Projekts:", Path.GetFileName(dialog.FolderName.TrimEnd('\\', '/')));
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return;
+        }
+        try
+        {
+            SetProject(PlanProject.Create(dialog.FolderName, name.Trim()));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            ShowError(ex.Message);
+        }
+    }
+
+    private void OnOpenProject(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFolderDialog { Title = "Ordner des Planprojekts wählen" };
+        if (dialog.ShowDialog(Owner) != true)
+        {
+            return;
+        }
+        if (!PlanProject.Exists(dialog.FolderName))
+        {
+            ShowError($"In diesem Ordner gibt es keine Planliste ({PlanRegister.FileName}). Mit „Neues Planprojekt“ lässt sich eine anlegen.");
+            return;
+        }
+        TryOpen(dialog.FolderName, quiet: false);
+    }
+
+    private void TryOpen(string root, bool quiet)
+    {
+        try
+        {
+            SetProject(PlanProject.Open(root));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException)
+        {
+            if (!quiet)
+            {
+                ShowError($"Die Planliste konnte nicht gelesen werden: {ex.Message}");
+            }
+        }
+    }
+
+    private void SetProject(PlanProject project)
+    {
+        _project = project;
+        App.Theme.Settings.PlanProjectPath = project.Root;
+        App.Theme.SaveSettings();
+        Refresh();
+    }
+
+    // ---------- Anzeige ----------
+
+    private void Refresh(string? selectId = null)
+    {
+        selectId ??= SelectedPlan?.Id;
+        var has = _project is not null;
+        ProjectTitle.Text = has && _project!.Register.Name.Length > 0 ? _project.Register.Name : "Pläne";
+        ProjectInfo.Text = has ? $"{_project!.Register.Plans.Count} Pläne in {_project.Root}" : "";
+        AddButton.IsEnabled = ExportButton.IsEnabled = BatchButton.IsEnabled = CompareAllButton.IsEnabled = has;
+
+        if (_disciplineFilter.Length > 0 && _project?.Register.Plans.Any(p => p.Discipline == _disciplineFilter) != true)
+        {
+            _disciplineFilter = "";
+        }
+        DisciplineFilter.Content = _disciplineFilter.Length > 0 ? $"Gewerk {_disciplineFilter}" : AllDisciplines;
+
+        var plans = FilteredPlans();
+        PlanGrid.ItemsSource = plans.Select(p => new PlanRow(p)).ToList();
+        PlanGrid.SelectedItem = PlanGrid.Items.Cast<PlanRow>().FirstOrDefault(r => r.Plan.Id == selectId);
+        EmptyText.Visibility = plans.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        EmptyText.Text = !has
+            ? "Noch kein Planprojekt geöffnet. Ein Planprojekt ist ein Ordner mit einer Planliste. Mit „Neues Planprojekt“ wählst du einen Ordner, danach fügst du Pläne hinzu oder ziehst PDF-Dateien hierher."
+            : _project!.Register.Plans.Count == 0
+                ? "Die Planliste ist leer. Pläne hinzufügen oder PDF-Dateien hierher ziehen. Plannummer und Index werden aus dem Plankopf oder dem Dateinamen erkannt."
+                : "Kein Plan passt zum Filter.";
+        ShowDetails();
+    }
+
+    private List<PlanEntry> FilteredPlans()
+    {
+        if (_project is null)
+        {
+            return [];
+        }
+        return [.. _project.Register.Filter(FilterBox.Text, _disciplineFilter)];
+    }
+
+    private void OnFilterChanged(object sender, EventArgs e)
+    {
+        if (!_loading && IsLoaded)
+        {
+            Refresh();
+        }
+    }
+
+    private void OnDisciplineFilterMenu(object sender, RoutedEventArgs e)
+    {
+        var choices = _project?.Register.Plans.Select(p => p.Discipline).Where(d => d.Length > 0).Distinct().Order().ToList() ?? [];
+        ShowChoices(DisciplineFilter, [AllDisciplines, .. choices], _disciplineFilter.Length > 0 ? _disciplineFilter : AllDisciplines, choice =>
+        {
+            _disciplineFilter = choice == AllDisciplines ? "" : choice;
+            Refresh();
+        });
+    }
+
+    /// <summary>Auswahlliste neben Gewerk und Status; die Felder bleiben frei beschreibbar.</summary>
+    private void OnChoiceMenu(object sender, RoutedEventArgs e)
+    {
+        var button = (Button)sender;
+        var box = (string)button.Tag == nameof(StatusBox) ? StatusBox : DisciplineBox;
+        IReadOnlyList<string> choices = box == StatusBox
+            ? PlanRegister.StatusNames
+            : [.. PlanDiscipline.Defaults.Select(d => $"{d.Code} {d.Name}")];
+        ShowChoices(button, choices, box.Text, choice =>
+        {
+            // Beim Gewerk wird nur das Kürzel eingetragen.
+            box.Text = box == DisciplineBox ? choice.Split(' ')[0] : choice;
+            OnDetailChanged(box, new RoutedEventArgs());
+        });
+    }
+
+    private static void ShowChoices(FrameworkElement target, IReadOnlyList<string> choices, string current, Action<string> chosen)
+    {
+        var menu = new ContextMenu { PlacementTarget = target, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom };
+        foreach (var c in choices)
+        {
+            var item = new MenuItem { Header = c, IsCheckable = true, IsChecked = c == current || c.Split(' ')[0] == current };
+            item.Click += (_, _) => chosen(c);
+            menu.Items.Add(item);
+        }
+        menu.IsOpen = true;
+    }
+
+    private void OnPlanSelected(object sender, SelectionChangedEventArgs e) => ShowDetails();
+
+    private void ShowDetails()
+    {
+        var plan = SelectedPlan;
+        DetailsPanel.IsEnabled = plan is not null;
+        RevisionButton.IsEnabled = OpenPlanButton.IsEnabled = RemoveButton.IsEnabled = plan is not null;
+        CompareButton.IsEnabled = plan is { Revisions.Count: > 1 };
+        _loading = true;
+        NumberBox.Text = plan?.Number ?? "";
+        TitleBox.Text = plan?.Title ?? "";
+        DisciplineBox.Text = plan?.Discipline ?? "";
+        StatusBox.Text = plan?.Status ?? "";
+        FloorBox.Text = plan?.Floor ?? "";
+        BuildingBox.Text = plan?.Building ?? "";
+        SectionBox.Text = plan?.Section ?? "";
+        AuthorBox.Text = plan?.Author ?? "";
+        ApprovalBox.Text = plan?.Approval ?? "";
+        RevisionList.ItemsSource = plan?.Revisions.Select((r, i) => new RevisionRow(r, i == plan.Revisions.Count - 1)).Reverse().ToList();
+        _loading = false;
+    }
+
+    /// <summary>Übernimmt geänderte Angaben aus dem Formular, sobald ein Feld verlassen wird.</summary>
+    private void OnDetailChanged(object sender, RoutedEventArgs e)
+    {
+        if (_loading || _project is null || SelectedPlan is not { } plan)
+        {
+            return;
+        }
+        var number = NumberBox.Text.Trim();
+        var updated = plan with
+        {
+            Number = number.Length > 0 ? number : plan.Number,
+            Title = TitleBox.Text.Trim(),
+            Discipline = DisciplineBox.Text.Trim(),
+            Status = StatusBox.Text.Trim(),
+            Floor = FloorBox.Text.Trim(),
+            Building = BuildingBox.Text.Trim(),
+            Section = SectionBox.Text.Trim(),
+            Author = AuthorBox.Text.Trim(),
+            Approval = ApprovalBox.Text.Trim(),
+        };
+        if (updated == plan)
+        {
+            return;
+        }
+        if (PlanRegister.NumberKey(updated.Number) != PlanRegister.NumberKey(plan.Number) && _project.Register.FindByNumber(updated.Number) is not null)
+        {
+            ShowError($"Die Plannummer {updated.Number} gibt es schon.");
+            NumberBox.Text = plan.Number;
+            return;
+        }
+        if (Save(() => _project.Update(_project.Register.Replace(updated))))
+        {
+            Dispatcher.BeginInvoke(() => Refresh(plan.Id));
+        }
+    }
+
+    // ---------- Pläne ----------
+
+    private void OnAddPlans(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog { Filter = "PDF-Dateien (*.pdf)|*.pdf", Multiselect = true, Title = "Pläne hinzufügen" };
+        if (dialog.ShowDialog(Owner) == true)
+        {
+            Import(dialog.FileNames);
+        }
+    }
+
+    private void OnDragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = _project is not null && e.Data.GetData(DataFormats.FileDrop) is string[] files
+            && files.Any(f => f.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)) ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void OnDrop(object sender, DragEventArgs e)
+    {
+        if (_project is not null && e.Data.GetData(DataFormats.FileDrop) is string[] files)
+        {
+            Import(files.Where(f => f.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)).ToList());
+        }
+    }
+
+    private void Import(IReadOnlyList<string> files)
+    {
+        if (_project is null || files.Count == 0)
+        {
+            return;
+        }
+        IReadOnlyList<PlanImportResult> results;
+        Mouse.OverrideCursor = Cursors.Wait;
+        try
+        {
+            results = _project.Import(files, Environment.UserName, TakeOverBox.IsChecked == true, _outliner);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PdfException)
+        {
+            Mouse.OverrideCursor = null;
+            ShowError($"Beim Hinzufügen ist ein Fehler aufgetreten: {ex.Message}");
+            Refresh();
+            return;
+        }
+        finally
+        {
+            Mouse.OverrideCursor = null;
+        }
+        Refresh(results.LastOrDefault(r => r.PlanId.Length > 0)?.PlanId);
+        var lines = new List<string>();
+        var added = results.Count(r => r.Action == PlanImportAction.NewPlan);
+        var revised = results.Where(r => r.Action == PlanImportAction.NewRevision).ToList();
+        if (added > 0)
+        {
+            lines.Add(added == 1 ? "1 neuer Plan angelegt." : $"{added} neue Pläne angelegt.");
+        }
+        foreach (var r in revised)
+        {
+            var plan = _project.Register.Find(r.PlanId)!;
+            lines.Add($"Plan {plan.Number}: neuer Index {PlanProject.Display(plan.Index)}"
+                + (TakeOverBox.IsChecked == true ? $", {r.MarkupsTakenOver} Markierung(en) übernommen." : "."));
+        }
+        lines.AddRange(results.Where(r => r.Action is PlanImportAction.Duplicate or PlanImportAction.Failed)
+            .Select(r => $"{Path.GetFileName(r.Source)}: {r.Message}"));
+        if (revised.Count > 0 || results.Any(r => r.Action is PlanImportAction.Duplicate or PlanImportAction.Failed))
+        {
+            MessageBox.Show(Owner, string.Join("\n", lines), "Pläne hinzugefügt", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+    }
+
+    private void OnNewRevision(object sender, RoutedEventArgs e)
+    {
+        if (_project is null || SelectedPlan is not { } plan)
+        {
+            return;
+        }
+        var dialog = new OpenFileDialog { Filter = "PDF-Dateien (*.pdf)|*.pdf", Title = $"Neuer Index für Plan {plan.Number}" };
+        if (dialog.ShowDialog(Owner) != true)
+        {
+            return;
+        }
+        var suggested = PlanProject.ReadInfo(dialog.FileName)?.Index is { Length: > 0 } read ? read : NextIndex(plan.Index);
+        if (Dialogs.AskText(Owner, "Neuer Index", $"Index des neuen Stands von Plan {plan.Number} (bisher {PlanProject.Display(plan.Index)}):", suggested) is not { } index)
+        {
+            return;
+        }
+        index = index.Trim();
+        if (plan.Revisions.Any(r => string.Equals(r.Index, index, StringComparison.OrdinalIgnoreCase)))
+        {
+            ShowError($"Plan {plan.Number} hat den Index {PlanProject.Display(index)} schon.");
+            return;
+        }
+        var note = Dialogs.AskText(Owner, "Neuer Index", "Änderungsvermerk (optional):", "") ?? "";
+        Mouse.OverrideCursor = Cursors.Wait;
+        try
+        {
+            var (_, taken) = _project.AddRevision(plan.Id, dialog.FileName, index, Environment.UserName, note.Trim(), TakeOverBox.IsChecked == true, _outliner);
+            Mouse.OverrideCursor = null;
+            Refresh(plan.Id);
+            if (TakeOverBox.IsChecked == true)
+            {
+                MessageBox.Show(Owner, $"Index {PlanProject.Display(index)} eingetragen, {taken} Markierung(en) übernommen.", "Neuer Index",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PdfException)
+        {
+            Mouse.OverrideCursor = null;
+            ShowError($"Der neue Index konnte nicht eingetragen werden: {ex.Message}");
+        }
+    }
+
+    /// <summary>Nächster Index als Vorschlag: A wird B, 03 wird 04; sonst leer.</summary>
+    internal static string NextIndex(string index)
+    {
+        if (index.Length == 1 && char.IsAsciiLetterUpper(index[0]) && index[0] < 'Z')
+        {
+            return ((char)(index[0] + 1)).ToString();
+        }
+        if (index.Length > 0 && index.All(char.IsAsciiDigit) && int.TryParse(index, out var n))
+        {
+            return (n + 1).ToString(new string('0', index.Length));
+        }
+        return index.Length == 0 ? "A" : "";
+    }
+
+    private void OnOpenPlan(object sender, RoutedEventArgs e)
+    {
+        if (SelectedPlan is { } plan)
+        {
+            OpenFile(plan.Current);
+        }
+    }
+
+    private void OnPlanDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if ((e.OriginalSource as FrameworkElement)?.DataContext is PlanRow row && _project?.Register.Find(row.Plan.Id) is { } plan)
+        {
+            OpenFile(plan.Current);
+        }
+    }
+
+    private void OnRevisionDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (RevisionList.SelectedItem is RevisionRow row)
+        {
+            OpenFile(row.Revision);
+        }
+    }
+
+    private void OpenFile(PlanRevision revision)
+    {
+        if (_project is null)
+        {
+            return;
+        }
+        var path = _project.FullPath(revision);
+        if (!File.Exists(path))
+        {
+            ShowError($"Die Datei {revision.File} fehlt im Projektordner.");
+            return;
+        }
+        ((MainWindow)Owner).OpenDocuments([path]);
+    }
+
+    private void OnRevisionOpen(object sender, RoutedEventArgs e)
+    {
+        if (RevisionList.SelectedItem is RevisionRow row)
+        {
+            OpenFile(row.Revision);
+        }
+    }
+
+    private void OnRevisionCompare(object sender, RoutedEventArgs e)
+    {
+        if (SelectedPlan is { } plan && RevisionList.SelectedItem is RevisionRow { IsCurrent: false } row)
+        {
+            Compare(plan, row.Revision, plan.Current);
+        }
+    }
+
+    private void OnCompare(object sender, RoutedEventArgs e)
+    {
+        if (SelectedPlan is { Revisions.Count: > 1 } plan)
+        {
+            Compare(plan, plan.Revisions[^2], plan.Current);
+        }
+    }
+
+    /// <summary>Vergleich aller angezeigten Pläne mit mehreren Ständen.</summary>
+    private void OnCompareAll(object sender, RoutedEventArgs e) => OpenPlanSetCompare();
+
+    internal PlanSetCompareWindow? OpenPlanSetCompare()
+    {
+        if (_project is null)
+        {
+            return null;
+        }
+        var main = (MainWindow)Owner;
+        var window = new PlanSetCompareWindow(Owner, _project, [.. PlanGrid.Items.OfType<PlanRow>().Select(r => r.Plan)],
+            plan => Compare(plan, plan.Revisions[^2], plan.Current),
+            (path, page, markups) => main.Documents.TryAddMarkups(path, page, markups, "Änderungen eintragen"));
+        window.Show();
+        return window;
+    }
+
+    /// <summary>Für den Screenshot-Modus: Vergleich des ausgewählten Plans öffnen.</summary>
+    internal Window? OpenCompareForScreenshot() =>
+        SelectedPlan is { Revisions.Count: > 1 } plan ? Compare(plan, plan.Revisions[^2], plan.Current) : null;
+
+    private Window? Compare(PlanEntry plan, PlanRevision older, PlanRevision newer)
+    {
+        if (_project is null)
+        {
+            return null;
+        }
+        var oldPath = _project.FullPath(older);
+        var newPath = _project.FullPath(newer);
+        if (!File.Exists(oldPath) || !File.Exists(newPath))
+        {
+            ShowError("Eine der beiden Dateien fehlt im Projektordner.");
+            return null;
+        }
+        try
+        {
+            var main = (MainWindow)Owner;
+            var window = new CompareWindow(Owner, oldPath, $"Index {PlanProject.Display(older.Index)}", newPath, $"Index {PlanProject.Display(newer.Index)}",
+                (path, page, markups) => main.Documents.TryAddMarkups(path, page, markups, "Änderungen eintragen"));
+            window.Show();
+            return window;
+        }
+        catch (PdfException ex)
+        {
+            ShowError($"Die Pläne konnten nicht verglichen werden: {ex.Message}");
+            return null;
+        }
+    }
+
+    private void OnRemovePlan(object sender, RoutedEventArgs e)
+    {
+        if (_project is null || SelectedPlan is not { } plan)
+        {
+            return;
+        }
+        if (MessageBox.Show(Owner, $"Plan {plan.Number} aus der Planliste entfernen? Die Dateien bleiben im Ordner {PlanProject.PlanFolder}.",
+                "EGLE360 PLAN", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes
+            && Save(() => _project.Update(_project.Register.Remove(plan.Id))))
+        {
+            Refresh();
+        }
+    }
+
+    /// <summary>Stapelverarbeitung für die aktuellen Stände der angezeigten (gefilterten) Pläne.</summary>
+    private void OnBatch(object sender, RoutedEventArgs e)
+    {
+        if (_project is null || Window.GetWindow(this) is not { } owner)
+        {
+            return;
+        }
+        var files = PlanGrid.Items.OfType<PlanRow>()
+            .Select(r => r.Plan.Revisions.Count > 0 ? _project.FullPath(r.Plan.Current) : null)
+            .OfType<string>()
+            .ToList();
+        new BatchWindow(owner, files, System.IO.Path.Combine(_project.Root, "Ausgabe")).Show();
+    }
+
+    private void OnExport(object sender, RoutedEventArgs e)
+    {
+        if (_project is null)
+        {
+            return;
+        }
+        var dialog = new SaveFileDialog
+        {
+            Filter = "Excel-Arbeitsmappe (*.xlsx)|*.xlsx",
+            FileName = $"Planliste {(_project.Register.Name.Length > 0 ? _project.Register.Name : "Projekt")}.xlsx",
+        };
+        if (dialog.ShowDialog(Owner) == true)
+        {
+            Save(() => File.WriteAllBytes(dialog.FileName, PlanListExport.ToXlsx(_project.Register, FilteredPlans())));
+        }
+    }
+
+    private bool Save(Action action)
+    {
+        try
+        {
+            action();
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            ShowError(ex.Message);
+            return false;
+        }
+    }
+
+    private void ShowError(string message) =>
+        MessageBox.Show(Owner, message, "EGLE360 PLAN", MessageBoxButton.OK, MessageBoxImage.Warning);
+}

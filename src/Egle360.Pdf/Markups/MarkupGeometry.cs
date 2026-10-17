@@ -1,0 +1,854 @@
+using System.Runtime.CompilerServices;
+
+namespace Egle360.Pdf.Markups;
+
+/// <summary>
+/// Geometrie der Markierungen: Zeichnung, Trefferprüfung, Griffe und Verschieben. Reine Rechenlogik in
+/// PDF-Benutzerkoordinaten.
+/// </summary>
+public static class MarkupGeometry
+{
+    /// <summary>Innenabstand des Textes im Textfeld in Punkt.</summary>
+    public const double TextPadding = 4;
+
+    /// <summary>Erzeugt die Zeichnung. Ohne <paramref name="outliner"/> fehlt bei Textfeldern nur der Text.</summary>
+    public static MarkupShape BuildShape(Markup m, ITextOutliner? outliner)
+    {
+        var s = m.Style;
+        var w = s.LineWidth;
+        var layers = new List<ShapeLayer>();
+        ShapeImage? image = null;
+        PdfColor? stroke = w > 0 ? s.Stroke : null;
+        PdfColor? fill = MarkupKinds.CanFill(m.Kind) ? s.Fill : null;
+        var pts = m.Points;
+
+        switch (m.Kind)
+        {
+            case MarkupKind.Rectangle when pts.Count >= 2:
+                layers.Add(new ShapeLayer(new PathData().Rectangle(PdfRect.FromPoints(pts[0], pts[1])), stroke, w, fill));
+                break;
+            case MarkupKind.Ellipse when pts.Count >= 2:
+                layers.Add(new ShapeLayer(new PathData().Ellipse(PdfRect.FromPoints(pts[0], pts[1])), stroke, w, fill));
+                break;
+            case MarkupKind.Line when pts.Count >= 2:
+                layers.Add(new ShapeLayer(new PathData().Polyline([pts[0], pts[1]], false), s.Stroke, w, null));
+                break;
+            case MarkupKind.Arrow when pts.Count >= 2:
+                var arrow = new PathData().Polyline([pts[0], pts[1]], false);
+                arrow.Append(ArrowHead(pts[0], pts[1], w));
+                layers.Add(new ShapeLayer(arrow, s.Stroke, w, null));
+                break;
+            case MarkupKind.Polyline when pts.Count >= 2:
+                layers.Add(new ShapeLayer(new PathData().Polyline(pts, false), s.Stroke, w, null));
+                break;
+            case MarkupKind.Polygon when pts.Count >= 2:
+                layers.Add(new ShapeLayer(new PathData().Polyline(pts, true), stroke, w, fill));
+                break;
+            case MarkupKind.Cloud when pts.Count >= 2:
+                layers.Add(new ShapeLayer(Cloud(pts, CloudArcLength(w)), stroke, w, fill));
+                break;
+            case MarkupKind.Freehand:
+                var ink = new PathData();
+                foreach (var path in m.Paths.Where(p => p.Count > 0))
+                {
+                    // Einzelne Punkte als winzige Strecke, damit sie sichtbar bleiben.
+                    ink.Polyline(path.Count == 1 ? [path[0], path[0] + new PdfPoint(0.01, 0)] : path, false);
+                }
+                layers.Add(new ShapeLayer(ink, s.Stroke, w, null));
+                break;
+            case MarkupKind.TextBox or MarkupKind.Callout or MarkupKind.Typewriter when pts.Count >= 2:
+                if (m.Kind == MarkupKind.Callout && m.Paths.Count >= 2 && m.Paths[1].Count >= 1)
+                {
+                    // Pfeillinie zuerst, damit der Textrahmen sie überdeckt, wenn die Spitze im Rahmen liegt.
+                    var tip = m.Paths[1][0];
+                    var anchor = CalloutAnchor(m);
+                    var leader = new PathData().Polyline([anchor, tip], false);
+                    leader.Append(ArrowHead(anchor, tip, w));
+                    layers.Add(new ShapeLayer(leader, s.Stroke, w, null));
+                }
+                var box = PdfRect.FromPoints(pts[0], pts[1]);
+                layers.Add(new ShapeLayer(new PathData().Rectangle(box), stroke, w, fill));
+                if (outliner is not null && !string.IsNullOrEmpty(m.Text))
+                {
+                    var frame = TextFrame.ForBox(box, m.TextRotation);
+                    var outline = outliner.Layout(m.Text, s.FontSize, Math.Max(1, frame.Width - 2 * TextPadding));
+                    var text = outline.Path.Transform(p => frame.ToUser(new PdfPoint(p.X + TextPadding, p.Y + TextPadding)));
+                    layers.Add(new ShapeLayer(text, null, 0, s.Stroke, IsText: true, Clip: box));
+                }
+                break;
+            case MarkupKind.Note when pts.Count >= 1:
+                layers.AddRange(NoteIcon(pts[0], m.TextRotation, s));
+                break;
+            case MarkupKind.Highlight when pts.Count >= 2:
+                var marked = new PathData();
+                foreach (var tr in TextRects(m))
+                {
+                    marked.Rectangle(tr);
+                }
+                layers.Add(new ShapeLayer(marked, null, 0, s.Fill ?? s.Stroke));
+                break;
+            case MarkupKind.Underline or MarkupKind.StrikeOut when pts.Count >= 2:
+                var lines = new PathData();
+                var area = new PathData();
+                var width = w;
+                foreach (var tr in TextRects(m))
+                {
+                    area.Rectangle(tr);
+                    // Zeilen höher als breit gelten als senkrechter Text; die Linie läuft dann längs.
+                    var vertical = tr.Height > tr.Width * 1.5;
+                    var size = vertical ? tr.Width : tr.Height;
+                    width = Math.Max(w, size / 14);
+                    var at = m.Kind == MarkupKind.Underline ? size * 0.12 : size * 0.5;
+                    if (vertical)
+                    {
+                        lines.MoveTo(new(tr.Right - at, tr.Bottom)).LineTo(new(tr.Right - at, tr.Top));
+                    }
+                    else
+                    {
+                        lines.MoveTo(new(tr.Left, tr.Bottom + at)).LineTo(new(tr.Right, tr.Bottom + at));
+                    }
+                }
+                // Unsichtbare Fläche, damit ein Klick auf den Text die Markierung trifft.
+                layers.Add(new ShapeLayer(area, null, 0, null));
+                layers.Add(new ShapeLayer(lines, s.Stroke, width, null));
+                break;
+            case MarkupKind.Length or MarkupKind.Polylength when pts.Count >= 2:
+                var run = new PathData().Polyline(pts, false);
+                run.Append(EndTick(pts[1], pts[0], w));
+                run.Append(EndTick(pts[^2], pts[^1], w));
+                layers.Add(new ShapeLayer(run, s.Stroke, w, null));
+                AddLabel(layers, m, PointAlong(pts, Measurement.PathLength(pts, false) / 2), outliner);
+                break;
+            case MarkupKind.Perimeter or MarkupKind.Area when pts.Count >= 2:
+                // Bei Flächen sind weitere Pfade Ausschnitte, die abgezogen und ausgespart werden.
+                var contour = new PathData();
+                foreach (var path in m.Kind == MarkupKind.Area ? m.Paths.Where(p => p.Count >= 2) : [pts])
+                {
+                    contour.Polyline(path, true);
+                }
+                layers.Add(new ShapeLayer(contour, stroke, w, fill, EvenOdd: true));
+                AddLabel(layers, m, pts.Count >= 3 ? Centroid(pts) : PointAlong(pts, Measurement.PathLength(pts, false) / 2), outliner);
+                break;
+            case MarkupKind.Angle when pts.Count >= 3:
+                var legs = new PathData().Polyline([pts[0], pts[1], pts[2]], false);
+                var r = Math.Min(24, 0.4 * Math.Min(pts[0].DistanceTo(pts[1]), pts[2].DistanceTo(pts[1])));
+                legs.Append(AngleArc(pts[0], pts[1], pts[2], r));
+                layers.Add(new ShapeLayer(legs, s.Stroke, w, null));
+                AddLabel(layers, m, Bisector(pts[0], pts[1], pts[2], r + 4 + LabelSize(Measurement.Label(m), s.FontSize).Width / 2), outliner);
+                break;
+            case MarkupKind.Dimension when pts.Count >= 2:
+                var dim = new PathData().Polyline([pts[0], pts[1]], false);
+                dim.Append(ArrowHead(pts[1], pts[0], w));
+                dim.Append(ArrowHead(pts[0], pts[1], w));
+                dim.Append(EndTick(pts[1], pts[0], w));
+                dim.Append(EndTick(pts[0], pts[1], w));
+                layers.Add(new ShapeLayer(dim, s.Stroke, w, null));
+                AddLabel(layers, m, DimensionLabelCenter(m, pts[0], pts[1]), outliner);
+                break;
+            case MarkupKind.Radius or MarkupKind.Diameter when pts.Count >= 2:
+                // Radius: Mittelpunkt und Punkt auf dem Kreis. Durchmesser: zwei gegenüberliegende Punkte.
+                var center = m.Kind == MarkupKind.Radius ? pts[0] : pts[0] + (pts[1] - pts[0]) * 0.5;
+                var radius = center.DistanceTo(pts[1]);
+                var circle = new PathData().Polyline([pts[0], pts[1]], false);
+                if (radius > 1e-6)
+                {
+                    circle.Ellipse(new PdfRect(center.X - radius, center.Y - radius, center.X + radius, center.Y + radius));
+                }
+                circle.Append(ArrowHead(center, pts[1], w));
+                if (m.Kind == MarkupKind.Diameter)
+                {
+                    circle.Append(ArrowHead(center, pts[0], w));
+                }
+                else
+                {
+                    var c = 3 + w;
+                    circle.MoveTo(center - new PdfPoint(c, 0)).LineTo(center + new PdfPoint(c, 0)).MoveTo(center - new PdfPoint(0, c)).LineTo(center + new PdfPoint(0, c));
+                }
+                layers.Add(new ShapeLayer(circle, s.Stroke, w, null));
+                AddLabel(layers, m, DimensionLabelCenter(m, pts[0], pts[1]), outliner);
+                break;
+            case MarkupKind.Stamp when pts.Count >= 2:
+                AddStamp(layers, m, PdfRect.FromPoints(pts[0], pts[1]), outliner);
+                break;
+            case MarkupKind.Image when pts.Count >= 2:
+                var frameBox = PdfRect.FromPoints(pts[0], pts[1]);
+                // Unsichtbare Fläche für die Trefferprüfung, auf Wunsch ein Rahmen.
+                layers.Add(new ShapeLayer(new PathData().Rectangle(frameBox), stroke, w, null));
+                if (m.Image is { } img)
+                {
+                    image = ImagePlacement(img, frameBox, m.TextRotation);
+                }
+                break;
+            case MarkupKind.Angle when pts.Count == 2:
+                layers.Add(new ShapeLayer(new PathData().Polyline(pts, false), s.Stroke, w, null));
+                break;
+            case MarkupKind.Count when pts.Count >= 1:
+                var marker = CountMarkerRadius(w);
+                var dots = new PathData();
+                foreach (var p in pts)
+                {
+                    dots.Ellipse(new PdfRect(p.X - marker, p.Y - marker, p.X + marker, p.Y + marker));
+                }
+                layers.Add(new ShapeLayer(dots, null, 0, s.Stroke));
+                var (lw, lh) = LabelSize(Measurement.Label(m), s.FontSize);
+                var frame0 = new TextFrame(pts[0], m.TextRotation, 0, 0);
+                AddLabel(layers, m, frame0.ToUser(new PdfPoint(marker + 2 + lw / 2, -(marker + 2 + lh / 2))), outliner);
+                break;
+        }
+        return new MarkupShape(layers, Math.Clamp(s.Opacity, 0, 1), image);
+    }
+
+    /// <summary>
+    /// Bild im Rahmen <paramref name="box"/>, so groß wie möglich bei gleichem Seitenverhältnis und mittig. Die
+    /// Bildoberkante zeigt auf dem Bildschirm nach oben: bei gedrehter Seite (<paramref name="rotation"/> wie beim Text,
+    /// gegen den Uhrzeigersinn in Benutzerkoordinaten) ist das Bild entsprechend gedreht.
+    /// </summary>
+    public static ShapeImage ImagePlacement(MarkupImage img, PdfRect box, int rotation)
+    {
+        var r = TextFrame.Normalize(rotation);
+        var sideways = r is 90 or 270;
+        // Ausdehnung des Bildes in Benutzerkoordinaten.
+        var (iw, ih) = sideways ? ((double)img.Height, (double)img.Width) : (img.Width, (double)img.Height);
+        var f = Math.Min(box.Width / iw, box.Height / ih);
+        var (w, h) = (iw * f, ih * f);
+        var left = box.Left + (box.Width - w) / 2;
+        var bottom = box.Bottom + (box.Height - h) / 2;
+        var (right, top) = (left + w, bottom + h);
+        return r switch
+        {
+            90 => new ShapeImage(img, 0, h, -w, 0, right, bottom),
+            180 => new ShapeImage(img, -w, 0, 0, -h, right, top),
+            270 => new ShapeImage(img, 0, -h, w, 0, left, top),
+            _ => new ShapeImage(img, w, 0, 0, h, left, bottom),
+        };
+    }
+
+    /// <summary>Zeichnung ohne Text, je unveränderlicher Markierung nur einmal berechnet (Trefferprüfung bei jeder Mausbewegung).</summary>
+    private static readonly ConditionalWeakTable<Markup, MarkupShape> PlainShapes = new();
+
+    private static MarkupShape PlainShape(Markup m) => PlainShapes.GetValue(m, key => BuildShape(key, null));
+
+    /// <summary>Rahmen der Anmerkung (PDF-Schlüssel Rect).</summary>
+    public static PdfRect Bounds(Markup m) => PlainShape(m).Bounds();
+
+    // ---------- Formen ----------
+
+    /// <summary>Offene Pfeilspitze am Ende <paramref name="to"/>.</summary>
+    public static PathData ArrowHead(PdfPoint from, PdfPoint to, double lineWidth)
+    {
+        var d = to - from;
+        var len = d.Length;
+        var path = new PathData();
+        if (len < 1e-9)
+        {
+            return path;
+        }
+        var head = Math.Min(len, 8 + 2.5 * lineWidth);
+        var dir = d * (1 / len);
+        var normal = new PdfPoint(-dir.Y, dir.X);
+        const double tan = 0.4663; // tan(25°)
+        var back = to - dir * head;
+        path.MoveTo(back + normal * (head * tan)).LineTo(to).LineTo(back - normal * (head * tan));
+        return path;
+    }
+
+    // ---------- Messungen ----------
+
+    /// <summary>Halbmesser der Zählpunkte in Punkt.</summary>
+    public static double CountMarkerRadius(double lineWidth) => 3 + lineWidth;
+
+    /// <summary>Kreisbogen um den Scheitel zwischen den beiden Schenkeln (über den kleineren Winkel).</summary>
+    private static PathData AngleArc(PdfPoint a, PdfPoint vertex, PdfPoint b, double radius)
+    {
+        var path = new PathData();
+        if (radius <= 0)
+        {
+            return path;
+        }
+        var start = Math.Atan2(a.Y - vertex.Y, a.X - vertex.X);
+        var end = Math.Atan2(b.Y - vertex.Y, b.X - vertex.X);
+        var sweep = end - start;
+        while (sweep > Math.PI) sweep -= 2 * Math.PI;
+        while (sweep < -Math.PI) sweep += 2 * Math.PI;
+        const int steps = 16;
+        for (var i = 0; i <= steps; i++)
+        {
+            var t = start + sweep * i / steps;
+            var p = vertex + new PdfPoint(Math.Cos(t), Math.Sin(t)) * radius;
+            if (i == 0)
+            {
+                path.MoveTo(p);
+            }
+            else
+            {
+                path.LineTo(p);
+            }
+        }
+        return path;
+    }
+
+    /// <summary>Punkt auf der Winkelhalbierenden im Abstand <paramref name="distance"/> vom Scheitel.</summary>
+    private static PdfPoint Bisector(PdfPoint a, PdfPoint vertex, PdfPoint b, double distance)
+    {
+        var u = a - vertex;
+        var v = b - vertex;
+        if (u.Length < 1e-9 || v.Length < 1e-9)
+        {
+            return vertex;
+        }
+        var dir = u * (1 / u.Length) + v * (1 / v.Length);
+        if (dir.Length < 1e-9)
+        {
+            dir = new PdfPoint(-u.Y, u.X); // gestreckter Winkel: senkrecht zum Schenkel
+        }
+        return vertex + dir * (distance / dir.Length);
+    }
+
+    /// <summary>Senkrechter Endstrich einer Messlinie am Punkt <paramref name="at"/>.</summary>
+    private static PathData EndTick(PdfPoint from, PdfPoint at, double lineWidth)
+    {
+        var d = at - from;
+        var len = d.Length;
+        var path = new PathData();
+        if (len < 1e-9)
+        {
+            return path;
+        }
+        var half = 4 + lineWidth;
+        var normal = new PdfPoint(-d.Y / len, d.X / len);
+        return path.MoveTo(at + normal * half).LineTo(at - normal * half);
+    }
+
+    /// <summary>Punkt nach der Strecke <paramref name="distance"/> entlang des Streckenzugs.</summary>
+    public static PdfPoint PointAlong(IReadOnlyList<PdfPoint> pts, double distance)
+    {
+        for (var i = 1; i < pts.Count; i++)
+        {
+            var seg = pts[i - 1].DistanceTo(pts[i]);
+            if (distance <= seg && seg > 1e-9)
+            {
+                return pts[i - 1] + (pts[i] - pts[i - 1]) * (distance / seg);
+            }
+            distance -= seg;
+        }
+        return pts[^1];
+    }
+
+    /// <summary>Flächenschwerpunkt eines Polygons; bei entarteten Polygonen der Mittelwert der Eckpunkte.</summary>
+    public static PdfPoint Centroid(IReadOnlyList<PdfPoint> pts)
+    {
+        var a = SignedArea(pts);
+        if (Math.Abs(a) < 1e-9)
+        {
+            return new PdfPoint(pts.Average(p => p.X), pts.Average(p => p.Y));
+        }
+        double cx = 0, cy = 0;
+        for (int i = 0, j = pts.Count - 1; i < pts.Count; j = i++)
+        {
+            var cross = (pts[j].X * pts[i].Y) - (pts[i].X * pts[j].Y);
+            cx += (pts[j].X + pts[i].X) * cross;
+            cy += (pts[j].Y + pts[i].Y) * cross;
+        }
+        return new PdfPoint(cx / (6 * a), cy / (6 * a));
+    }
+
+    /// <summary>
+    /// Größe des Beschriftungsfelds (Breite, Höhe in Punkt auf dem Bildschirm). Bewusst geschätzt statt gemessen, damit
+    /// Rahmen und Trefferprüfung ohne Schriftsatz auskommen; der Text wird im Feld zentriert.
+    /// </summary>
+    public static (double Width, double Height) LabelSize(string text, double fontSize) =>
+        (Math.Max(1, text.Length) * 0.6 * fontSize + 6, fontSize * 1.4 + 2);
+
+    private static readonly PdfColor LabelBackground = new(255, 255, 255);
+
+    /// <summary>Beschriftung mit weißem Hintergrund, mittig auf <paramref name="center"/>, auf dem Bildschirm aufrecht.</summary>
+    private static void AddLabel(List<ShapeLayer> layers, Markup m, PdfPoint center, ITextOutliner? outliner)
+    {
+        var text = Measurement.Label(m);
+        var size = m.Style.FontSize;
+        var (w, h) = LabelSize(text, size);
+        var rot = TextFrame.Normalize(m.TextRotation);
+        var rect = rot is 90 or 270
+            ? new PdfRect(center.X - h / 2, center.Y - w / 2, center.X + h / 2, center.Y + w / 2)
+            : new PdfRect(center.X - w / 2, center.Y - h / 2, center.X + w / 2, center.Y + h / 2);
+        layers.Add(new ShapeLayer(new PathData().Rectangle(rect), m.Style.Stroke, 0.5, LabelBackground));
+        if (outliner is null || text.Length == 0)
+        {
+            return;
+        }
+        var frame = TextFrame.ForBox(rect, rot);
+        var outline = outliner.Layout(text, size, 10_000);
+        var ox = (frame.Width - outline.Width) / 2;
+        var oy = (frame.Height - outline.Height) / 2;
+        var path = outline.Path.Transform(p => frame.ToUser(new PdfPoint(p.X + ox, p.Y + oy)));
+        layers.Add(new ShapeLayer(path, null, 0, m.Style.Stroke, IsText: true, Clip: rect));
+    }
+
+    /// <summary>Rechtecke einer Textmarkierung: je Pfad zwei Ecken.</summary>
+    public static IEnumerable<PdfRect> TextRects(Markup m) =>
+        m.Paths.Where(p => p.Count >= 2).Select(p => PdfRect.FromPoints(p[0], p[1]));
+
+    /// <summary>Punkt am Textrahmen der Sprechblase, an dem die Pfeillinie ansetzt: die nächstgelegene Seitenmitte.</summary>
+    public static PdfPoint CalloutAnchor(Markup m)
+    {
+        var box = PdfRect.FromPoints(m.Points[0], m.Points[1]);
+        var tip = m.Paths.Count >= 2 && m.Paths[1].Count > 0 ? m.Paths[1][0] : new PdfPoint(box.Left, box.Bottom);
+        var cx = (box.Left + box.Right) / 2;
+        var cy = (box.Bottom + box.Top) / 2;
+        PdfPoint[] candidates = [new(box.Left, cy), new(box.Right, cy), new(cx, box.Bottom), new(cx, box.Top)];
+        return candidates.MinBy(c => c.DistanceTo(tip));
+    }
+
+    /// <summary>
+    /// Mitte der Bemaßungszahl: über der Maßlinie, also auf der Seite, die auf dem Bildschirm oben liegt (bei
+    /// senkrechten Linien links).
+    /// </summary>
+    private static PdfPoint DimensionLabelCenter(Markup m, PdfPoint a, PdfPoint b)
+    {
+        var d = b - a;
+        var len = d.Length;
+        var mid = a + d * 0.5;
+        if (len < 1e-9)
+        {
+            return mid;
+        }
+        var frame = new TextFrame(mid, m.TextRotation, 0, 0);
+        var up = frame.ToUser(new PdfPoint(0, 0)) - frame.ToUser(new PdfPoint(0, 1));
+        var left = frame.ToUser(new PdfPoint(0, 0)) - frame.ToUser(new PdfPoint(1, 0));
+        var normal = new PdfPoint(-d.Y / len, d.X / len);
+        var dotUp = normal.X * up.X + normal.Y * up.Y;
+        if (dotUp < -1e-6 || (Math.Abs(dotUp) <= 1e-6 && normal.X * left.X + normal.Y * left.Y < 0))
+        {
+            normal = normal * -1;
+        }
+        var (lw, lh) = LabelSize(Measurement.Label(m), m.Style.FontSize);
+        // Abstand so wählen, dass das Feld die Linie nicht verdeckt, auch wenn die Linie schräg liegt.
+        var across = Math.Abs(normal.X * up.X + normal.Y * up.Y) * lh / 2 + Math.Abs(normal.X * left.X + normal.Y * left.Y) * lw / 2;
+        return mid + normal * (across + 2 + m.Style.LineWidth);
+    }
+
+    /// <summary>
+    /// Stempel: doppelter, abgerundeter Rahmen, darin die Aufschrift groß und darunter Autor und Datum klein. Die
+    /// Schriftgröße richtet sich nach dem Rahmen, damit der Stempel beim Aufziehen mitwächst.
+    /// </summary>
+    private static void AddStamp(List<ShapeLayer> layers, Markup m, PdfRect box, ITextOutliner? outliner)
+    {
+        var w = Math.Max(0.5, m.Style.LineWidth);
+        var radius = Math.Min(8, Math.Min(box.Width, box.Height) / 4);
+        layers.Add(new ShapeLayer(RoundedRectangle(box, radius), m.Style.Stroke, w, m.Style.Fill));
+        var inset = w * 1.5 + 1;
+        if (box.Width > 4 * inset && box.Height > 4 * inset)
+        {
+            layers.Add(new ShapeLayer(RoundedRectangle(box.Inflate(-inset), Math.Max(0, radius - inset)), m.Style.Stroke, w / 2, null));
+        }
+        var title = m.Text.Trim().ReplaceLineEndings(" ");
+        if (outliner is null || title.Length == 0)
+        {
+            return;
+        }
+        var frame = TextFrame.ForBox(box, m.TextRotation);
+        var subtitle = StampSubtitle(m);
+        var avail = frame.Width - 2 * (inset + 4);
+        var titleSize = Math.Min(frame.Height * (subtitle.Length > 0 ? 0.42 : 0.55), avail / Math.Max(1, title.Length * 0.62));
+        titleSize = Math.Max(4, titleSize);
+        var titleOutline = outliner.Layout(title, titleSize, 10_000);
+        if (titleOutline.Width > avail && titleOutline.Width > 0)
+        {
+            titleSize *= avail / titleOutline.Width;
+            titleOutline = outliner.Layout(title, titleSize, 10_000);
+        }
+        var subSize = Math.Max(4, Math.Min(titleSize * 0.45, frame.Height * 0.2));
+        var subOutline = subtitle.Length > 0 ? outliner.Layout(subtitle, subSize, 10_000) : null;
+        if (subOutline is not null && subOutline.Width > avail && subOutline.Width > 0)
+        {
+            subOutline = outliner.Layout(subtitle, subSize * avail / subOutline.Width, 10_000);
+        }
+        var total = titleOutline.Height + (subOutline is null ? 0 : subOutline.Height + 1);
+        var y = (frame.Height - total) / 2;
+        var text = titleOutline.Path.Transform(p => frame.ToUser(new PdfPoint(p.X + (frame.Width - titleOutline.Width) / 2, p.Y + y)));
+        if (subOutline is not null)
+        {
+            var sy = y + titleOutline.Height + 1;
+            text.Append(subOutline.Path.Transform(p => frame.ToUser(new PdfPoint(p.X + (frame.Width - subOutline.Width) / 2, p.Y + sy))));
+        }
+        layers.Add(new ShapeLayer(text, null, 0, m.Style.Stroke, IsText: true, Clip: box));
+    }
+
+    /// <summary>Zweite Zeile des Stempels: Autor und Datum der Anlage.</summary>
+    public static string StampSubtitle(Markup m)
+    {
+        var date = m.Created.LocalDateTime.ToString("dd.MM.yyyy", System.Globalization.CultureInfo.InvariantCulture);
+        return string.IsNullOrWhiteSpace(m.Author) ? date : $"{m.Author.Trim()}, {date}";
+    }
+
+    private static PathData RoundedRectangle(PdfRect r, double radius)
+    {
+        if (radius <= 0.01)
+        {
+            return new PathData().Rectangle(r);
+        }
+        const double k = 0.5523; // Kontrollpunktabstand für einen Viertelkreis
+        var c = radius * k;
+        return new PathData()
+            .MoveTo(new(r.Left + radius, r.Bottom))
+            .LineTo(new(r.Right - radius, r.Bottom))
+            .CurveTo(new(r.Right - radius + c, r.Bottom), new(r.Right, r.Bottom + radius - c), new(r.Right, r.Bottom + radius))
+            .LineTo(new(r.Right, r.Top - radius))
+            .CurveTo(new(r.Right, r.Top - radius + c), new(r.Right - radius + c, r.Top), new(r.Right - radius, r.Top))
+            .LineTo(new(r.Left + radius, r.Top))
+            .CurveTo(new(r.Left + radius - c, r.Top), new(r.Left, r.Top - radius + c), new(r.Left, r.Top - radius))
+            .LineTo(new(r.Left, r.Bottom + radius))
+            .CurveTo(new(r.Left, r.Bottom + radius - c), new(r.Left + radius - c, r.Bottom), new(r.Left + radius, r.Bottom))
+            .Close();
+    }
+
+    /// <summary>Bogenlänge der Wolke in Punkt, abhängig von der Linienbreite.</summary>
+    public static double CloudArcLength(double lineWidth) => Math.Max(12, 8 * lineWidth);
+
+    /// <summary>
+    /// Wolkenrand entlang eines geschlossenen Polygons: Jede Kante wird in gleich lange Abschnitte geteilt, über
+    /// jeden Abschnitt spannt sich ein nach außen gewölbter Bogen.
+    /// </summary>
+    public static PathData Cloud(IReadOnlyList<PdfPoint> polygon, double arcLength)
+    {
+        var path = new PathData();
+        var pts = RemoveDuplicates(polygon);
+        if (pts.Count < 2)
+        {
+            return path;
+        }
+        // Außen liegt bei gegen den Uhrzeigersinn umlaufenden Polygonen rechts der Laufrichtung.
+        var orientation = SignedArea(pts) >= 0 ? 1.0 : -1.0;
+        path.MoveTo(pts[0]);
+        for (var i = 0; i < pts.Count; i++)
+        {
+            var a = pts[i];
+            var b = pts[(i + 1) % pts.Count];
+            var edge = b - a;
+            var len = edge.Length;
+            if (len < 1e-9)
+            {
+                continue;
+            }
+            var n = Math.Max(1, (int)Math.Round(len / arcLength));
+            var dir = edge * (1 / len);
+            var outward = new PdfPoint(dir.Y, -dir.X) * orientation;
+            var chord = len / n;
+            var bulge = chord * 0.5 * 4 / 3; // Kontrollpunktabstand für einen annähernd halbkreisförmigen Bogen
+            for (var k = 0; k < n; k++)
+            {
+                var p0 = a + dir * (chord * k);
+                var p1 = a + dir * (chord * (k + 1));
+                path.CurveTo(p0 + outward * bulge, p1 + outward * bulge, p1);
+            }
+        }
+        return path.Close();
+    }
+
+    private static IEnumerable<ShapeLayer> NoteIcon(PdfPoint origin, int rotation, MarkupStyle style)
+    {
+        const double s = MarkupKinds.NoteSize;
+        var frame = new TextFrame(origin, rotation, s, s);
+        var bubble = new PathData()
+            .MoveTo(new(1, 1)).LineTo(new(s - 1, 1)).LineTo(new(s - 1, s * 0.72)).LineTo(new(s * 0.42, s * 0.72))
+            .LineTo(new(s * 0.22, s - 1)).LineTo(new(s * 0.26, s * 0.72)).LineTo(new(1, s * 0.72)).Close();
+        var lines = new PathData();
+        foreach (var y in new[] { 0.22, 0.38, 0.54 })
+        {
+            lines.MoveTo(new(s * 0.2, s * y)).LineTo(new(s * 0.8, s * y));
+        }
+        yield return new ShapeLayer(bubble.Transform(frame.ToUser), style.Stroke, Math.Max(0.5, style.LineWidth), style.Fill ?? new PdfColor(255, 214, 10));
+        yield return new ShapeLayer(lines.Transform(frame.ToUser), style.Stroke, Math.Max(0.5, style.LineWidth), null);
+    }
+
+    // ---------- Trefferprüfung ----------
+
+    /// <summary>
+    /// Prüft, ob <paramref name="p"/> die Markierung trifft: auf der Linie (mit Toleranz) oder innerhalb gefüllter
+    /// Flächen, Textfelder, Notizen und Hervorhebungen.
+    /// </summary>
+    public static bool HitTest(Markup m, PdfPoint p, double tolerance)
+    {
+        var shape = PlainShape(m);
+        if (!shape.Bounds().Inflate(tolerance).Contains(p))
+        {
+            return false;
+        }
+        var areaCounts = m.Kind is MarkupKind.Image or MarkupKind.TextBox or MarkupKind.Note or MarkupKind.Highlight or MarkupKind.Count or MarkupKind.Stamp or MarkupKind.Callout or MarkupKind.Typewriter
+            or MarkupKind.Underline or MarkupKind.StrikeOut;
+        foreach (var layer in shape.Layers)
+        {
+            var figures = layer.Path.Flatten().ToList();
+            if (layer.EvenOdd && layer.Fill is not null && figures.Count(f => f.Closed && PointInPolygon(f.Points, p)) % 2 == 1)
+            {
+                return true;
+            }
+            foreach (var (points, closed) in figures)
+            {
+                if ((areaCounts || layer.Fill is not null) && !layer.EvenOdd && closed && PointInPolygon(points, p))
+                {
+                    return true;
+                }
+                var reach = tolerance + (layer.Stroke is null ? 0 : layer.StrokeWidth / 2);
+                if (DistanceToPolyline(points, closed, p) <= reach)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /// <summary>Oberste getroffene Markierung (die zuletzt gezeichnete liegt oben).</summary>
+    public static Markup? HitTestTopmost(IReadOnlyList<Markup> markups, PdfPoint p, double tolerance)
+    {
+        for (var i = markups.Count - 1; i >= 0; i--)
+        {
+            if (HitTest(markups[i], p, tolerance))
+            {
+                return markups[i];
+            }
+        }
+        return null;
+    }
+
+    public static double DistanceToSegment(PdfPoint p, PdfPoint a, PdfPoint b)
+    {
+        var ab = b - a;
+        var len2 = ab.X * ab.X + ab.Y * ab.Y;
+        if (len2 < 1e-18)
+        {
+            return p.DistanceTo(a);
+        }
+        var t = Math.Clamp(((p.X - a.X) * ab.X + (p.Y - a.Y) * ab.Y) / len2, 0, 1);
+        return p.DistanceTo(a + ab * t);
+    }
+
+    public static double DistanceToPolyline(IReadOnlyList<PdfPoint> points, bool closed, PdfPoint p)
+    {
+        if (points.Count == 1)
+        {
+            return p.DistanceTo(points[0]);
+        }
+        var best = double.PositiveInfinity;
+        var count = closed ? points.Count : points.Count - 1;
+        for (var i = 0; i < count; i++)
+        {
+            best = Math.Min(best, DistanceToSegment(p, points[i], points[(i + 1) % points.Count]));
+        }
+        return best;
+    }
+
+    /// <summary>Gerade-Ungerade-Regel.</summary>
+    public static bool PointInPolygon(IReadOnlyList<PdfPoint> poly, PdfPoint p)
+    {
+        var inside = false;
+        for (int i = 0, j = poly.Count - 1; i < poly.Count; j = i++)
+        {
+            var a = poly[i];
+            var b = poly[j];
+            if ((a.Y > p.Y) != (b.Y > p.Y) && p.X < (b.X - a.X) * (p.Y - a.Y) / (b.Y - a.Y) + a.X)
+            {
+                inside = !inside;
+            }
+        }
+        return inside;
+    }
+
+    public static double SignedArea(IReadOnlyList<PdfPoint> poly)
+    {
+        var sum = 0.0;
+        for (int i = 0, j = poly.Count - 1; i < poly.Count; j = i++)
+        {
+            sum += (poly[j].X * poly[i].Y) - (poly[i].X * poly[j].Y);
+        }
+        return sum / 2;
+    }
+
+    // ---------- Griffe und Verschieben ----------
+
+    /// <summary>Lage der acht Rahmengriffe als Anteil des Rechtecks (links unten beginnend, gegen den Uhrzeigersinn).</summary>
+    private static readonly (double X, double Y)[] BoxHandles =
+        [(0, 0), (0.5, 0), (1, 0), (1, 0.5), (1, 1), (0.5, 1), (0, 1), (0, 0.5)];
+
+    /// <summary>Griffpunkte zum Bearbeiten. Rahmenarten und Freihand: acht Rahmengriffe; Linienarten: Eckpunkte; Notiz: keine.</summary>
+    public static IReadOnlyList<PdfPoint> Handles(Markup m)
+    {
+        // Notizen und Textmarkierungen über mehrere Zeilen haben keine Griffe; sie folgen dem Text.
+        if (m.Kind == MarkupKind.Note || (MarkupKinds.IsTextMarkup(m.Kind) && m.Paths.Count > 1))
+        {
+            return [];
+        }
+        if (UsesVertexHandles(m.Kind))
+        {
+            return m.Paths.SelectMany(p => p).ToArray();
+        }
+        var r = HandleRect(m);
+        var handles = BoxHandles.Select(h => new PdfPoint(r.Left + h.X * r.Width, r.Bottom + h.Y * r.Height));
+        // Bei der Sprechblase folgt als neunter Griff die Pfeilspitze.
+        return m.Kind == MarkupKind.Callout && m.Paths.Count >= 2 && m.Paths[1].Count > 0 ? [.. handles, m.Paths[1][0]] : handles.ToArray();
+    }
+
+    public static bool UsesVertexHandles(MarkupKind kind) =>
+        kind is MarkupKind.Line or MarkupKind.Arrow or MarkupKind.Polyline or MarkupKind.Polygon or MarkupKind.Cloud
+            || MarkupKinds.IsMeasurement(kind);
+
+    /// <summary>Zieht einen Griff an die Position <paramref name="to"/>.</summary>
+    public static Markup DragHandle(Markup m, int handle, PdfPoint to)
+    {
+        if (UsesVertexHandles(m.Kind))
+        {
+            // Griffnummern laufen über alle Pfade (Ausschnitte einer Fläche folgen der Außenkontur).
+            var paths = m.Paths.Select(p => p.ToArray()).ToArray();
+            foreach (var path in paths)
+            {
+                if (handle < path.Length)
+                {
+                    if (handle < 0)
+                    {
+                        return m;
+                    }
+                    path[handle] = to;
+                    return m.WithPaths(paths);
+                }
+                handle -= path.Length;
+            }
+            return m;
+        }
+        if (m.Kind == MarkupKind.Callout && handle == BoxHandles.Length && m.Paths.Count >= 2)
+        {
+            return m.WithPaths([m.Paths[0], new[] { to }]);
+        }
+        if (m.Kind == MarkupKind.Note || handle < 0 || handle >= BoxHandles.Length)
+        {
+            return m;
+        }
+        var r = HandleRect(m);
+        var (hx, hy) = BoxHandles[handle];
+        double l = r.Left, b = r.Bottom, rr = r.Right, t = r.Top;
+        if (hx == 0) l = to.X;
+        if (hx == 1) rr = to.X;
+        if (hy == 0) b = to.Y;
+        if (hy == 1) t = to.Y;
+        var target = new PdfRect(Math.Min(l, rr), Math.Min(b, t), Math.Max(l, rr), Math.Max(b, t));
+        return ResizeTo(m, target);
+    }
+
+    /// <summary>Setzt den Rahmen einer Rahmenart oder skaliert eine Freihandzeichnung auf das Zielrechteck.</summary>
+    public static Markup ResizeTo(Markup m, PdfRect target)
+    {
+        if (m.Kind == MarkupKind.Freehand)
+        {
+            var r = HandleRect(m);
+            var sx = r.Width > 1e-9 ? target.Width / r.Width : 1;
+            var sy = r.Height > 1e-9 ? target.Height / r.Height : 1;
+            return m.WithPaths(m.Paths.Select(path => (IReadOnlyList<PdfPoint>)path
+                .Select(p => new PdfPoint(target.Left + (p.X - r.Left) * sx, target.Bottom + (p.Y - r.Bottom) * sy)).ToArray()).ToArray());
+        }
+        IReadOnlyList<PdfPoint> corners = [new PdfPoint(target.Left, target.Bottom), new PdfPoint(target.Right, target.Top)];
+        return m.Kind == MarkupKind.Callout && m.Paths.Count >= 2 ? m.WithPaths([corners, m.Paths[1]]) : m.WithPaths([corners]);
+    }
+
+    public static Markup Translate(Markup m, double dx, double dy)
+    {
+        var d = new PdfPoint(dx, dy);
+        return m.WithPaths(m.Paths.Select(path => (IReadOnlyList<PdfPoint>)path.Select(p => p + d).ToArray()).ToArray());
+    }
+
+    /// <summary>Rechteck, an dem die Rahmengriffe sitzen (Geometrie ohne Linienbreite).</summary>
+    public static PdfRect HandleRect(Markup m) =>
+        m.Kind == MarkupKind.Callout && m.Points.Count >= 2 ? PdfRect.FromPoints(m.Points[0], m.Points[1]) : PdfRect.Bounds(m.Paths.SelectMany(p => p));
+
+    // ---------- Hilfen ----------
+
+    /// <summary>Vereinfacht einen Streckenzug (Douglas-Peucker), damit Freihandstriche nicht unnötig groß werden.</summary>
+    public static IReadOnlyList<PdfPoint> Simplify(IReadOnlyList<PdfPoint> points, double tolerance)
+    {
+        if (points.Count < 3)
+        {
+            return points.ToArray();
+        }
+        var keep = new bool[points.Count];
+        keep[0] = keep[^1] = true;
+        var stack = new Stack<(int, int)>();
+        stack.Push((0, points.Count - 1));
+        while (stack.Count > 0)
+        {
+            var (first, last) = stack.Pop();
+            var maxDist = 0.0;
+            var index = -1;
+            for (var i = first + 1; i < last; i++)
+            {
+                var d = DistanceToSegment(points[i], points[first], points[last]);
+                if (d > maxDist)
+                {
+                    maxDist = d;
+                    index = i;
+                }
+            }
+            if (index >= 0 && maxDist > tolerance)
+            {
+                keep[index] = true;
+                stack.Push((first, index));
+                stack.Push((index, last));
+            }
+        }
+        return points.Where((_, i) => keep[i]).ToArray();
+    }
+
+    private static List<PdfPoint> RemoveDuplicates(IReadOnlyList<PdfPoint> pts)
+    {
+        var result = new List<PdfPoint>();
+        foreach (var p in pts)
+        {
+            if (result.Count == 0 || result[^1].DistanceTo(p) > 1e-6)
+            {
+                result.Add(p);
+            }
+        }
+        if (result.Count > 1 && result[0].DistanceTo(result[^1]) < 1e-6)
+        {
+            result.RemoveAt(result.Count - 1);
+        }
+        return result;
+    }
+}
+
+/// <summary>
+/// Lokales Koordinatensystem für aufrecht stehenden Text und Symbole: Ursprung oben links, x nach rechts, y nach
+/// unten, so wie die Seite auf dem Bildschirm erscheint. Berücksichtigt die Seitendrehung.
+/// </summary>
+public readonly record struct TextFrame(PdfPoint Origin, int Rotation, double Width, double Height)
+{
+    /// <summary>Rahmen für ein Rechteck in Benutzerkoordinaten auf einer um <paramref name="rotation"/> Grad gedrehten Seite.</summary>
+    public static TextFrame ForBox(PdfRect box, int rotation) => Normalize(rotation) switch
+    {
+        90 => new TextFrame(new PdfPoint(box.Left, box.Bottom), 90, box.Height, box.Width),
+        180 => new TextFrame(new PdfPoint(box.Right, box.Bottom), 180, box.Width, box.Height),
+        270 => new TextFrame(new PdfPoint(box.Right, box.Top), 270, box.Height, box.Width),
+        _ => new TextFrame(new PdfPoint(box.Left, box.Top), 0, box.Width, box.Height),
+    };
+
+    public PdfPoint ToUser(PdfPoint local) => Normalize(Rotation) switch
+    {
+        90 => new PdfPoint(Origin.X + local.Y, Origin.Y + local.X),
+        180 => new PdfPoint(Origin.X - local.X, Origin.Y + local.Y),
+        270 => new PdfPoint(Origin.X - local.Y, Origin.Y - local.X),
+        _ => new PdfPoint(Origin.X + local.X, Origin.Y - local.Y),
+    };
+
+    /// <summary>Umkehrung von <see cref="ToUser"/>: Benutzerkoordinaten in Rahmenkoordinaten (x rechts, y unten).</summary>
+    public PdfPoint ToLocal(PdfPoint user)
+    {
+        var d = user - Origin;
+        return Normalize(Rotation) switch
+        {
+            90 => new PdfPoint(d.Y, d.X),
+            180 => new PdfPoint(-d.X, d.Y),
+            270 => new PdfPoint(-d.Y, -d.X),
+            _ => new PdfPoint(d.X, -d.Y),
+        };
+    }
+
+    public static int Normalize(int rotation) => ((rotation % 360) + 360) % 360;
+}

@@ -22,6 +22,7 @@ public partial class MainWindow : Window
         // Nur funktionsfähige Module werden registriert. Weitere Module folgen in den nächsten Phasen.
         // Die Dokumentansicht bleibt beim Wechseln erhalten, damit geöffnete Dokumente offen bleiben.
         Register(new NavigationEntry("documents", "Dokumente", "\uE8A5"), () => Documents);
+        Register(new NavigationEntry("plans", "Pläne", "\uE8B7"), () => Plans);
         Register(new NavigationEntry("design", "Designsystem", ""), () => new DesignSystemView());
         Register(new NavigationEntry("settings", "Einstellungen", "", NavigationGroup.Footer), () => new SettingsView());
 
@@ -45,6 +46,11 @@ public partial class MainWindow : Window
     }
 
     private DocumentsView? _documents;
+
+    private PlansView? _plans;
+
+    /// <summary>Die Planverwaltung bleibt beim Wechseln erhalten (Auswahl und Filter).</summary>
+    public PlansView Plans => _plans ??= new PlansView();
 
     /// <summary>Die Dokumentansicht wird beim ersten Aufruf angelegt und danach wiederverwendet.</summary>
     public DocumentsView Documents => _documents ??= new DocumentsView();
@@ -115,4 +121,7 @@ internal static class AutomationPropertiesHelper
 {
     public static void SetName(DependencyObject element, string name) =>
         System.Windows.Automation.AutomationProperties.SetName(element, name);
+
+    public static string GetName(DependencyObject element) =>
+        System.Windows.Automation.AutomationProperties.GetName(element);
 }

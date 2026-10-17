@@ -38,9 +38,10 @@ public sealed class PageRenderService : IDisposable
     public int Pending => Volatile.Read(ref _pending);
 
     /// <summary>Rendert einen Ausschnitt und liefert ein eingefrorenes Bild, oder null bei Abbruch oder Fehler.</summary>
-    public Task<BitmapSource?> RenderAsync(PdfDocument document, int page, double scale, PixelRect region, RenderPriority priority, CancellationToken cancel)
+    /// <param name="hideMarkups">EGLE360-Markierungen weglassen, weil die Ansicht sie selbst zeichnet.</param>
+    public Task<BitmapSource?> RenderAsync(PdfDocument document, int page, double scale, PixelRect region, RenderPriority priority, CancellationToken cancel, bool hideMarkups = false)
     {
-        var job = new Job(document, page, scale, region, cancel);
+        var job = new Job(document, page, scale, region, cancel, hideMarkups);
         Interlocked.Increment(ref _pending);
         (priority == RenderPriority.View ? _view : _background).Enqueue(job);
         _signal.Release();
@@ -89,7 +90,7 @@ public sealed class PageRenderService : IDisposable
         }
         var stride = r.Width * 4;
         var buffer = new byte[stride * r.Height];
-        job.Document.Render(job.Page, job.Scale, r, buffer, stride);
+        job.Document.Render(job.Page, job.Scale, r, buffer, stride, hideMarkups: job.HideMarkups);
         if (job.Cancel.IsCancellationRequested)
         {
             return null;
@@ -105,7 +106,7 @@ public sealed class PageRenderService : IDisposable
         _worker.Join(TimeSpan.FromSeconds(2));
     }
 
-    private sealed record Job(PdfDocument Document, int Page, double Scale, PixelRect Region, CancellationToken Cancel)
+    private sealed record Job(PdfDocument Document, int Page, double Scale, PixelRect Region, CancellationToken Cancel, bool HideMarkups)
     {
         public TaskCompletionSource<BitmapSource?> Completion { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }

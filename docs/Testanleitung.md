@@ -1,0 +1,156 @@
+# EGLE360 PLAN – Testanleitung
+
+Stand: Entwicklungsversion 0.7 (PDF-Grundsystem, Markierungen mit Stempeln, Bildern und Bemaßung, Textsuche, Mengenermittlung mit Volumen, Wandflächen, Neigung und Excel-Export, Werkzeugbibliothek, Planverwaltung mit Indexverlauf). Das ist eine frühe Testversion, keine fertige Software. Bitte mit Kopien von Plänen arbeiten, nicht mit den einzigen Originalen.
+
+## Starten
+
+1. `EGLE360-PLAN-win-x64.zip` herunterladen.
+2. Rechtsklick auf die ZIP-Datei, „Alle extrahieren“, in einen beliebigen Ordner entpacken (zum Beispiel auf den Desktop).
+3. Im entpackten Ordner `EGLE360-PLAN` die Datei `EGLE360.PLAN.exe` doppelklicken.
+
+Eine Installation ist nicht nötig, auch kein .NET. Voraussetzung ist Windows 10 oder 11 mit 64 Bit.
+
+Die Testversion ist noch nicht digital signiert. Windows meldet deshalb beim ersten Start wahrscheinlich „Der Computer wurde durch Windows geschützt“. Dann „Weitere Informationen“ und „Trotzdem ausführen“ wählen. Manche Virenscanner fragen ebenfalls nach.
+
+Zum Löschen genügt es, den Ordner zu entfernen. Einstellungen und die Liste der zuletzt geöffneten Dateien liegen unter `%APPDATA%\EGLE360\PLAN`.
+
+## Schnellster Einstieg
+
+Im Startbildschirm „Beispielplan öffnen“ wählen. Das ist ein frei erfundener Grundriss im Maßstab 1:50 mit einigen Prüfvermerken, einem Stempel und mehreren Beispielmessungen. Damit lässt sich alles unten Beschriebene ausprobieren, ohne eigene Pläne zu öffnen.
+
+## Was sich testen lässt
+
+### Grundgerüst
+- Navigation links: Dokumente, Designsystem, Einstellungen.
+- Einstellungen: hell, dunkel oder wie Windows. Die Wahl bleibt beim nächsten Start erhalten.
+
+### Menüband (neu)
+- Oben liegen die Befehle jetzt in Registerkarten: Start (Öffnen, Speichern, Drucken, Eigenschaften, Markierungsliste, Stapelverarbeitung), Ansicht (Seitenleiste, Markierungen ausblenden, Breite, Ganze Seite, Zurück und Vor), Seiten (Drehen, Einfügen, Herauslösen, Löschen), Markieren und Messen.
+- Jede Schaltfläche hat eine Beschriftung, die Befehle sind in benannte Gruppen sortiert. Links stehen immer Auswählen, Verschieben, Rückgängig, Wiederholen und Löschen, rechts bei Markieren und Messen Farbe, Linienbreite, Deckkraft und Füllung.
+- Seitenwechsel und Zoom sitzen unten rechts in der Statuszeile.
+- Die Planverwaltung hat ein Menüband mit den Gruppen Projekt, Pläne, Vergleichen und Ausgabe. Such- und Filterfelder zeigen einen grauen Hinweis, solange sie leer sind.
+
+### PDF öffnen, ansehen und verwalten
+- „PDF öffnen“ (Strg+O), Dateien ins Fenster ziehen, „Zuletzt geöffnet“. Mehrere PDFs erscheinen als Registerkarten, Strg+Tab wechselt, Strg+W schließt.
+- Zoomen mit Strg+Mausrad, Strg+Plus und Strg+Minus, Prozentfeld, „An Breite anpassen“ (Strg+2), „Ganze Seite“ (Strg+0).
+- Verschieben mit gedrückter mittlerer Maustaste, mit dem Hand-Werkzeug (H) oder durch Ziehen auf einer leeren Stelle. Umschalt+Mausrad verschiebt waagrecht.
+- Seitenleiste mit Miniaturen, Lesezeichen und Suche.
+- Vorherige und nächste Ansicht: Nach einem Sprung (Seitenwechsel, Fundstelle, Eintrag in der Liste) führt die Pfeiltaste links neben der Seitenzahl, Alt+Pfeil links oder die Zurück-Taste der Maus zur vorigen Stelle zurück.
+- Seiten drehen, verschieben, löschen, leere Seite einfügen, Seiten aus einem anderen PDF einfügen, Seiten als neues PDF speichern (Registerkarte „Seiten“ oder Rechtsklick auf eine Miniatur).
+- Dokumenteigenschaften ansehen.
+- Speichern (Strg+S), Speichern unter (Strg+Umschalt+S).
+- Drucken (Strg+P) über den Windows-Druckdialog, mit Seitenauswahl. Jede Seite wird auf das Papier eingepasst, quer liegende Pläne werden auf Hochformat gedreht. Zum Ausprobieren ohne Drucker eignet sich „Microsoft Print to PDF“.
+
+### Textsuche
+- Strg+F öffnet die Suche in der Seitenleiste. Begriff eingeben, Eingabetaste.
+- Alle Fundstellen werden gelb hinterlegt, die aktuelle orange. Eingabetaste oder F3 springt weiter, Umschalt+F3 zurück, Klick auf einen Eintrag springt hin.
+- Gescannte Pläne ohne Textebene enthalten keinen durchsuchbaren Text; die Suche meldet das.
+
+### Markierungen
+Die Markierungswerkzeuge liegen in der Registerkarte „Markieren“. Nach dem Zeichnen springt das Werkzeug zurück auf „Auswählen“ und die neue Markierung ist ausgewählt.
+
+| Werkzeug | Taste | Bedienung |
+|---|---|---|
+| Auswählen | V | Anklicken, verschieben, an den Griffen ziehen. Strg+Klick wählt mehrere |
+| Hand | H | Plan verschieben |
+| Rechteck | R | Aufziehen |
+| Ellipse | E | Aufziehen |
+| Linie | L | Aufziehen |
+| Pfeil | A | Aufziehen |
+| Polylinie | N | Punkte klicken, beenden mit Doppelklick, Eingabetaste oder Rechtsklick |
+| Polygon | P | wie Polylinie |
+| Wolke | C | wie Polylinie |
+| Freihand | F | Mit gedrückter Maustaste zeichnen |
+| Textfeld | T | Aufziehen oder klicken, dann Text eingeben |
+| Schreibmaschine | W | Klicken und Text eingeben; der Text steht ohne Rahmen direkt auf dem Plan |
+| Sprechblase | B | Von der Stelle, auf die der Pfeil zeigen soll, zum Textfeld ziehen (oder nur klicken), dann Text eingeben. Rahmen und Pfeilspitze lassen sich danach an den Griffen verschieben |
+| Notiz | K | Klicken, dann Text eingeben |
+| Hervorhebung | M | Über Text ziehen: Die Markierung folgt den Textzeilen. Ohne Text im Bereich entsteht ein Rechteck |
+| Unterstreichen | U | Über Text ziehen; jede Zeile wird unterstrichen. Funktioniert nur bei echtem Text im PDF, nicht bei gescannten Plänen |
+| Durchstreichen | X | wie Unterstreichen |
+| Stempel | S | Aufschrift im Menü der Schaltfläche wählen (GEPRÜFT, FREIGEGEBEN, ABGELEHNT und andere oder eine eigene), dann klicken oder aufziehen. Darunter stehen automatisch Autor und Datum |
+| Bild oder Unterschrift (neu) | I | Im Menü der Schaltfläche: Bild aus Datei, Bild aus der Zwischenablage oder Unterschrift zeichnen. Dann klicken (Standardgröße) oder einen Rahmen aufziehen; das Seitenverhältnis bleibt erhalten. Gezeichnete Unterschriften landen auf Wunsch im Werkzeugsatz „Unterschriften“ und stehen danach direkt im Menü. Das ist ein Bild der Unterschrift, keine digitale Signatur |
+| Bemaßung | D | Maßlinie aufziehen; braucht wie die Messungen einen Maßstab. Die Zahl steht über der Linie |
+
+- Mit gedrückter Umschalttaste rasten Linien waagrecht, senkrecht oder unter 45 Grad ein, Rechtecke werden quadratisch.
+- Objektfang (Registerkarte „Messen“ neben dem Maßstab, standardmäßig an): Beim Zeichnen und beim Ziehen von Eckpunkten rastet der Punkt an Linienenden und Linienmitten des Plans und an Eckpunkten anderer Markierungen ein. Ein grünes Quadrat zeigt den Fangpunkt. Das funktioniert nur bei Vektorplänen (aus CAD exportiert), nicht bei gescannten. Die Umschalttaste schaltet den Fang vorübergehend ab.
+- Farbe, Linienbreite, Deckkraft und Füllung gelten für neue Markierungen und für die Auswahl.
+- Rechtsklick, „Drehen“: um 90 Grad nach rechts oder links oder um 180 Grad, bei mehreren ausgewählten Markierungen gemeinsam. Linien, Polylinien, Flächen und andere Punktformen lassen sich mit „Um Winkel drehen …“ auch beliebig drehen. Rechtecke, Textfelder und Stempel bleiben achsenparallel.
+- Doppelklick bearbeitet Text oder Kommentar. Rechtsklick öffnet ein Menü (Text, Kopieren, Duplizieren, Vordergrund, Hintergrund, Löschen).
+- Strg+C, Strg+V, Strg+D (Duplizieren), Strg+A (alle auf der Seite), Entf, Esc, Strg+Z, Strg+Y.
+- Mehrere ausgewählte Markierungen lassen sich per Rechtsklick ausrichten (links, rechts, oben, unten, zentriert) und ab drei gleichmäßig verteilen.
+- Darstellung übertragen: Strg+Umschalt+C kopiert Farbe, Linie und Füllung der ausgewählten Markierung, Strg+Umschalt+V überträgt sie auf die Auswahl.
+- „Markierungen aus“ in der Registerkarte „Ansicht“ blendet alle Markierungen aus, um den Plan ohne sie zu sehen.
+- Nach dem Speichern sind Markierungen normale PDF-Anmerkungen. Zum Gegenprüfen die Datei in einem anderen Programm öffnen, zum Beispiel Bluebeam, Adobe Acrobat oder einem Browser. Sie sollten dort an derselben Stelle gleich aussehen.
+
+### Mengenermittlung
+Die Messwerkzeuge, die Bemaßung, der Maßstab und der Objektfang liegen in der Registerkarte „Messen“.
+
+1. Maßstab festlegen: auf „Kein Maßstab“ klicken und einen Maßstab wie 1:50 wählen. Alternativ „Kalibrieren …“: eine bekannte Strecke im Plan aufziehen (zum Beispiel eine Bemaßung) und das wirkliche Maß eingeben, etwa „10“ oder „4,25“. Einheit m, cm oder mm. Der Maßstab gilt je Seite und lässt sich auf alle Seiten übertragen.
+2. Messen:
+   - Länge: Strecke aufziehen.
+   - Polylänge: Punkte klicken, beenden mit Doppelklick, Eingabetaste oder Rechtsklick.
+   - Umfang und Fläche: Eckpunkte klicken, beenden wie bei der Polylänge. Die Fläche zeigt zusätzlich den Umfang in der Statuszeile.
+   - Ausschnitt: Rechtsklick auf den Rand oder die Beschriftung einer Fläche, „Ausschnitt hinzufügen“, dann das abzuziehende Polygon zeichnen (zum Beispiel einen Schacht). Der Wert wird um den Ausschnitt verringert.
+   - Anzahl: jedes Objekt anklicken, mit Eingabetaste beenden. Braucht keinen Maßstab.
+   - Winkel: erst einen Punkt auf dem ersten Schenkel, dann den Scheitel, dann einen Punkt auf dem zweiten Schenkel klicken. Braucht keinen Maßstab.
+   - Radius: erst den Mittelpunkt, dann einen Punkt auf dem Kreis anklicken oder aufziehen. Durchmesser: von einem Kreisrand zum gegenüberliegenden ziehen. Die Liste zeigt zusätzlich die Kreisfläche.
+   - Volumen: Rechtsklick auf eine Fläche, „Tiefe für Volumen …“, zum Beispiel 0,25 für eine Bodenplatte. Die Beschriftung zeigt dann Fläche und Volumen.
+   - Wandfläche: Rechtsklick auf eine Länge, Polylänge oder einen Umfang, „Höhe für Wandfläche …“, zum Beispiel 2,80. Ein leeres Feld entfernt die Angabe wieder.
+   - Neigung oder Gefälle (neu): Rechtsklick auf eine Länge, Polylänge oder Fläche, „Neigung oder Gefälle …“, Wert in Prozent. Gemessen wird weiter im Grundriss; dazu kommen die geneigte Länge und der Höhenunterschied, bei Flächen die geneigte Fläche (zum Beispiel ein Dach). Probe: 4 m Grundrisslänge bei 75 % ergibt 5,00 m geneigt und 3,00 m Höhenunterschied. Ein Einheitspreis bezieht sich dann auf den geneigten Wert, außer es ist eine Höhe oder Tiefe angegeben.
+3. Der Wert steht als Beschriftung im Plan und ändert sich live beim Ziehen an den Eckpunkten.
+4. Wird der Maßstab einer Seite geändert, übernehmen die vorhandenen Messungen auf dieser Seite ihn. Rückgängig nimmt das zurück.
+
+Zum Ausprobieren im Beispielplan: Die Küche ist 10 m × 10 m, die Fläche muss also 100,00 m² ergeben. Der Abschnitt zwischen den Achsen A und C ist 10,00 m lang. Die Innenwand an Achse E ist 11,00 m lang und 2,80 m hoch, ihre Wandfläche also 30,80 m². Die Bemaßung unter dem Grundriss zeigt die Gebäudelänge von 30,00 m.
+
+### Markierungs- und Mengenliste (neu)
+- „Markierungsliste“ in der Registerkarte „Start“. Die Liste erscheint unter dem Plan und lässt sich in der Höhe ziehen.
+- Sie zeigt alle Markierungen des Dokuments mit Seite, Art, Messwert, Text, Maßstab, Autor und Datum. Spalten lassen sich durch Klick auf die Überschrift sortieren.
+- Filterfeld und „Nur Messungen“ grenzen die Liste ein. Oben stehen die Summen je Messart, zum Beispiel alle Flächen zusammen, dazu Volumen und Wandflächen.
+- Klick auf eine Zeile springt zur Markierung und wählt sie aus.
+- „Exportieren (Excel) …“ speichert die (gefilterte) Liste als Excel-Arbeitsmappe (XLSX) mit echten Zahlen und Datumswerten, einem Filter in der Kopfzeile und einem zweiten Blatt mit den Summen. Im Speichern-Dialog lässt sich stattdessen CSV wählen.
+
+### Status, Sperren und Preise (neu)
+- Rechtsklick auf eine Markierung, „Status“: Offen, In Bearbeitung, Erledigt, Geprüft, Freigegeben oder Abgelehnt. Gespeichert werden auch Name und Zeitpunkt. Der Status steht in der Liste, in der Statuszeile und im Excel-Export.
+- „Sperren“ schützt eine Markierung: Sie lässt sich noch auswählen und kopieren, aber nicht mehr verschieben, ändern oder löschen, bis sie wieder entsperrt wird. Im Beispielplan ist die Küchenfläche gesperrt.
+- „Einheitspreis …“ bei Längen, Flächen, Umfängen und Anzahlen: Preis in Euro je Einheit. Ist eine Höhe oder Tiefe angegeben, gilt der Preis je m² Wandfläche oder je m³ Volumen. Die Liste zeigt den Gesamtpreis und oben die Summe aller Kosten. Im Beispielplan: Küche 100 m² zu 38,50 € und drei Türen zu 650 €, zusammen 5.800,00 €.
+
+### Werkzeugbibliothek (neu)
+- In der Seitenleiste unter „Werkzeuge“ stehen gespeicherte Werkzeuge, nach Sätzen geordnet. Mitgeliefert sind „Planprüfung“ (Mangel, Hinweis, Rückfrage, Erledigt, Geprüft) und „Mengen Hochbau“ (Boden- und Deckenfläche, Wand, Sockelleiste, Türen, Fenster). Preise und Höhen sind dort bewusst leer, weil sie vom Projekt abhängen.
+- Ein Klick wählt ein Werkzeug. Es bleibt aktiv, sodass sich mehrere Flächen oder Zählungen hintereinander erfassen lassen. Esc beendet es.
+- Eigene Werkzeuge: Markierung so einstellen, wie sie sein soll (Farbe, Linie, Höhe oder Tiefe, Einheitspreis, Text), dann Rechtsklick, „Als Werkzeug speichern …“. Neue Markierungen mit diesem Werkzeug bekommen alles davon mit.
+- Rechtsklick in der Liste: Favorit (steht bei der Suche oben), Umbenennen, Löschen, Satz umbenennen oder löschen, Import und Export als Datei für andere Arbeitsplätze. Das Suchfeld findet Werkzeuge nach Name, Satz und Art.
+- Die Bibliothek liegt in `%APPDATA%\EGLE360\PLAN\Werkzeuge.json`.
+
+### Planverwaltung (neu)
+- Links in der Navigation gibt es „Pläne“. Ein Planprojekt ist ein Ordner mit einer Planliste. „Neues Planprojekt“ legt sie in einem Ordner deiner Wahl an, am besten in einem leeren Testordner.
+- „Pläne hinzufügen“ (oder PDF-Dateien in die Liste ziehen) kopiert die Dateien in den Unterordner `Pläne` des Projekts. Die Originale bleiben unverändert.
+- Plannummer, Index und Bezeichnung werden aus dem Plankopf („Plannummer …“, „Plan-Nr. …“, „Index …“) oder aus dem Dateinamen erkannt, z. B. `AR-101_Grundriss EG_Index B.pdf`. Die Erkennung arbeitet mit Mustern und kann danebenliegen. Rechts lassen sich alle Angaben korrigieren, dazu Gewerk, Geschoss, Gebäude, Bauabschnitt, Status, Verfasser und Freigabe.
+- Hat eine neue Datei dieselbe Plannummer wie ein vorhandener Plan, aber einen anderen Index, wird sie als neuer Stand eingetragen. Mit dem Häkchen „Markierungen in neuen Index übernehmen“ wandern Markierungen und Maßstäbe des bisherigen Stands auf dieselben Seiten der neuen Datei. Bitte vorher Änderungen am alten Stand speichern, übernommen wird, was in der Datei steht.
+- „Neuer Index“ trägt für den ausgewählten Plan gezielt eine Datei ein, mit Änderungsvermerk. Unter „Verlauf“ stehen alle Stände, ein Doppelklick öffnet auch ältere.
+- „Mit Vorstand“ (Gruppe Vergleichen) legt den aktuellen und den vorherigen Index übereinander: Rot ist nur im alten Stand, Blau nur im neuen, Grau unverändert. Ein Klick auf einen Eintrag der Legende blendet die jeweilige Farbe aus und wieder ein. Über den Verlauf (Rechtsklick auf einen älteren Index) lässt sich auch mit anderen Ständen vergleichen. „Änderungen als Wolken eintragen“ setzt rote Wolken um jeden geänderten Bereich in den neuen Stand. Ist der Planinhalt zwischen den Ständen verschoben (bis etwa 6 % der Seitengröße), wird das automatisch ausgeglichen und in der Statuszeile in Millimetern angezeigt. Bei verdrehten oder anders skalierten Ständen hilft „Ausrichten …“ (neu): Erst einen gut erkennbaren Punkt im alten Stand anklicken, dann denselben im neuen. Ein Punktpaar gleicht nur die Verschiebung aus („Nur verschieben“), ein zweites Paar möglichst weit vom ersten zusätzlich Drehung und Maßstab. Esc bricht ab, „Automatisch ausrichten“ kehrt zur automatischen Lage zurück. Die Ausrichtung gilt für alle Seiten des Vergleichs.
+- „Plansatz“ (Gruppe Vergleichen) vergleicht alle angezeigten Pläne mit mehreren Ständen auf einmal, jeweils den aktuellen mit dem vorherigen Index. Die Liste zeigt je Plan die Zahl der geänderten Bereiche; Doppelklick öffnet den Einzelvergleich. Von dort lassen sich Änderungswolken in alle neuen Stände eintragen und ein Änderungsbericht als Excel-Mappe speichern.
+- „Planliste“ (Gruppe Ausgabe) schreibt die (gefilterte) Liste und den Verlauf aller Stände in eine Arbeitsmappe.
+
+### Stapelverarbeitung (neu)
+
+- In der Dokumentansicht über „Stapelverarbeitung“ in der Registerkarte „Start“ (mit den geöffneten Dateien als Vorauswahl) oder unter „Pläne“ über „Stapel“ (mit den aktuellen Ständen der angezeigten Pläne).
+- Dateien lassen sich hinzufügen, als ganzer Ordner übernehmen oder ins Fenster ziehen.
+- Arbeitsschritte: Stempel in eine Ecke der ersten oder aller Seiten setzen (die Ecke gilt so, wie die Seite angezeigt wird) oder einen Maßstab für die erste oder alle Seiten festlegen. Neu sind Kopf- oder Fußzeile mit den Platzhaltern {Datei}, {Seite}, {Seiten} und {Datum} in sechs Lagen, Seiten drehen und Markierungen einbrennen. Eingebrannte Markierungen werden Teil des Plans und sind danach nicht mehr bearbeitbar, der Maßstab bleibt erhalten.
+- Standardmäßig entstehen bearbeitete Kopien im gewählten Zielordner, die Originale bleiben unverändert. „Originale überschreiben“ fragt vorher nach.
+- Fortschritt, Abbruch und Protokoll: Ein Fehler in einer Datei hält den Lauf nicht an. Das Protokoll steht im Fenster und wird als Textdatei in den Zielordner geschrieben. Ein abgebrochener Lauf lässt sich fortsetzen, weil bereits erledigte Kopien übersprungen werden.
+
+## Was noch fehlt
+
+Diese Punkte sind geplant, aber noch nicht enthalten:
+
+- Drucken in Originalgröße oder gekachelt, geteilte und synchronisierte Ansichten, Metadaten bearbeiten.
+- Messungen: Schnittpunktfang, Preislisten je Werkzeug und die Übernahme in EGLE360 AVA.
+- Ob Bluebeam die gespeicherten Messungen als Messungen (mit Wert in der Markups-Liste) erkennt, ist noch nicht geprüft. Die Datei enthält dafür die genormten PDF-Messangaben; im Plan sind die Messungen in jedem Fall sichtbar.
+- BIM, 4D/5D, KI-Funktionen und die AVA-Anbindung folgen in späteren Phasen.
+- Programmsymbol, digitale Signatur und Installationsprogramm.
+- Weitere Stapelschritte (Drucken, Sicherheit, Schwärzen, Verknüpfungen zwischen Plänen).
+
+## Rückmeldung
+
+Am hilfreichsten sind kurze Notizen nach dem Muster: Was wurde gemacht, was ist passiert, was war erwartet. Ein Screenshot (Windows+Umschalt+S) hilft sehr. Bei einem unerwarteten Fehler zeigt das Programm eine Meldung und schreibt die Einzelheiten nach `%APPDATA%\EGLE360\PLAN\Fehlerprotokoll.txt`. Diese Datei bitte mitschicken.

@@ -29,6 +29,23 @@ internal static unsafe class Pdfium
     public const uint FPDF_INCREMENTAL = 1 << 0;
     public const uint FPDF_NO_INCREMENTAL = 1 << 1;
 
+    public const int FPDF_ANNOT_TEXT = 1;
+    public const int FPDF_ANNOT_FREETEXT = 3;
+    public const int FPDF_ANNOT_SQUARE = 5;
+    public const int FPDF_ANNOT_CIRCLE = 6;
+    public const int FPDF_ANNOT_HIGHLIGHT = 9;
+    public const int FPDF_ANNOT_UNDERLINE = 10;
+    public const int FPDF_ANNOT_STRIKEOUT = 12;
+    public const int FPDF_ANNOT_STAMP = 13;
+    public const int FPDF_ANNOT_INK = 15;
+    public const int FPDF_ANNOT_FLAG_HIDDEN = 1 << 1;
+    public const int FPDF_ANNOT_FLAG_PRINT = 1 << 2;
+    public const int FPDF_ANNOT_FLAG_LOCKED = 1 << 7;
+    public const int FPDF_ANNOT_APPEARANCEMODE_NORMAL = 0;
+    public const int FPDFANNOT_COLORTYPE_Color = 0;
+    public const int FPDFANNOT_COLORTYPE_InteriorColor = 1;
+    public const int FPDF_OBJECT_STRING = 3;
+
     public const int FPDF_FILLMODE_NONE = 0;
     public const int FPDF_FILLMODE_ALTERNATE = 1;
 
@@ -48,6 +65,40 @@ internal static unsafe class Pdfium
         public delegate* unmanaged<FileWriteWithTarget*, void*, CULong, int> WriteBlock;
         public nint Target;
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FS_RECTF
+    {
+        public float left;
+        public float top;
+        public float right;
+        public float bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FS_POINTF
+    {
+        public float x;
+        public float y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FS_QUADPOINTSF
+    {
+        public float x1, y1, x2, y2, x3, y3, x4, y4;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FS_MATRIX
+    {
+        public float a, b, c, d, e, f;
+    }
+
+    public const int FPDF_PAGEOBJ_PATH = 2;
+    public const int FPDF_PAGEOBJ_FORM = 5;
+    public const int FPDF_SEGMENT_LINETO = 0;
+    public const int FPDF_SEGMENT_BEZIERTO = 1;
+    public const int FPDF_SEGMENT_MOVETO = 2;
 
     [StructLayout(LayoutKind.Sequential)]
     public struct FS_SIZEF
@@ -99,6 +150,33 @@ internal static unsafe class Pdfium
     [DllImport(Lib, ExactSpelling = true)] public static extern nint FPDFAction_GetDest(nint document, nint action);
     [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFDest_GetDestPageIndex(nint document, nint dest);
 
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDF_GetPageBoundingBox(nint page, FS_RECTF* rect);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDF_PageToDevice(nint page, int startX, int startY, int sizeX, int sizeY, int rotate, double pageX, double pageY, int* deviceX, int* deviceY);
+
+    // Anmerkungen
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPage_GetAnnotCount(nint page);
+    [DllImport(Lib, ExactSpelling = true)] public static extern nint FPDFPage_GetAnnot(nint page, int index);
+    [DllImport(Lib, ExactSpelling = true)] public static extern nint FPDFPage_CreateAnnot(nint page, int subtype);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPage_RemoveAnnot(nint page, int index);
+    [DllImport(Lib, ExactSpelling = true)] public static extern void FPDFPage_CloseAnnot(nint annot);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFAnnot_GetSubtype(nint annot);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFAnnot_GetRect(nint annot, FS_RECTF* rect);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFAnnot_SetRect(nint annot, FS_RECTF* rect);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFAnnot_GetFlags(nint annot);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFAnnot_SetFlags(nint annot, int flags);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFAnnot_SetColor(nint annot, int type, uint r, uint g, uint b, uint a);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFAnnot_SetBorder(nint annot, float horizontalRadius, float verticalRadius, float borderWidth);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFAnnot_HasKey(nint annot, byte* key);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFAnnot_GetValueType(nint annot, byte* key);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFAnnot_SetStringValue(nint annot, byte* key, char* value);
+    [DllImport(Lib, ExactSpelling = true)] public static extern CULong FPDFAnnot_GetStringValue(nint annot, byte* key, void* buffer, CULong length);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFAnnot_SetAP(nint annot, int appearanceMode, char* value);
+    [DllImport(Lib, ExactSpelling = true)] public static extern CULong FPDFAnnot_GetAP(nint annot, int appearanceMode, void* buffer, CULong length);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFAnnot_AddInkStroke(nint annot, FS_POINTF* points, nuint count);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFAnnot_AppendAttachmentPoints(nint annot, FS_QUADPOINTSF* quadPoints);
+    [DllImport(Lib, ExactSpelling = true)] public static extern CULong FPDFAnnot_GetVertices(nint annot, FS_POINTF* buffer, CULong length);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFAnnot_GetLine(nint annot, FS_POINTF* start, FS_POINTF* end);
+
     // Inhalte erzeugen
     [DllImport(Lib, ExactSpelling = true)] public static extern nint FPDFPageObj_CreateNewPath(float x, float y);
     [DllImport(Lib, ExactSpelling = true)] public static extern nint FPDFPageObj_CreateNewRect(float x, float y, float w, float h);
@@ -113,5 +191,35 @@ internal static unsafe class Pdfium
     [DllImport(Lib, ExactSpelling = true)] public static extern nint FPDFPageObj_NewTextObj(nint document, byte* font, float fontSize);
     [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFText_SetText(nint textObject, char* text);
     [DllImport(Lib, ExactSpelling = true)] public static extern void FPDFPage_InsertObject(nint page, nint obj);
+    [DllImport(Lib, ExactSpelling = true)] public static extern nint FPDFPageObj_NewImageObj(nint document);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFImageObj_SetBitmap(nint* pages, int count, nint imageObject, nint bitmap);
+    [DllImport(Lib, ExactSpelling = true)] public static extern void FPDFPageObj_Destroy(nint obj);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPageObj_GetBounds(nint obj, float* left, float* bottom, float* right, float* top);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFAnnot_AppendObject(nint annot, nint obj);
     [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPage_GenerateContent(nint page);
+
+    /// <summary>Brennt die sichtbaren Anmerkungen einer Seite in den Seiteninhalt ein. 0 Fehler, 1 erledigt, 2 nichts zu tun.</summary>
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPage_Flatten(nint page, int flag);
+
+    // Text lesen
+    // Seitenobjekte lesen (Objektfang)
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPage_CountObjects(nint page);
+    [DllImport(Lib, ExactSpelling = true)] public static extern nint FPDFPage_GetObject(nint page, int index);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPageObj_GetType(nint pageObject);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPageObj_GetMatrix(nint pageObject, FS_MATRIX* matrix);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPath_CountSegments(nint path);
+    [DllImport(Lib, ExactSpelling = true)] public static extern nint FPDFPath_GetPathSegment(nint path, int index);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPathSegment_GetPoint(nint segment, float* x, float* y);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPathSegment_GetType(nint segment);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPathSegment_GetClose(nint segment);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFFormObj_CountObjects(nint formObject);
+    [DllImport(Lib, ExactSpelling = true)] public static extern nint FPDFFormObj_GetObject(nint formObject, CULong index);
+
+    [DllImport(Lib, ExactSpelling = true)] public static extern nint FPDFText_LoadPage(nint page);
+    [DllImport(Lib, ExactSpelling = true)] public static extern void FPDFText_ClosePage(nint textPage);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFText_CountChars(nint textPage);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFText_GetText(nint textPage, int startIndex, int count, char* result);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFText_GetCharBox(nint textPage, int index, double* left, double* right, double* bottom, double* top);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFText_CountRects(nint textPage, int startIndex, int count);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFText_GetRect(nint textPage, int rectIndex, double* left, double* top, double* right, double* bottom);
 }

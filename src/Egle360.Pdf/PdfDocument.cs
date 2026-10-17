@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
+using Egle360.Pdf.Markups;
 using Egle360.Pdf.Native;
 using Microsoft.Win32.SafeHandles;
 
@@ -14,7 +15,7 @@ namespace Egle360.Pdf;
 /// Änderungen werden angehängt. Nach dem Löschen oder Einfügen von Seiten wird neu geschrieben, damit entfernte
 /// Inhalte nicht in der Datei verbleiben.
 /// </remarks>
-public sealed unsafe class PdfDocument : IDisposable
+public sealed unsafe partial class PdfDocument : IDisposable
 {
     private const int PageCacheSize = 8;
 
@@ -206,7 +207,9 @@ public sealed unsafe class PdfDocument : IDisposable
     /// </summary>
     /// <param name="scale">Pixel je Punkt. 1 entspricht 72 dpi, 96/72 entspricht 100 % auf einem Standardbildschirm.</param>
     /// <param name="region">Ausschnitt innerhalb der Seite in Pixeln bei diesem Maßstab.</param>
-    public void Render(int pageIndex, double scale, PixelRect region, Span<byte> bgra, int stride, bool annotations = true)
+    /// <param name="hideMarkups">EGLE360-Markierungen weglassen, weil die Oberfläche sie selbst zeichnet.</param>
+    /// <param name="forPrinting">Druckdarstellung: Anmerkungen ohne Druck-Kennzeichen entfallen, wie in anderen Programmen.</param>
+    public void Render(int pageIndex, double scale, PixelRect region, Span<byte> bgra, int stride, bool annotations = true, bool hideMarkups = false, bool forPrinting = false)
     {
         if (region.Width <= 0 || region.Height <= 0)
         {
@@ -231,8 +234,19 @@ public sealed unsafe class PdfDocument : IDisposable
                 try
                 {
                     Pdfium.FPDFBitmap_FillRect(bitmap, 0, 0, region.Width, region.Height, 0xFFFFFFFF);
-                    var flags = annotations ? Pdfium.FPDF_ANNOT : 0;
-                    Pdfium.FPDF_RenderPageBitmap(bitmap, page, -region.X, -region.Y, fullW, fullH, 0, flags);
+                    var flags = (annotations ? Pdfium.FPDF_ANNOT : 0) | (forPrinting ? Pdfium.FPDF_PRINTING : 0);
+                    var hidden = annotations && hideMarkups ? HideMarkups(pageIndex, page) : null;
+                    try
+                    {
+                        Pdfium.FPDF_RenderPageBitmap(bitmap, page, -region.X, -region.Y, fullW, fullH, 0, flags);
+                    }
+                    finally
+                    {
+                        if (hidden is not null)
+                        {
+                            RestoreMarkups(hidden);
+                        }
+                    }
                 }
                 finally
                 {
@@ -264,6 +278,38 @@ public sealed unsafe class PdfDocument : IDisposable
             IsModified = true;
         }
         PagesChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// Brennt die sichtbaren Markierungen einer Seite in den Seiteninhalt ein; danach sind sie nicht mehr bearbeitbar.
+    /// Verborgene Anmerkungen (etwa der Maßstab) bleiben erhalten. False, wenn die Seite keine Markierungen hatte.
+    /// </summary>
+    public bool FlattenMarkups(int index)
+    {
+        bool done;
+        lock (PdfiumLibrary.Sync)
+        {
+            EnsureCanModify();
+            CheckIndex(index);
+            var result = Pdfium.FPDFPage_Flatten(GetPage(index), 0);
+            if (result == 0)
+            {
+                throw new PdfException(PdfErrorKind.Unknown, $"Die Markierungen auf Seite {index + 1} konnten nicht eingebrannt werden.");
+            }
+            done = result == 1;
+            if (done)
+            {
+                // PDFium liest den geänderten Seiteninhalt erst beim nächsten Laden der Seite.
+                ClosePages();
+                _markups.Remove(index);
+                IsModified = true;
+            }
+        }
+        if (done)
+        {
+            PagesChanged?.Invoke(this, EventArgs.Empty);
+        }
+        return done;
     }
 
     public void DeletePage(int index)
@@ -401,7 +447,7 @@ public sealed unsafe class PdfDocument : IDisposable
         var temp = Path.Combine(Path.GetDirectoryName(fullPath)!, $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
         try
         {
-            using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None))
             {
                 WriteTo(stream, effectiveMode);
                 stream.Flush(flushToDisk: true);
@@ -436,6 +482,7 @@ public sealed unsafe class PdfDocument : IDisposable
                 FilePath = fullPath;
                 IsModified = false;
                 _structureChanged = false;
+                _pendingStandardPatches = 0;
             }
         }
         finally
@@ -448,12 +495,20 @@ public sealed unsafe class PdfDocument : IDisposable
         PagesChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>Schreibt das Dokument in einen Datenstrom, ohne den Zustand des Dokuments zu ändern.</summary>
+    /// <summary>
+    /// Schreibt das Dokument in einen Datenstrom, ohne den Zustand des Dokuments zu ändern. Ist der Datenstrom
+    /// les- und positionierbar, werden danach die Standardeinträge der Markierungen übertragen (siehe
+    /// <see cref="PdfObjectPatcher"/>).
+    /// </summary>
     public void WriteTo(Stream target, PdfSaveMode mode)
     {
         lock (PdfiumLibrary.Sync)
         {
             ClosePages();
+            var origin = target.CanSeek ? target.Position : 0;
+            var incremental = mode == PdfSaveMode.Incremental && _source is not null;
+            // Beim inkrementellen Speichern kopiert PDFium zuerst die Originaldatei; gesucht wird nur dahinter.
+            var scanFrom = origin + (incremental ? _source!.Length : 0);
             var handle = GCHandle.Alloc(target);
             try
             {
@@ -463,10 +518,15 @@ public sealed unsafe class PdfDocument : IDisposable
                     WriteBlock = &WriteBlock,
                     Target = GCHandle.ToIntPtr(handle),
                 };
-                var flags = mode == PdfSaveMode.Incremental && _source is not null ? Pdfium.FPDF_INCREMENTAL : Pdfium.FPDF_NO_INCREMENTAL;
+                var flags = incremental ? Pdfium.FPDF_INCREMENTAL : Pdfium.FPDF_NO_INCREMENTAL;
                 if (Pdfium.FPDF_SaveAsCopy(Handle, &writer, flags) == 0)
                 {
                     throw new PdfException(PdfErrorKind.Unknown, "Das Dokument konnte nicht gespeichert werden.");
+                }
+                if (_pendingStandardPatches > 0 && target.CanRead && target.CanSeek)
+                {
+                    target.Flush();
+                    PdfObjectPatcher.Patch(target, scanFrom);
                 }
             }
             finally
@@ -520,6 +580,7 @@ public sealed unsafe class PdfDocument : IDisposable
     {
         IsModified = true;
         _structureChanged = true;
+        ResetMarkupState();
     }
 
     private void EnsureCanModify()
@@ -676,6 +737,9 @@ public sealed unsafe class PdfDocument : IDisposable
 
     private interface IDocumentSource : IDisposable
     {
+        /// <summary>Länge der Quelldaten in Byte.</summary>
+        long Length { get; }
+
         nint Load(string? password);
     }
 
@@ -686,6 +750,8 @@ public sealed unsafe class PdfDocument : IDisposable
         private GCHandle _self;
         private Pdfium.FPDF_FILEACCESS* _access;
         private readonly string _name;
+
+        public long Length => RandomAccess.GetLength(_file);
 
         public FileSource(string path)
         {
@@ -766,6 +832,8 @@ public sealed unsafe class PdfDocument : IDisposable
     {
         private void* _data;
         private readonly nuint _length;
+
+        public long Length => (long)_length;
 
         public MemorySource(ReadOnlySpan<byte> data)
         {

@@ -9,6 +9,7 @@ using Egle360.Desktop.Controls;
 using Egle360.Desktop.Services;
 using Egle360.Design;
 using Egle360.Pdf;
+using Egle360.Pdf.Markups;
 using Microsoft.Win32;
 
 namespace Egle360.Desktop.Views;
@@ -31,6 +32,8 @@ public partial class DocumentsView : UserControl, IDisposable
     public DocumentsView()
     {
         InitializeComponent();
+        BuildMarkupBar();
+        InitToolLibrary();
         SidebarColumn.Width = new GridLength(Math.Clamp(App.Theme.Settings.DocumentSidebarWidth, 140, 480));
         PreviewKeyDown += OnPreviewKeyDown;
         RefreshRecent();
@@ -39,6 +42,23 @@ public partial class DocumentsView : UserControl, IDisposable
 
     /// <summary>Das aktive Dokument, für den Screenshot-Modus.</summary>
     internal PdfViewer? ActiveViewer => _active?.Viewer;
+
+    internal PdfDocument? ActiveDocument => _active?.Document;
+
+    /// <summary>
+    /// Trägt Markierungen in ein geöffnetes Dokument ein, rückgängig machbar. False, wenn die Datei nicht geöffnet ist.
+    /// </summary>
+    internal bool TryAddMarkups(string path, int page, IReadOnlyList<Markup> markups, string description)
+    {
+        var full = Path.GetFullPath(path);
+        if (_documents.FirstOrDefault(d => string.Equals(d.Document.FilePath, full, StringComparison.OrdinalIgnoreCase)) is not { } open
+            || page >= open.Document.PageCount)
+        {
+            return false;
+        }
+        open.History.Apply(page, [.. open.Document.GetMarkups(page), .. markups], description);
+        return true;
+    }
 
     internal bool IsBusy => _renderer.Pending > 0 || _documents.Any(d => d.Viewer.IsBusy);
 
@@ -106,14 +126,41 @@ public partial class DocumentsView : UserControl, IDisposable
 
     private OpenDocument AddDocument(PdfDocument document, string title)
     {
-        var viewer = new PdfViewer();
-        var open = new OpenDocument(document, viewer, title);
+        var viewer = new PdfViewer { Outliner = _outliner, StyleProvider = CurrentStyle, TextProvider = kind => kind == MarkupKind.Stamp ? _stamp.Title : "", Author = Environment.UserName, SnapEnabled = _snap };
+        var history = new MarkupHistory(document, _outliner);
+        var open = new OpenDocument(document, viewer, history, title);
         open.Tab = CreateTab(open);
-        viewer.Attach(document, _renderer);
+        viewer.Attach(document, _renderer, history);
+        ApplyTool(viewer, CheckedToolKey);
+        history.Changed += (_, page) =>
+        {
+            UpdateTab(open);
+            RefreshThumbnail(open, page);
+            if (open == _active)
+            {
+                RefreshMarkupBar();
+                RefreshMarkupList();
+            }
+        };
+        viewer.SelectionChanged += (_, _) => { if (open == _active) { RefreshMarkupBar(); } };
+        viewer.ToolChanged += (_, _) => { if (open == _active) { SyncToolButtons(viewer); SyncToolList(); } };
+        viewer.EditTextRequested += (_, args) => OnEditText(open, args.Page, args.Markup);
+        viewer.DepthRequested += (_, args) => OnEditDepth(open, args.Page, args.Markup);
+        viewer.SlopeRequested += (_, args) => OnEditSlope(open, args.Page, args.Markup);
+        viewer.PriceRequested += (_, args) => OnEditPrice(open, args.Page, args.Markup);
+        viewer.SaveAsToolRequested += (_, markup) => OnSaveAsTool(markup);
+        viewer.RotateAngleRequested += (_, _) => OnRotateAngle(viewer);
+        viewer.ViewHistoryChanged += (_, _) => { if (open == _active) { RefreshViewHistory(); } };
+        viewer.MarkupsVisibilityChanged += (_, _) => { if (open == _active) { RefreshMarkupBar(); } };
+        AttachMeasure(open);
         viewer.CurrentPageChanged += (_, _) => { if (open == _active) { SyncCurrentPage(); } };
         viewer.ZoomChanged += (_, _) => { if (open == _active) { RefreshZoom(); } };
         document.PagesChanged += (_, _) =>
         {
+            if (open == _active)
+            {
+                ResetSearch();
+            }
             viewer.Reload();
             open.Title = document.FilePath is { } p ? Path.GetFileName(p) : open.Title;
             UpdateTab(open);
@@ -121,6 +168,7 @@ public partial class DocumentsView : UserControl, IDisposable
             {
                 BuildThumbnails();
                 BuildBookmarks();
+                RefreshMarkupList();
                 RefreshUi();
             }
         };
@@ -131,9 +179,16 @@ public partial class DocumentsView : UserControl, IDisposable
 
     private void Activate(OpenDocument document)
     {
+        _active?.Viewer.CancelDrawing();
+        if (_active != document)
+        {
+            ResetSearch();
+        }
         _active = document;
         document.Tab.IsChecked = true;
+        ApplyTool(document.Viewer, CheckedToolKey);
         ViewerHost.Content = document.Viewer;
+        RefreshMarkupList();
         BuildThumbnails();
         BuildBookmarks();
         RefreshUi();
@@ -169,6 +224,30 @@ public partial class DocumentsView : UserControl, IDisposable
         }
         RefreshUi();
         return true;
+    }
+
+    /// <summary>Für den Screenshot-Modus: geänderte (temporäre) Dateien speichern, damit beim Beenden keine Rückfrage kommt.</summary>
+    /// <summary>Für den Screenshot-Modus: Lage und Größe der Hauptbereiche als Text, um Layoutfehler zu finden.</summary>
+    internal string DescribeLayoutForScreenshot()
+    {
+        string Line(string name, FrameworkElement e)
+        {
+            var p = e.IsVisible ? e.TranslatePoint(new Point(0, 0), this) : new Point(double.NaN, double.NaN);
+            return $"{name}: sichtbar={e.IsVisible} oben={p.Y:0} links={p.X:0} breite={e.ActualWidth:0} höhe={e.ActualHeight:0}";
+        }
+        return string.Join(Environment.NewLine,
+            Line("DocumentsView", this), Line("Menüband", MarkupBarBorder), Line("Registerkarten", TabStripBorder), Line("Arbeitsbereich", WorkArea),
+            Line("Ansicht", ViewerHost), Line("Liste", MarkupListPanel), Line("Seitenleiste", Sidebar), Line("Leer", EmptyState),
+            $"Zeilen: {string.Join(", ", ((Grid)Content).RowDefinitions.Select(r => r.ActualHeight.ToString("0")))}",
+            $"Listenzeile: {MarkupListRow.ActualHeight:0}");
+    }
+
+    internal void SaveAllForScreenshot()
+    {
+        foreach (var document in _documents.Where(d => d.Document.IsModified && d.Document.FilePath is not null))
+        {
+            document.Document.Save();
+        }
     }
 
     /// <summary>Für das Schließen des Hauptfensters. Liefert false, wenn der Benutzer abbricht.</summary>
@@ -283,14 +362,26 @@ public partial class DocumentsView : UserControl, IDisposable
         SyncCurrentPage();
     }
 
-    private async void OnThumbnailLoaded(object sender, RoutedEventArgs e)
+    private void OnThumbnailLoaded(object sender, RoutedEventArgs e)
     {
-        if (sender is not FrameworkElement { DataContext: ThumbnailItem item } || item.Requested || _active is null)
+        if (sender is FrameworkElement { DataContext: ThumbnailItem item } && !item.Requested && _active is not null)
         {
-            return;
+            RenderThumbnail(_active.Document, item);
         }
+    }
+
+    /// <summary>Miniatur nach einer Änderung der Markierungen neu zeichnen (sie enthält die Markierungen).</summary>
+    private void RefreshThumbnail(OpenDocument open, int page)
+    {
+        if (open == _active && page >= 0 && page < open.Thumbnails.Count && open.Thumbnails[page].Requested)
+        {
+            RenderThumbnail(open.Document, open.Thumbnails[page]);
+        }
+    }
+
+    private async void RenderThumbnail(PdfDocument document, ThumbnailItem item)
+    {
         item.Requested = true;
-        var document = _active.Document;
         var dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
         var info = document.GetPageInfo(item.Index);
         var scale = item.Width / info.WidthPt * dpi;
@@ -329,15 +420,18 @@ public partial class DocumentsView : UserControl, IDisposable
 
     private void UpdateSidebarTab()
     {
-        if (Thumbnails is null || Bookmarks is null)
+        if (Thumbnails is null || Bookmarks is null || SearchPanel is null || ToolsPanel is null)
         {
             return;
         }
         var pages = PagesTab.IsChecked == true;
+        var bookmarks = BookmarksTab.IsChecked == true;
         var hasBookmarks = Bookmarks.Items.Count > 0;
         Thumbnails.Visibility = pages ? Visibility.Visible : Visibility.Collapsed;
-        Bookmarks.Visibility = !pages && hasBookmarks ? Visibility.Visible : Visibility.Collapsed;
-        NoBookmarks.Visibility = !pages && !hasBookmarks ? Visibility.Visible : Visibility.Collapsed;
+        Bookmarks.Visibility = bookmarks && hasBookmarks ? Visibility.Visible : Visibility.Collapsed;
+        NoBookmarks.Visibility = bookmarks && !hasBookmarks ? Visibility.Visible : Visibility.Collapsed;
+        SearchPanel.Visibility = SearchTab.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        ToolsPanel.Visibility = ToolsTab.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void OnToggleSidebar(object sender, RoutedEventArgs e)
@@ -380,7 +474,7 @@ public partial class DocumentsView : UserControl, IDisposable
         EmptyState.Visibility = has ? Visibility.Collapsed : Visibility.Visible;
         TabStripBorder.Visibility = _documents.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         var canModify = has && _active!.Document.CanModify;
-        foreach (var b in new[] { SaveButton, SaveAsButton, SidebarButton, ZoomOutButton, ZoomInButton, FitWidthButton, FitPageButton, PrevButton, NextButton, PropertiesButton, ExtractButton })
+        foreach (var b in new[] { SaveButton, SaveAsButton, SidebarButton, ZoomOutButton, ZoomInButton, FitWidthButton, FitPageButton, PrevButton, NextButton, PropertiesButton, ExtractButton, MarkupListButton, PrintButton })
         {
             b.IsEnabled = has;
         }
@@ -389,12 +483,17 @@ public partial class DocumentsView : UserControl, IDisposable
             b.IsEnabled = canModify;
         }
         ZoomBox.IsEnabled = PageBox.IsEnabled = has;
+        if (!has && MarkupListVisible)
+        {
+            OnToggleMarkupList(this, new RoutedEventArgs());
+        }
         if (has)
         {
             UpdateTab(_active!);
         }
         RefreshZoom();
         RefreshPageInfo();
+        RefreshMarkupBar();
     }
 
     private void RefreshZoom()
@@ -410,6 +509,7 @@ public partial class DocumentsView : UserControl, IDisposable
         {
             PageBox.Text = "";
             PageCountText.Text = "";
+            RefreshViewHistory();
             StatusFormat.Text = "";
             StatusPath.Text = _active is null ? "" : "Das Dokument hat keine Seiten.";
             return;
@@ -420,6 +520,7 @@ public partial class DocumentsView : UserControl, IDisposable
         PageCountText.Text = $"von {_active.Viewer.PageCount}";
         StatusFormat.Text = $"Seite {info.DisplayLabel}: {info.Format.Description}";
         StatusPath.Text = _active.Document.FilePath ?? "Noch nicht gespeichert";
+        RefreshViewHistory();
         PrevButton.IsEnabled = page > 0;
         NextButton.IsEnabled = page < _active.Viewer.PageCount - 1;
         DeletePageButton.IsEnabled = _active.Document.CanModify && _active.Viewer.PageCount > 1;
@@ -454,6 +555,21 @@ public partial class DocumentsView : UserControl, IDisposable
         }
     }
 
+    /// <summary>Öffnet eine frisch erzeugte Kopie des Beispielplans aus dem Temp-Ordner, damit ohne eigene Pläne getestet werden kann.</summary>
+    private void OnOpenSample(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var path = Path.Combine(Path.GetTempPath(), $"EGLE360-Beispielplan-{DateTime.Now:yyyyMMdd-HHmmss}.pdf");
+            SamplePlan.Write(path, new WpfTextOutliner());
+            OpenFiles([path]);
+        }
+        catch (Exception ex)
+        {
+            ShowError($"Der Beispielplan konnte nicht erzeugt werden: {ex.Message}");
+        }
+    }
+
     private void OnNew(object sender, RoutedEventArgs e)
     {
         var document = PdfDocument.CreateNew();
@@ -467,6 +583,23 @@ public partial class DocumentsView : UserControl, IDisposable
         if (_active is not null)
         {
             Save(_active, saveAs: false);
+        }
+    }
+
+    private void OnPrint(object sender, RoutedEventArgs e)
+    {
+        if (_active is not { } open)
+        {
+            return;
+        }
+        open.Viewer.CancelDrawing();
+        try
+        {
+            PdfPrinter.Print(open.Document, open.Title, open.Viewer.CurrentPage);
+        }
+        catch (Exception ex) when (ex is PdfException or System.Printing.PrintSystemException or InvalidOperationException)
+        {
+            ShowError($"Drucken war nicht möglich: {ex.Message}");
         }
     }
 
@@ -485,6 +618,16 @@ public partial class DocumentsView : UserControl, IDisposable
     private void OnFitWidth(object sender, RoutedEventArgs e) => _active?.Viewer.FitWidth();
 
     private void OnFitPage(object sender, RoutedEventArgs e) => _active?.Viewer.FitPage();
+
+    private void OnViewBack(object sender, RoutedEventArgs e) => _active?.Viewer.GoBack();
+
+    private void OnViewForward(object sender, RoutedEventArgs e) => _active?.Viewer.GoForward();
+
+    private void RefreshViewHistory()
+    {
+        BackButton.IsEnabled = _active?.Viewer.CanGoBack == true;
+        ForwardButton.IsEnabled = _active?.Viewer.CanGoForward == true;
+    }
 
     private void OnPrevPage(object sender, RoutedEventArgs e) => _active?.Viewer.GoToPage(_active.Viewer.CurrentPage - 1);
 
@@ -686,6 +829,10 @@ public partial class DocumentsView : UserControl, IDisposable
         }
     }
 
+    /// <summary>Stapelverarbeitung mit den geöffneten, gespeicherten Dateien als Vorauswahl.</summary>
+    private void OnBatch(object sender, RoutedEventArgs e) =>
+        new BatchWindow(Owner, _documents.Select(d => d.Document.FilePath).OfType<string>()).Show();
+
     private void OnProperties(object sender, RoutedEventArgs e)
     {
         if (_active is not null)
@@ -712,7 +859,13 @@ public partial class DocumentsView : UserControl, IDisposable
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
         var viewer = _active?.Viewer;
-        if (KeyGestures.Ctrl(e, Key.O)) { OnOpen(this, e); }
+        if (HandleMarkupShortcut(e)) { }
+        else if (KeyGestures.Ctrl(e, Key.F)) { ShowSearch(); }
+        else if (e.Key == Key.System && Keyboard.Modifiers == ModifierKeys.Alt && e.SystemKey == Key.Left) { viewer?.GoBack(); }
+        else if (e.Key == Key.System && Keyboard.Modifiers == ModifierKeys.Alt && e.SystemKey == Key.Right) { viewer?.GoForward(); }
+        else if (e.Key == Key.F3 && Keyboard.Modifiers is ModifierKeys.None or ModifierKeys.Shift) { StepSearch(Keyboard.Modifiers == ModifierKeys.Shift ? -1 : 1); }
+        else if (KeyGestures.Ctrl(e, Key.O)) { OnOpen(this, e); }
+        else if (KeyGestures.Ctrl(e, Key.P)) { OnPrint(this, e); }
         else if (KeyGestures.Ctrl(e, Key.N)) { OnNew(this, e); }
         else if (KeyGestures.Ctrl(e, Key.S)) { OnSave(this, e); }
         else if (KeyGestures.Ctrl(e, Key.S, shift: true)) { OnSaveAs(this, e); }
@@ -737,11 +890,13 @@ public partial class DocumentsView : UserControl, IDisposable
         Activate(_documents[i]);
     }
 
-    private sealed class OpenDocument(PdfDocument document, PdfViewer viewer, string title)
+    private sealed class OpenDocument(PdfDocument document, PdfViewer viewer, MarkupHistory history, string title)
     {
         public PdfDocument Document { get; } = document;
 
         public PdfViewer Viewer { get; } = viewer;
+
+        public MarkupHistory History { get; } = history;
 
         public string Title { get; set; } = title;
 
