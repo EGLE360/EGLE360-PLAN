@@ -40,6 +40,9 @@ public sealed class UiSettings
 
     /// <summary>Breite der Seitenleiste in der Dokumentansicht.</summary>
     public double DocumentSidebarWidth { get; set; } = 220;
+
+    /// <summary>Ordner des zuletzt geöffneten Planprojekts.</summary>
+    public string? PlanProjectPath { get; set; }
 }
 
 /// <summary>Pflege der Liste zuletzt geöffneter Dokumente.</summary>

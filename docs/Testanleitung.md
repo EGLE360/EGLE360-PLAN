@@ -1,6 +1,6 @@
 # EGLE360 PLAN – Testanleitung
 
-Stand: Entwicklungsversion 0.6 (PDF-Grundsystem, Markierungen mit Stempeln und Bemaßung, Textsuche, Mengenermittlung mit Volumen, Wandflächen und Excel-Export). Das ist eine frühe Testversion, keine fertige Software. Bitte mit Kopien von Plänen arbeiten, nicht mit den einzigen Originalen.
+Stand: Entwicklungsversion 0.7 (PDF-Grundsystem, Markierungen mit Stempeln und Bemaßung, Textsuche, Mengenermittlung mit Volumen, Wandflächen und Excel-Export, Werkzeugbibliothek, Planverwaltung mit Indexverlauf). Das ist eine frühe Testversion, keine fertige Software. Bitte mit Kopien von Plänen arbeiten, nicht mit den einzigen Originalen.
 
 ## Starten
 
@@ -112,6 +112,14 @@ Zum Ausprobieren im Beispielplan: Die Küche ist 10 m × 10 m, die Fläche muss 
 - Eigene Werkzeuge: Markierung so einstellen, wie sie sein soll (Farbe, Linie, Höhe oder Tiefe, Einheitspreis, Text), dann Rechtsklick, „Als Werkzeug speichern …“. Neue Markierungen mit diesem Werkzeug bekommen alles davon mit.
 - Rechtsklick in der Liste: Favorit (steht bei der Suche oben), Umbenennen, Löschen, Satz umbenennen oder löschen, Import und Export als Datei für andere Arbeitsplätze. Das Suchfeld findet Werkzeuge nach Name, Satz und Art.
 - Die Bibliothek liegt in `%APPDATA%\EGLE360\PLAN\Werkzeuge.json`.
+
+### Planverwaltung (neu)
+- Links in der Navigation gibt es „Pläne“. Ein Planprojekt ist ein Ordner mit einer Planliste. „Neues Planprojekt“ legt sie in einem Ordner deiner Wahl an, am besten in einem leeren Testordner.
+- „Pläne hinzufügen“ (oder PDF-Dateien in die Liste ziehen) kopiert die Dateien in den Unterordner `Pläne` des Projekts. Die Originale bleiben unverändert.
+- Plannummer, Index und Bezeichnung werden aus dem Plankopf („Plannummer …“, „Plan-Nr. …“, „Index …“) oder aus dem Dateinamen erkannt, z. B. `AR-101_Grundriss EG_Index B.pdf`. Die Erkennung arbeitet mit Mustern und kann danebenliegen. Rechts lassen sich alle Angaben korrigieren, dazu Gewerk, Geschoss, Gebäude, Bauabschnitt, Status, Verfasser und Freigabe.
+- Hat eine neue Datei dieselbe Plannummer wie ein vorhandener Plan, aber einen anderen Index, wird sie als neuer Stand eingetragen. Mit dem Häkchen „Markierungen in neuen Index übernehmen“ wandern Markierungen und Maßstäbe des bisherigen Stands auf dieselben Seiten der neuen Datei. Bitte vorher Änderungen am alten Stand speichern, übernommen wird, was in der Datei steht.
+- „Neuer Index“ trägt für den ausgewählten Plan gezielt eine Datei ein, mit Änderungsvermerk. Unter „Verlauf“ stehen alle Stände, ein Doppelklick öffnet auch ältere.
+- „Planliste exportieren (Excel)“ schreibt die (gefilterte) Liste und den Verlauf aller Stände in eine Arbeitsmappe.
 
 ## Was noch fehlt
 

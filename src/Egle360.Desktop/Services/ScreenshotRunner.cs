@@ -27,6 +27,18 @@ internal static class ScreenshotRunner
         SamplePlan.Write(sample, new WpfTextOutliner());
         window.OpenDocuments([sample]);
 
+        // Planprojekt mit zwei Plänen, einer davon mit zwei Ständen (Testdaten aus dem Beispielplan).
+        var planRoot = Path.Combine(Path.GetTempPath(), $"EGLE360-Planprojekt-{Environment.ProcessId}");
+        var project = Egle360.Pdf.Plans.PlanProject.Create(planRoot, "Beispielprojekt Wohnanlage (Testdaten)");
+        project.Import([sample], "Prüfer", takeOverMarkups: false, new WpfTextOutliner());
+        var eg = project.Register.Plans[0];
+        project.AddRevision(eg.Id, sample, "B", "Prüfer", "Türen Bad geändert", takeOverMarkups: false, new WpfTextOutliner());
+        var og = project.AddPlan(sample, new Egle360.Pdf.Plans.PlanInfo("GR-OG-01", "A", "Grundriss Obergeschoss"), "Prüfer");
+        project.Update(project.Register
+            .Replace(project.Register.Find(eg.Id)! with { Discipline = "AR", Floor = "EG", Status = "Zur Ausführung", Author = "Planungsbüro (Testdaten)" })
+            .Replace(og with { Discipline = "AR", Floor = "OG", Status = "Zur Prüfung" }));
+        window.Plans.ShowProject(planRoot);
+
         foreach (var theme in new[] { ThemePreference.Light, ThemePreference.Dark })
         {
             App.Theme.SetPreference(theme);
@@ -130,6 +142,11 @@ internal static class ScreenshotRunner
                     window.Documents.EndSearchForScreenshot();
                     viewer.FitWidth();
                     continue;
+                }
+                if (page == "plans")
+                {
+                    window.Plans.SelectFirstForScreenshot();
+                    WaitForRender(window);
                 }
                 Save(window, Path.Combine(outputDir, name + ".png"));
 

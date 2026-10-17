@@ -1,0 +1,134 @@
+<UserControl x:Class="Egle360.Desktop.Views.PlansView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             AllowDrop="True" Drop="OnDrop" DragOver="OnDragOver">
+    <Grid Background="{DynamicResource CanvasBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Werkzeugleiste -->
+        <Border Grid.Row="0" Background="{DynamicResource Surface1Brush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
+            <WrapPanel VerticalAlignment="Center">
+                <Button Style="{StaticResource ToolButton}" Content="&#xE8F4;" Click="OnNewProject" ToolTip="Neues Planprojekt in einem Ordner anlegen" AutomationProperties.Name="Neues Planprojekt" />
+                <Button Style="{StaticResource ToolButton}" Content="&#xE838;" Click="OnOpenProject" ToolTip="Planprojekt öffnen" AutomationProperties.Name="Planprojekt öffnen" />
+                <Border Style="{StaticResource ToolSeparator}" />
+                <Button x:Name="AddButton" Style="{StaticResource ToolButton}" Content="&#xE710;" Click="OnAddPlans"
+                        ToolTip="Pläne hinzufügen. Plannummer und Index werden aus dem Plankopf oder dem Dateinamen erkannt; Dateien zu vorhandenen Plannummern werden als neuer Index eingetragen. Auch per Ziehen und Ablegen."
+                        AutomationProperties.Name="Pläne hinzufügen" />
+                <Button x:Name="RevisionButton" Style="{StaticResource ToolButton}" Content="&#xE8EB;" Click="OnNewRevision"
+                        ToolTip="Neuen Index für den ausgewählten Plan hinzufügen" AutomationProperties.Name="Neuer Index" />
+                <Button x:Name="OpenPlanButton" Style="{StaticResource ToolButton}" Content="&#xE8A5;" Click="OnOpenPlan"
+                        ToolTip="Aktuellen Stand des Plans öffnen (Doppelklick)" AutomationProperties.Name="Plan öffnen" />
+                <Button x:Name="RemoveButton" Style="{StaticResource ToolButton}" Content="&#xE74D;" Click="OnRemovePlan"
+                        ToolTip="Plan aus der Planliste entfernen (die Dateien bleiben im Projektordner)" AutomationProperties.Name="Plan entfernen" />
+                <Border Style="{StaticResource ToolSeparator}" />
+                <CheckBox x:Name="TakeOverBox" IsChecked="True" VerticalAlignment="Center" Margin="4,0,12,0" Foreground="{DynamicResource TextBrush}"
+                          Content="Markierungen in neuen Index übernehmen"
+                          ToolTip="Beim Eintragen eines neuen Index werden Markierungen und Maßstäbe des bisherigen Stands auf dieselben Seiten der neuen Datei kopiert." />
+                <Border Style="{StaticResource ToolSeparator}" />
+                <Button x:Name="ExportButton" Style="{StaticResource ButtonSecondary}" Content="Planliste exportieren (Excel) …" Click="OnExport" Margin="4,0" />
+            </WrapPanel>
+        </Border>
+
+        <!-- Kopf mit Projektname und Filter -->
+        <DockPanel Grid.Row="1" Margin="16,12,16,8">
+            <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                <TextBlock x:Name="ProjectTitle" Style="{StaticResource TextTitle}" Text="Pläne" />
+                <TextBlock x:Name="ProjectInfo" Style="{StaticResource TextCaption}" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                <ComboBox x:Name="DisciplineFilter" Width="160" Margin="0,0,8,0" SelectionChanged="OnFilterChanged" AutomationProperties.Name="Gewerk filtern" />
+                <TextBox x:Name="FilterBox" Style="{StaticResource InputBox}" Width="220" TextChanged="OnFilterChanged"
+                         ToolTip="Planliste filtern (Nummer, Bezeichnung, Geschoss, Status …)" AutomationProperties.Name="Planliste filtern" />
+            </StackPanel>
+            <Border />
+        </DockPanel>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="320" MinWidth="240" MaxWidth="560" />
+            </Grid.ColumnDefinitions>
+
+            <DataGrid x:Name="PlanGrid" Grid.Column="0" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                      SelectionMode="Single" CanUserResizeRows="False" BorderThickness="0,1,0,0" Background="Transparent"
+                      BorderBrush="{DynamicResource BorderBrush}" HorizontalGridLinesBrush="{DynamicResource BorderBrush}"
+                      RowBackground="Transparent" AlternatingRowBackground="Transparent"
+                      ColumnHeaderStyle="{StaticResource ListHeader}" CellStyle="{StaticResource ListCell}" RowStyle="{StaticResource ListRow}"
+                      SelectionChanged="OnPlanSelected" MouseDoubleClick="OnPlanDoubleClick" AutomationProperties.Name="Planliste">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Plannummer" Binding="{Binding Number}" Width="130" MinWidth="130" />
+                    <DataGridTextColumn Header="Bezeichnung" Binding="{Binding Title}" Width="2*" MinWidth="160" />
+                    <DataGridTextColumn Header="Index" Binding="{Binding Index}" Width="60" MinWidth="60" />
+                    <DataGridTextColumn Header="Stand vom" Binding="{Binding Added, StringFormat=dd.MM.yyyy}" Width="96" MinWidth="96" />
+                    <DataGridTextColumn Header="Gewerk" Binding="{Binding Discipline}" Width="80" MinWidth="80" />
+                    <DataGridTextColumn Header="Geschoss" Binding="{Binding Floor}" Width="80" MinWidth="80" />
+                    <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="1*" MinWidth="110" />
+                    <DataGridTextColumn Header="Stände" Binding="{Binding RevisionCount}" Width="64" MinWidth="64" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <TextBlock x:Name="EmptyText" Grid.Column="0" Style="{StaticResource TextSecondary}" Margin="24" TextWrapping="Wrap" MaxWidth="560"
+                       HorizontalAlignment="Left" VerticalAlignment="Top" />
+
+            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="{DynamicResource BorderBrush}" />
+
+            <!-- Planangaben und Verlauf -->
+            <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Background="{DynamicResource Surface1Brush}">
+                <StackPanel x:Name="DetailsPanel" Margin="16" IsEnabled="False">
+                    <TextBlock Style="{StaticResource TextSubtitle}" Text="Planangaben" Margin="0,0,0,8" />
+                    <TextBlock Style="{StaticResource TextCaption}" Text="Plannummer" />
+                    <TextBox x:Name="NumberBox" Style="{StaticResource InputBox}" Margin="0,2,0,8" LostFocus="OnDetailChanged" />
+                    <TextBlock Style="{StaticResource TextCaption}" Text="Bezeichnung" />
+                    <TextBox x:Name="TitleBox" Style="{StaticResource InputBox}" Margin="0,2,0,8" LostFocus="OnDetailChanged" />
+                    <UniformGrid Columns="2">
+                        <StackPanel Margin="0,0,4,0">
+                            <TextBlock Style="{StaticResource TextCaption}" Text="Gewerk" />
+                            <ComboBox x:Name="DisciplineBox" IsEditable="True" Margin="0,2,0,8" LostFocus="OnDetailChanged" />
+                        </StackPanel>
+                        <StackPanel Margin="4,0,0,0">
+                            <TextBlock Style="{StaticResource TextCaption}" Text="Status" />
+                            <ComboBox x:Name="StatusBox" IsEditable="True" Margin="0,2,0,8" LostFocus="OnDetailChanged" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,4,0">
+                            <TextBlock Style="{StaticResource TextCaption}" Text="Geschoss" />
+                            <TextBox x:Name="FloorBox" Style="{StaticResource InputBox}" Margin="0,2,0,8" LostFocus="OnDetailChanged" />
+                        </StackPanel>
+                        <StackPanel Margin="4,0,0,0">
+                            <TextBlock Style="{StaticResource TextCaption}" Text="Gebäude" />
+                            <TextBox x:Name="BuildingBox" Style="{StaticResource InputBox}" Margin="0,2,0,8" LostFocus="OnDetailChanged" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,4,0">
+                            <TextBlock Style="{StaticResource TextCaption}" Text="Bauabschnitt" />
+                            <TextBox x:Name="SectionBox" Style="{StaticResource InputBox}" Margin="0,2,0,8" LostFocus="OnDetailChanged" />
+                        </StackPanel>
+                        <StackPanel Margin="4,0,0,0">
+                            <TextBlock Style="{StaticResource TextCaption}" Text="Verfasser" />
+                            <TextBox x:Name="AuthorBox" Style="{StaticResource InputBox}" Margin="0,2,0,8" LostFocus="OnDetailChanged" />
+                        </StackPanel>
+                    </UniformGrid>
+                    <TextBlock Style="{StaticResource TextCaption}" Text="Freigabe (wer, wann)" />
+                    <TextBox x:Name="ApprovalBox" Style="{StaticResource InputBox}" Margin="0,2,0,16" LostFocus="OnDetailChanged" />
+
+                    <TextBlock Style="{StaticResource TextSubtitle}" Text="Verlauf" Margin="0,0,0,4" />
+                    <TextBlock Style="{StaticResource TextCaption}" TextWrapping="Wrap" Margin="0,0,0,6"
+                               Text="Alle Stände bleiben als eigene Datei erhalten. Doppelklick öffnet einen Stand." />
+                    <ListBox x:Name="RevisionList" Style="{StaticResource PlainList}" MouseDoubleClick="OnRevisionDoubleClick" AutomationProperties.Name="Planstände">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource TextBody}" Text="{Binding Title}" />
+                                    <TextBlock Style="{StaticResource TextCaption}" Text="{Binding Detail}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</UserControl>
