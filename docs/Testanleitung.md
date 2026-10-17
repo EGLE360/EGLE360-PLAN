@@ -130,7 +130,7 @@ Zum Ausprobieren im Beispielplan: Die Küche ist 10 m × 10 m, die Fläche muss 
 
 - In der Dokumentansicht über die Schaltfläche „Stapelverarbeitung“ (mit den geöffneten Dateien als Vorauswahl) oder unter „Pläne“ über „Stapelverarbeitung …“ (mit den aktuellen Ständen der angezeigten Pläne).
 - Dateien lassen sich hinzufügen, als ganzer Ordner übernehmen oder ins Fenster ziehen.
-- Arbeitsschritte: Stempel in eine Ecke der ersten oder aller Seiten setzen (die Ecke gilt so, wie die Seite angezeigt wird) oder einen Maßstab für die erste oder alle Seiten festlegen.
+- Arbeitsschritte: Stempel in eine Ecke der ersten oder aller Seiten setzen (die Ecke gilt so, wie die Seite angezeigt wird) oder einen Maßstab für die erste oder alle Seiten festlegen. Neu sind Kopf- oder Fußzeile mit den Platzhaltern {Datei}, {Seite}, {Seiten} und {Datum} in sechs Lagen, Seiten drehen und Markierungen einbrennen. Eingebrannte Markierungen werden Teil des Plans und sind danach nicht mehr bearbeitbar, der Maßstab bleibt erhalten.
 - Standardmäßig entstehen bearbeitete Kopien im gewählten Zielordner, die Originale bleiben unverändert. „Originale überschreiben“ fragt vorher nach.
 - Fortschritt, Abbruch und Protokoll: Ein Fehler in einer Datei hält den Lauf nicht an. Das Protokoll steht im Fenster und wird als Textdatei in den Zielordner geschrieben. Ein abgebrochener Lauf lässt sich fortsetzen, weil bereits erledigte Kopien übersprungen werden.
 
@@ -143,7 +143,7 @@ Diese Punkte sind geplant, aber noch nicht enthalten:
 - Ob Bluebeam die gespeicherten Messungen als Messungen (mit Wert in der Markups-Liste) erkennt, ist noch nicht geprüft. Die Datei enthält dafür die genormten PDF-Messangaben; im Plan sind die Messungen in jedem Fall sichtbar.
 - BIM, 4D/5D, KI-Funktionen und die AVA-Anbindung folgen in späteren Phasen.
 - Programmsymbol, digitale Signatur und Installationsprogramm.
-- Weitere Stapelschritte (Drucken, Sicherheit, Schwärzen, Seiten einrichten, Verknüpfungen zwischen Plänen).
+- Weitere Stapelschritte (Drucken, Sicherheit, Schwärzen, Verknüpfungen zwischen Plänen).
 
 ## Rückmeldung
 

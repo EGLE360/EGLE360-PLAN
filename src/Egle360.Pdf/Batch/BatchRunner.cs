@@ -260,3 +260,115 @@ public sealed class ScaleBatchAction(MeasureScale scale, BatchPages pages) : IBa
         return changed == 0 ? null : changed == 1 ? $"Maßstab {scale.Label} für 1 Seite gesetzt." : $"Maßstab {scale.Label} für {changed} Seiten gesetzt.";
     }
 }
+
+/// <summary>Dreht die erste oder alle Seiten um Vielfache von 90 Grad im Uhrzeigersinn.</summary>
+public sealed class RotateBatchAction(int quarterTurns, BatchPages pages) : IBatchAction
+{
+    private readonly int _turns = (quarterTurns % 4 + 4) % 4;
+
+    public string Description => $"{(pages == BatchPages.First ? "Seite 1" : "Alle Seiten")} um {_turns * 90}° im Uhrzeigersinn drehen";
+
+    public string? Apply(PdfDocument document)
+    {
+        var count = pages == BatchPages.First ? Math.Min(1, document.PageCount) : document.PageCount;
+        if (_turns == 0 || count == 0)
+        {
+            return null;
+        }
+        for (var p = 0; p < count; p++)
+        {
+            document.RotatePage(p, _turns);
+        }
+        return count == 1 ? "1 Seite gedreht." : $"{count} Seiten gedreht.";
+    }
+}
+
+/// <summary>Brennt alle sichtbaren Markierungen in den Seiteninhalt ein, etwa vor der Weitergabe.</summary>
+public sealed class FlattenBatchAction : IBatchAction
+{
+    public string Description => "Markierungen einbrennen";
+
+    public string? Apply(PdfDocument document)
+    {
+        var count = 0;
+        for (var p = 0; p < document.PageCount; p++)
+        {
+            if (document.FlattenMarkups(p))
+            {
+                count++;
+            }
+        }
+        return count == 0 ? null : count == 1 ? "Markierungen auf 1 Seite eingebrannt." : $"Markierungen auf {count} Seiten eingebrannt.";
+    }
+}
+
+/// <summary>Lage einer Kopf- oder Fußzeile, wie die Seite angezeigt wird.</summary>
+public enum PageEdgePosition
+{
+    BottomRight,
+    BottomCenter,
+    BottomLeft,
+    TopRight,
+    TopCenter,
+    TopLeft,
+}
+
+/// <summary>
+/// Schreibt eine Kopf- oder Fußzeile fest in den Seiteninhalt. Platzhalter: {Datei} (Dateiname ohne Endung),
+/// {Seite}, {Seiten} und {Datum}.
+/// </summary>
+public sealed class HeaderFooterBatchAction(string text, PageEdgePosition position, double size, BatchPages pages, DateTime? date = null) : IBatchAction
+{
+    /// <summary>Abstand zum Seitenrand in Punkt.</summary>
+    public const double Margin = 18;
+
+    public static readonly IReadOnlyList<string> Placeholders = ["{Datei}", "{Seite}", "{Seiten}", "{Datum}"];
+
+    public string Description => $"Text „{text}“ {PositionText(position)} {(pages == BatchPages.First ? "auf Seite 1" : "auf allen Seiten")}";
+
+    public static string PositionText(PageEdgePosition position) => position switch
+    {
+        PageEdgePosition.BottomCenter => "unten Mitte",
+        PageEdgePosition.BottomLeft => "unten links",
+        PageEdgePosition.TopRight => "oben rechts",
+        PageEdgePosition.TopCenter => "oben Mitte",
+        PageEdgePosition.TopLeft => "oben links",
+        _ => "unten rechts",
+    };
+
+    /// <summary>Text mit eingesetzten Platzhaltern für eine Seite (Index ab 0).</summary>
+    public string Resolve(string? filePath, int page, int pageCount) => text
+        .Replace("{Datei}", filePath is null ? "" : Path.GetFileNameWithoutExtension(filePath), StringComparison.OrdinalIgnoreCase)
+        .Replace("{Seiten}", pageCount.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.OrdinalIgnoreCase)
+        .Replace("{Seite}", (page + 1).ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.OrdinalIgnoreCase)
+        .Replace("{Datum}", (date ?? DateTime.Now).ToString("dd.MM.yyyy", System.Globalization.CultureInfo.InvariantCulture), StringComparison.OrdinalIgnoreCase);
+
+    public string? Apply(PdfDocument document)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+        var count = pages == BatchPages.First ? Math.Min(1, document.PageCount) : document.PageCount;
+        for (var p = 0; p < count; p++)
+        {
+            var t = document.GetPageTransform(p);
+            var top = position is PageEdgePosition.TopLeft or PageEdgePosition.TopCenter or PageEdgePosition.TopRight;
+            var v = top ? Margin + size : t.DisplayHeight - Margin;
+            var (u, align) = position switch
+            {
+                PageEdgePosition.TopLeft or PageEdgePosition.BottomLeft => (Margin, PdfTextAlign.Left),
+                PageEdgePosition.TopCenter or PageEdgePosition.BottomCenter => (t.DisplayWidth / 2, PdfTextAlign.Center),
+                _ => (t.DisplayWidth - Margin, PdfTextAlign.Right),
+            };
+            // Aufrecht wie die Seite angezeigt wird: Richtung „nach rechts“ auf dem Bildschirm im Seitenraum.
+            var anchor = t.ToUser(u, v);
+            var right = t.ToUser(u + 1, v);
+            var angle = Math.Atan2(right.Y - anchor.Y, right.X - anchor.X) * 180 / Math.PI;
+            using var content = document.EditContent(p);
+            content.Text(anchor.X, anchor.Y, Resolve(document.FilePath, p, document.PageCount), size, PdfColor.Black, angle: angle, align: align);
+            content.Commit();
+        }
+        return count == 0 ? null : count == 1 ? "Text auf 1 Seite gesetzt." : $"Text auf {count} Seiten gesetzt.";
+    }
+}

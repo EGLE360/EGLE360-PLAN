@@ -13,7 +13,7 @@ using Microsoft.Win32;
 namespace Egle360.Desktop.Views;
 
 /// <summary>
-/// Stapelverarbeitung: ein Arbeitsschritt (Stempel, Maßstab) für viele PDF-Dateien, mit Fortschritt, Abbruch und
+/// Stapelverarbeitung: ein Arbeitsschritt (Stempel, Maßstab, Kopf- oder Fußzeile, Drehen, Einbrennen) für viele PDF-Dateien, mit Fortschritt, Abbruch und
 /// Protokoll. Standardmäßig entstehen bearbeitete Kopien in einem Zielordner; die Originale bleiben unverändert.
 /// </summary>
 public sealed class BatchWindow : Window
@@ -23,6 +23,14 @@ public sealed class BatchWindow : Window
     private readonly ListBox _fileList;
     private readonly RadioButton _stampChoice;
     private readonly RadioButton _scaleChoice;
+    private readonly RadioButton _textChoice;
+    private readonly RadioButton _rotateChoice;
+    private readonly RadioButton _flattenChoice;
+    private readonly TextBox _textBox;
+    private readonly Button _positionButton;
+    private readonly Button _turnsButton;
+    private PageEdgePosition _position = PageEdgePosition.BottomRight;
+    private int _turns = 1;
     private readonly Button _stampButton;
     private readonly Button _cornerButton;
     private readonly TextBox _ratioBox;
@@ -96,6 +104,27 @@ public sealed class BatchWindow : Window
         _ratioBox = new TextBox { Style = (Style)FindResource("InputBox"), Width = 90, Text = "50" };
         scaleRow.Children.Add(_ratioBox);
         right.Children.Add(scaleRow);
+        _textChoice = Choice("Kopf- oder Fußzeile setzen", "action", false);
+        right.Children.Add(_textChoice);
+        var textRow = Row();
+        _textBox = new TextBox { Style = (Style)FindResource("InputBox"), Width = 260, Text = "{Datei}, Seite {Seite} von {Seiten}" };
+        _textBox.GotFocus += (_, _) => _textChoice.IsChecked = true;
+        _positionButton = SecondaryButton(HeaderFooterBatchAction.PositionText(_position), (_, _) => ShowPositionMenu());
+        textRow.Children.Add(_textBox);
+        textRow.Children.Add(_positionButton);
+        right.Children.Add(textRow);
+        right.Children.Add(Text("Platzhalter: " + string.Join(", ", HeaderFooterBatchAction.Placeholders) + ". Der Text wird fest in die Seite geschrieben.",
+            "TextSecondary", new Thickness(24, 0, 0, 4)));
+        _rotateChoice = Choice("Seiten drehen", "action", false);
+        right.Children.Add(_rotateChoice);
+        var rotateRow = Row();
+        _turnsButton = SecondaryButton(TurnsText(_turns), (_, _) => ShowTurnsMenu());
+        rotateRow.Children.Add(_turnsButton);
+        right.Children.Add(rotateRow);
+        _flattenChoice = Choice("Markierungen einbrennen", "action", false);
+        right.Children.Add(_flattenChoice);
+        right.Children.Add(Text("Markierungen werden Teil des Planinhalts und lassen sich danach nicht mehr bearbeiten. Kopien empfohlen.",
+            "TextSecondary", new Thickness(24, 0, 0, 4)));
         right.Children.Add(Text("Seiten", "TextSubtitle", new Thickness(0, 16, 0, 0)));
         _firstPage = Choice("Nur erste Seite", "pages", true);
         right.Children.Add(_firstPage);
@@ -176,7 +205,7 @@ public sealed class BatchWindow : Window
     }
 
     private TextBlock Text(string text, string style, Thickness? margin = null) =>
-        new() { Text = text, Style = (Style)FindResource(style), Margin = margin ?? new Thickness(0, 0, 0, 4) };
+        new() { Text = text, Style = (Style)FindResource(style), Margin = margin ?? new Thickness(0, 0, 0, 4), TextWrapping = TextWrapping.Wrap };
 
     private RadioButton Choice(string text, string group, bool isChecked) =>
         new() { Content = text, GroupName = group, IsChecked = isChecked, Style = (Style)FindResource("ChoiceRadio") };
@@ -298,6 +327,47 @@ public sealed class BatchWindow : Window
         menu.IsOpen = true;
     }
 
+    private static string TurnsText(int turns) => turns switch
+    {
+        2 => "180°",
+        3 => "90° gegen den Uhrzeigersinn",
+        _ => "90° im Uhrzeigersinn",
+    };
+
+    private void ShowTurnsMenu()
+    {
+        var menu = new ContextMenu { PlacementTarget = _turnsButton, Placement = PlacementMode.Bottom };
+        foreach (var turns in new[] { 1, 2, 3 })
+        {
+            var item = new MenuItem { Header = TurnsText(turns), IsCheckable = true, IsChecked = turns == _turns };
+            item.Click += (_, _) =>
+            {
+                _turns = turns;
+                _turnsButton.Content = TurnsText(turns);
+                _rotateChoice.IsChecked = true;
+            };
+            menu.Items.Add(item);
+        }
+        menu.IsOpen = true;
+    }
+
+    private void ShowPositionMenu()
+    {
+        var menu = new ContextMenu { PlacementTarget = _positionButton, Placement = PlacementMode.Bottom };
+        foreach (var position in Enum.GetValues<PageEdgePosition>())
+        {
+            var item = new MenuItem { Header = HeaderFooterBatchAction.PositionText(position), IsCheckable = true, IsChecked = position == _position };
+            item.Click += (_, _) =>
+            {
+                _position = position;
+                _positionButton.Content = HeaderFooterBatchAction.PositionText(position);
+                _textChoice.IsChecked = true;
+            };
+            menu.Items.Add(item);
+        }
+        menu.IsOpen = true;
+    }
+
     /// <summary>Arbeitsschritt aus den Eingaben; null mit Hinweis in der Statuszeile, wenn etwas fehlt.</summary>
     private IBatchAction? BuildAction()
     {
@@ -310,6 +380,23 @@ public sealed class BatchWindow : Window
                 return null;
             }
             return new ScaleBatchAction(MeasureScale.FromRatio(ratio), pages);
+        }
+        if (_textChoice.IsChecked == true)
+        {
+            if (string.IsNullOrWhiteSpace(_textBox.Text))
+            {
+                _status.Text = "Bitte einen Text für die Kopf- oder Fußzeile eingeben.";
+                return null;
+            }
+            return new HeaderFooterBatchAction(_textBox.Text.Trim(), _position, 9, pages);
+        }
+        if (_rotateChoice.IsChecked == true)
+        {
+            return new RotateBatchAction(_turns, pages);
+        }
+        if (_flattenChoice.IsChecked == true)
+        {
+            return new FlattenBatchAction();
         }
         return new StampBatchAction(_stamp, Environment.UserName, pages, _corner, new WpfTextOutliner());
     }

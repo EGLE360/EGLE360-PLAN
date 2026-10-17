@@ -280,6 +280,38 @@ public sealed unsafe partial class PdfDocument : IDisposable
         PagesChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>
+    /// Brennt die sichtbaren Markierungen einer Seite in den Seiteninhalt ein; danach sind sie nicht mehr bearbeitbar.
+    /// Verborgene Anmerkungen (etwa der Maßstab) bleiben erhalten. False, wenn die Seite keine Markierungen hatte.
+    /// </summary>
+    public bool FlattenMarkups(int index)
+    {
+        bool done;
+        lock (PdfiumLibrary.Sync)
+        {
+            EnsureCanModify();
+            CheckIndex(index);
+            var result = Pdfium.FPDFPage_Flatten(GetPage(index), 0);
+            if (result == 0)
+            {
+                throw new PdfException(PdfErrorKind.Unknown, $"Die Markierungen auf Seite {index + 1} konnten nicht eingebrannt werden.");
+            }
+            done = result == 1;
+            if (done)
+            {
+                // PDFium liest den geänderten Seiteninhalt erst beim nächsten Laden der Seite.
+                ClosePages();
+                _markups.Remove(index);
+                IsModified = true;
+            }
+        }
+        if (done)
+        {
+            PagesChanged?.Invoke(this, EventArgs.Empty);
+        }
+        return done;
+    }
+
     public void DeletePage(int index)
     {
         lock (PdfiumLibrary.Sync)

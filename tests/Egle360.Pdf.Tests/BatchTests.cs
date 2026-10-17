@@ -112,4 +112,76 @@ public class BatchTests
     {
         public void Report(BatchProgress value) => report(value);
     }
+
+    [Fact]
+    public void Seiten_drehen()
+    {
+        using var dir = new TempDir();
+        using var doc = PdfDocument.Open(Blank(dir, "a.pdf", pages: 2));
+        Assert.Equal("2 Seiten gedreht.", new RotateBatchAction(1, BatchPages.All).Apply(doc));
+        Assert.Equal([90, 90], [doc.GetPageRotation(0), doc.GetPageRotation(1)]);
+        Assert.Equal("1 Seite gedreht.", new RotateBatchAction(-1, BatchPages.First).Apply(doc));
+        Assert.Equal([0, 90], [doc.GetPageRotation(0), doc.GetPageRotation(1)]);
+        Assert.Null(new RotateBatchAction(4, BatchPages.All).Apply(doc));
+    }
+
+    [Fact]
+    public void Markierungen_einbrennen_behaelt_den_Massstab()
+    {
+        using var dir = new TempDir();
+        using var doc = PdfDocument.Open(Blank(dir, "a.pdf"));
+        var scale = MeasureScale.FromRatio(100);
+        doc.SetPageScale(0, scale);
+        var box = Markup.Create(MarkupKind.Rectangle, [[new PdfPoint(100, 100), new PdfPoint(300, 250)]],
+            MarkupStyle.DefaultFor(MarkupKind.Rectangle) with { Stroke = PdfColor.Black, LineWidth = 4 }, "Prüfer");
+        doc.SetMarkups(0, [box], Text);
+        using (var empty = PdfDocument.Open(Blank(dir, "leer.pdf")))
+        {
+            Assert.Null(new FlattenBatchAction().Apply(empty));
+        }
+
+        Assert.Equal("Markierungen auf 1 Seite eingebrannt.", new FlattenBatchAction().Apply(doc));
+        Assert.Empty(doc.GetMarkups(0));
+        Assert.Equal(scale.MetersPerPoint, doc.GetPageScale(0)!.MetersPerPoint, 9);
+        // Das Rechteck ist jetzt Seiteninhalt: auch ohne Anmerkungen gerendert dunkel.
+        var (w, h) = doc.PagePixelSize(0, 1);
+        var pixels = new byte[w * h * 4];
+        doc.Render(0, 1, new PixelRect(0, 0, w, h), pixels, w * 4, annotations: false);
+        var i = ((400 - 100) * w + 200) * 4;
+        Assert.True(pixels[i] < 128, $"Pixel {pixels[i]}");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(90)]
+    public void Kopf_und_Fusszeile_mit_Platzhaltern(int rotation)
+    {
+        using var dir = new TempDir();
+        using var doc = PdfDocument.Open(Blank(dir, "Grundriss EG.pdf", pages: 2, rotation: rotation));
+        var action = new HeaderFooterBatchAction("{Datei} Seite {Seite} von {Seiten}, {Datum}", PageEdgePosition.BottomRight, 9, BatchPages.All,
+            new DateTime(2026, 10, 17));
+        Assert.Equal("Text auf 2 Seiten gesetzt.", action.Apply(doc));
+        Assert.Contains("Grundriss EG Seite 2 von 2, 17.10.2026", doc.GetPageText(1));
+
+        // Der Text steht unten rechts, wie die Seite angezeigt wird, und aufrecht.
+        var t = doc.GetPageTransform(0);
+        var (w, h) = doc.PagePixelSize(0, 1);
+        var pixels = new byte[w * h * 4];
+        doc.Render(0, 1, new PixelRect(0, 0, w, h), pixels, w * 4, annotations: false);
+        int minX = w, minY = h, maxX = -1, maxY = -1;
+        for (var y = 0; y < h; y++)
+        {
+            for (var x = 0; x < w; x++)
+            {
+                if (pixels[(y * w + x) * 4] < 128)
+                {
+                    (minX, minY, maxX, maxY) = (Math.Min(minX, x), Math.Min(minY, y), Math.Max(maxX, x), Math.Max(maxY, y));
+                }
+            }
+        }
+        Assert.InRange(maxX, w - HeaderFooterBatchAction.Margin - 3, w - HeaderFooterBatchAction.Margin + 1);
+        Assert.InRange(maxY, h - HeaderFooterBatchAction.Margin - 1, h - HeaderFooterBatchAction.Margin + 4);
+        Assert.True(maxX - minX > 4 * (maxY - minY), $"{minX},{minY} bis {maxX},{maxY}");
+        Assert.Equal(t.DisplayWidth, w, 0);
+    }
 }

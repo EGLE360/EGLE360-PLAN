@@ -75,8 +75,13 @@ public sealed unsafe class PdfContentWriter : IDisposable
         return this;
     }
 
-    /// <summary>Text in einer der 14 Standardschriften (z. B. „Helvetica“), Grundlinie bei (x, y).</summary>
-    public PdfContentWriter Text(double x, double y, string text, double size, PdfColor color, string font = "Helvetica")
+    /// <summary>
+    /// Text in einer der 14 Standardschriften (z. B. „Helvetica“), Grundlinie bei (x, y). <paramref name="angle"/> dreht
+    /// gegen den Uhrzeigersinn in Grad um (x, y); <paramref name="align"/> legt fest, ob (x, y) Anfang, Mitte oder Ende
+    /// der Zeile ist.
+    /// </summary>
+    public PdfContentWriter Text(double x, double y, string text, double size, PdfColor color, string font = "Helvetica",
+        double angle = 0, PdfTextAlign align = PdfTextAlign.Left)
     {
         lock (PdfiumLibrary.Sync)
         {
@@ -95,7 +100,18 @@ public sealed unsafe class PdfContentWriter : IDisposable
                 Pdfium.FPDFText_SetText(obj, t);
             }
             Pdfium.FPDFPageObj_SetFillColor(obj, color.R, color.G, color.B, color.A);
-            Pdfium.FPDFPageObj_Transform(obj, 1, 0, 0, 1, x, y);
+            double shift = 0;
+            if (align != PdfTextAlign.Left)
+            {
+                float l, b, r, tp;
+                if (Pdfium.FPDFPageObj_GetBounds(obj, &l, &b, &r, &tp) != 0)
+                {
+                    shift = align == PdfTextAlign.Center ? (r - l) / 2 : r - l;
+                }
+            }
+            var cos = Math.Cos(angle * Math.PI / 180);
+            var sin = Math.Sin(angle * Math.PI / 180);
+            Pdfium.FPDFPageObj_Transform(obj, cos, sin, -sin, cos, x - cos * shift, y - sin * shift);
             Pdfium.FPDFPage_InsertObject(Page, obj);
         }
         return this;
@@ -134,3 +150,12 @@ public sealed unsafe class PdfContentWriter : IDisposable
         Pdfium.FPDFPageObj_SetStrokeWidth(obj, (float)width);
     }
 }
+
+/// <summary>Bezugspunkt einer Textzeile.</summary>
+public enum PdfTextAlign
+{
+    Left,
+    Center,
+    Right,
+}
+

@@ -194,8 +194,12 @@ internal static unsafe class Pdfium
     [DllImport(Lib, ExactSpelling = true)] public static extern nint FPDFPageObj_NewImageObj(nint document);
     [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFImageObj_SetBitmap(nint* pages, int count, nint imageObject, nint bitmap);
     [DllImport(Lib, ExactSpelling = true)] public static extern void FPDFPageObj_Destroy(nint obj);
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPageObj_GetBounds(nint obj, float* left, float* bottom, float* right, float* top);
     [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFAnnot_AppendObject(nint annot, nint obj);
     [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPage_GenerateContent(nint page);
+
+    /// <summary>Brennt die sichtbaren Anmerkungen einer Seite in den Seiteninhalt ein. 0 Fehler, 1 erledigt, 2 nichts zu tun.</summary>
+    [DllImport(Lib, ExactSpelling = true)] public static extern int FPDFPage_Flatten(nint page, int flag);
 
     // Text lesen
     // Seitenobjekte lesen (Objektfang)
