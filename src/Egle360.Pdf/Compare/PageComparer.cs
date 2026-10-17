@@ -111,6 +111,33 @@ public static class PageComparer
         return new PageComparison(w, h, scale, overlay, changes, changed, dx, dy);
     }
 
+    /// <summary>
+    /// Kopie der Überlagerung, in der ausgeblendete Kategorien weiß sind: nur im alten Stand (rot), nur im neuen
+    /// (blau), unverändert (grau).
+    /// </summary>
+    public static byte[] Filter(byte[] overlay, bool showOld, bool showNew, bool showSame)
+    {
+        var result = (byte[])overlay.Clone();
+        if (showOld && showNew && showSame)
+        {
+            return result;
+        }
+        static bool Is(byte[] o, int i, PdfColor c) => o[i] == c.B && o[i + 1] == c.G && o[i + 2] == c.R;
+        var pixels = result.Length / 4;
+        Parallel.For(0, (pixels + 65535) / 65536, chunk =>
+        {
+            for (var p = chunk * 65536; p < Math.Min(pixels, (chunk + 1) * 65536); p++)
+            {
+                var i = p * 4;
+                if ((!showOld && Is(result, i, OldOnly)) || (!showNew && Is(result, i, NewOnly)) || (!showSame && Is(result, i, Same)))
+                {
+                    result[i] = result[i + 1] = result[i + 2] = 255;
+                }
+            }
+        });
+        return result;
+    }
+
     private static byte[] Render(PdfDocument doc, int page, double scale, int w, int h)
     {
         var buffer = new byte[w * h * 4];

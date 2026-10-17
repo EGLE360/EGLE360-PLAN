@@ -98,4 +98,17 @@ public class CompareTests
         using var same = Plan(false);
         Assert.Equal((0, 0), (PageComparer.Compare(a, 0, same, 0, 1, align: true).OffsetX, PageComparer.Compare(a, 0, same, 0, 1, align: true).OffsetY));
     }
+
+    [Fact]
+    public void Kategorien_lassen_sich_ausblenden()
+    {
+        byte[] Px(PdfColor c) => [c.B, c.G, c.R, 255];
+        var overlay = new[] { PageComparer.OldOnly, PageComparer.NewOnly, PageComparer.Same, PdfColor.White }.SelectMany(Px).ToArray();
+        var onlyNew = PageComparer.Filter(overlay, showOld: false, showNew: true, showSame: false);
+        Assert.Equal([255, 255, 255, 255], onlyNew[0..4]);
+        Assert.Equal(Px(PageComparer.NewOnly), onlyNew[4..8]);
+        Assert.Equal([255, 255, 255, 255], onlyNew[8..12]);
+        Assert.Equal(overlay, PageComparer.Filter(overlay, true, true, true));
+        Assert.Equal(Px(PageComparer.OldOnly), overlay[0..4]); // Original bleibt unverändert
+    }
 }

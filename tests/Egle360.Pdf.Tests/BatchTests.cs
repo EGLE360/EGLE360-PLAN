@@ -28,7 +28,7 @@ public class BatchTests
         new(StampPreset.Defaults[0], "Prüfer", pages, PageCorner.TopRight, Text);
 
     [Fact]
-    public void Stempel_in_Kopien_mit_Protokoll_und_Fortsetzen()
+    public async Task Stempel_in_Kopien_mit_Protokoll_und_Fortsetzen()
     {
         using var dir = new TempDir();
         var a = Blank(dir, "a.pdf", pages: 2);
@@ -39,8 +39,8 @@ public class BatchTests
         var output = dir.File("ausgabe");
         var seen = new List<BatchProgress>();
 
-        var report = BatchRunner.RunAsync([a, b, broken, missing], Stamp(BatchPages.All), new BatchOptions(output), new SyncProgress(seen.Add), default)
-            .GetAwaiter().GetResult();
+        var report = await BatchRunner.RunAsync([a, b, broken, missing], Stamp(BatchPages.All), new BatchOptions(output), new SyncProgress(seen.Add), default)
+            ;
 
         Assert.Equal([BatchStatus.Done, BatchStatus.Done, BatchStatus.Failed, BatchStatus.Failed], report.Entries.Select(e => e.Status));
         Assert.Equal("2 bearbeitet, 2 Fehler", report.Summary);
@@ -57,22 +57,22 @@ public class BatchTests
         }
 
         // Zweiter Lauf: bereits erledigte Dateien werden übersprungen.
-        var again = BatchRunner.RunAsync([a, b], Stamp(), new BatchOptions(output), null, default).GetAwaiter().GetResult();
+        var again = await BatchRunner.RunAsync([a, b], Stamp(), new BatchOptions(output), null, default);
         Assert.All(again.Entries, e => Assert.Equal(BatchStatus.Skipped, e.Status));
 
         // Zielordner gleich Quellordner wird abgelehnt.
-        var same = BatchRunner.RunAsync([a], Stamp(), new BatchOptions(dir.Path), null, default).GetAwaiter().GetResult();
+        var same = await BatchRunner.RunAsync([a], Stamp(), new BatchOptions(dir.Path), null, default);
         Assert.Equal(BatchStatus.Failed, same.Entries[0].Status);
     }
 
     [Fact]
-    public void Abbruch_markiert_die_restlichen_Dateien()
+    public async Task Abbruch_markiert_die_restlichen_Dateien()
     {
         using var dir = new TempDir();
         var files = Enumerable.Range(0, 3).Select(i => Blank(dir, $"p{i}.pdf")).ToList();
         using var cancel = new CancellationTokenSource();
-        var report = BatchRunner.RunAsync(files, Stamp(), new BatchOptions(null), null, cancel.Token,
-            between: () => { cancel.Cancel(); return Task.CompletedTask; }).GetAwaiter().GetResult();
+        var report = await BatchRunner.RunAsync(files, Stamp(), new BatchOptions(null), null, cancel.Token,
+            between: () => { cancel.Cancel(); return Task.CompletedTask; });
         Assert.Equal([BatchStatus.Done, BatchStatus.Cancelled, BatchStatus.Cancelled], report.Entries.Select(e => e.Status));
         // Ohne Zielordner wird das Original bearbeitet.
         using var doc = PdfDocument.Open(files[0]);
@@ -95,15 +95,15 @@ public class BatchTests
     }
 
     [Fact]
-    public void Massstab_fuer_alle_Seiten_nur_wo_noetig()
+    public async Task Massstab_fuer_alle_Seiten_nur_wo_noetig()
     {
         using var dir = new TempDir();
         var path = Blank(dir, "m.pdf", pages: 3);
         var scale = MeasureScale.FromRatio(100);
         var action = new ScaleBatchAction(scale, BatchPages.All);
-        var first = BatchRunner.RunAsync([path], action, new BatchOptions(null), null, default).GetAwaiter().GetResult();
+        var first = await BatchRunner.RunAsync([path], action, new BatchOptions(null), null, default);
         Assert.Equal("Maßstab 1:100 für 3 Seiten gesetzt.", first.Entries[0].Message);
-        var second = BatchRunner.RunAsync([path], action, new BatchOptions(null), null, default).GetAwaiter().GetResult();
+        var second = await BatchRunner.RunAsync([path], action, new BatchOptions(null), null, default);
         Assert.Equal(BatchStatus.Unchanged, second.Entries[0].Status);
     }
 

@@ -30,6 +30,9 @@ public sealed class CompareWindow : Window
     private readonly Button _cloudButton;
     private readonly Button _prev;
     private readonly Button _next;
+    private readonly CheckBox _showOld;
+    private readonly CheckBox _showNew;
+    private readonly CheckBox _showSame;
     private int _page;
     private PageComparison? _result;
 
@@ -78,9 +81,12 @@ public sealed class CompareWindow : Window
         Tool("", "Vergrößern", (_, _) => SetZoom(_zoom.ScaleX * 1.25));
         Tool("", "Ganze Seite", (_, _) => FitPage());
         bar.Children.Add(new Border { Style = (Style)FindResource("ToolSeparator") });
-        bar.Children.Add(Legend(PageComparer.OldOnly, $"nur in {oldLabel}"));
-        bar.Children.Add(Legend(PageComparer.NewOnly, $"nur in {newLabel}"));
-        bar.Children.Add(Legend(PageComparer.Same, "unverändert"));
+        _showOld = Legend(PageComparer.OldOnly, $"nur in {oldLabel}");
+        _showNew = Legend(PageComparer.NewOnly, $"nur in {newLabel}");
+        _showSame = Legend(PageComparer.Same, "unverändert");
+        bar.Children.Add(_showOld);
+        bar.Children.Add(_showNew);
+        bar.Children.Add(_showSame);
         bar.Children.Add(_status);
         _cloudButton = new Button { Style = (Style)FindResource("ButtonPrimary"), Content = $"Änderungen als Wolken in {newLabel} eintragen", Margin = new Thickness(4, 0, 4, 0) };
         _cloudButton.Click += (_, _) => AddClouds();
@@ -111,14 +117,30 @@ public sealed class CompareWindow : Window
 
     private int PageCount => Math.Min(_old.PageCount, _new.PageCount);
 
-    private StackPanel Legend(PdfColor color, string text)
+    /// <summary>Legendeneintrag, zugleich Schalter zum Ein- und Ausblenden der Kategorie.</summary>
+    private CheckBox Legend(PdfColor color, string text)
     {
-        var panel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(8, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
+        var box = new CheckBox { IsChecked = true, Margin = new Thickness(8, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = "Ein- oder ausblenden" };
+        box.Click += (_, _) => RefreshImage();
+        var panel = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+        box.Content = panel;
         panel.Children.Add(new Rectangle { Width = 12, Height = 12, Fill = new SolidColorBrush(Color.FromRgb(color.R, color.G, color.B)), Margin = new Thickness(0, 0, 6, 0) });
         var label = new TextBlock { Text = text };
         label.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
         panel.Children.Add(label);
-        return panel;
+        return box;
+    }
+
+    private void RefreshImage()
+    {
+        if (_result is null)
+        {
+            return;
+        }
+        var pixels = PageComparer.Filter(_result.Overlay, _showOld.IsChecked == true, _showNew.IsChecked == true, _showSame.IsChecked == true);
+        var bitmap = BitmapSource.Create(_result.Width, _result.Height, 96, 96, PixelFormats.Bgra32, null, pixels, _result.Width * 4);
+        bitmap.Freeze();
+        _image.Source = bitmap;
     }
 
     private void ShowPage(int page)
@@ -140,9 +162,7 @@ public sealed class CompareWindow : Window
         {
             Mouse.OverrideCursor = null;
         }
-        var bitmap = BitmapSource.Create(_result.Width, _result.Height, 96, 96, PixelFormats.Bgra32, null, _result.Overlay, _result.Width * 4);
-        bitmap.Freeze();
-        _image.Source = bitmap;
+        RefreshImage();
         _pageText.Text = $"Seite {_page + 1} von {PageCount}";
         _prev.IsEnabled = _page > 0;
         _next.IsEnabled = _page < PageCount - 1;

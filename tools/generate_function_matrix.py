@@ -536,7 +536,7 @@ STATUS = {
     "PLAN-004": "Umgesetzt (Phase 5, Teil 3): jeder Index bleibt als eigene Datei erhalten und lässt sich öffnen",
     "PLAN-007": "Teilweise (Phase 5, Teil 3): Vorschlagsliste mit Gewerkkürzeln, frei änderbar",
     "CMP-001": "Teilweise (Phase 6, Teil 1): Seitenweiser Vergleich zweier Stände, Änderungen als Wolken im neuen Stand; stapelweise offen",
-    "CMP-002": "Teilweise (Phase 6, Teil 1): Überlagerung rot (alt), blau (neu), grau (gleich); Ebenen und Transparenz offen",
+    "CMP-002": "Teilweise (Phase 6): Überlagerung rot (alt), blau (neu), grau (gleich), jede Farbe ein- und ausblendbar; eigene Farben und Transparenz offen",
     "QTO-008": "Umgesetzt (Phase 5): Neigung in Prozent bei Länge, Polylänge und Fläche; geneigte Länge oder Fläche und Höhenunterschied in Liste und Export. Ob die Rechenweise der Referenz entspricht, ist ungeprüft",
     "MKP-TOOL-025": "Umgesetzt (Phase 5): Bild aus Datei oder Zwischenablage, gezeichnetes Unterschriftsbild (keine digitale Signatur), speicherbar in der Werkzeugbibliothek; Scanner offen",
     "AUTO-001": "Teilweise (Phase 6): Stapellauf mit Fortschritt, Protokoll, Abbruch und Fortsetzen über bereits erledigte Kopien; bisher Schritte Stempel und Maßstab",
