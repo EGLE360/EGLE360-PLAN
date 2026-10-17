@@ -134,7 +134,7 @@ public sealed class CompareWindow : Window
         try
         {
             var scale = PageComparer.ScaleFor(_old, _page, _new, _page);
-            _result = PageComparer.Compare(_old, _page, _new, _page, scale);
+            _result = PageComparer.Compare(_old, _page, _new, _page, scale, align: true);
         }
         finally
         {
@@ -154,6 +154,11 @@ public sealed class CompareWindow : Window
             >= PageComparer.MaxChanges => $"Mehr als {PageComparer.MaxChanges} geänderte Bereiche, die größten werden gezeigt.",
             _ => $"{n} geänderte Bereiche.",
         };
+        if (_result.OffsetX != 0 || _result.OffsetY != 0)
+        {
+            var (mx, my) = _result.OffsetMillimeters;
+            _status.Text += $" Der neue Stand ist um {mx:0.#} mm waagerecht und {my:0.#} mm senkrecht verschoben, das wurde ausgeglichen.";
+        }
         _cloudButton.IsEnabled = n > 0 && _new.CanAnnotate;
         FitPage();
     }

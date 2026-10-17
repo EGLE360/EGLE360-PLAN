@@ -537,6 +537,7 @@ STATUS = {
     "PLAN-007": "Teilweise (Phase 5, Teil 3): Vorschlagsliste mit Gewerkkürzeln, frei änderbar",
     "CMP-001": "Teilweise (Phase 6, Teil 1): Seitenweiser Vergleich zweier Stände, Änderungen als Wolken im neuen Stand; stapelweise offen",
     "CMP-002": "Teilweise (Phase 6, Teil 1): Überlagerung rot (alt), blau (neu), grau (gleich); Ebenen und Transparenz offen",
+    "CMP-003": "Teilweise (Phase 6, Teil 1): Verschiebung wird automatisch erkannt und ausgeglichen; Drehung, Maßstab und manuelle Ausrichtung offen",
     "TOOL-001": "Umgesetzt (Phase 5, Teil 3): Werkzeugsätze in der Seitenleiste, Werkzeug aus Markierung speichern, bleibt beim Zeichnen aktiv",
     "TOOL-003": "Teilweise (Phase 5, Teil 3): Import und Export im eigenen Format e360-tools (JSON); BTX-Import offen",
     "TOOL-004": "Umgesetzt (Phase 5, Teil 3): Suche nach Name, Satz und Art; Favoriten zuerst",

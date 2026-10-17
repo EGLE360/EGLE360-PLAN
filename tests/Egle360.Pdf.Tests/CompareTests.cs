@@ -6,17 +6,19 @@ namespace Egle360.Pdf.Tests;
 /// <summary>Vergleich zweier Planstände.</summary>
 public class CompareTests
 {
-    private static PdfDocument Plan(bool withExtraWall, int rotation = 0)
+    private static PdfDocument Plan(bool withExtraWall, int rotation = 0, double ox = 0, double oy = 0)
     {
         var doc = PdfDocument.CreateNew();
         doc.InsertBlankPage(0, 600, 400);
         using (var c = doc.EditContent(0))
         {
-            c.Rectangle(50, 50, 500, 300, PdfColor.Black, null, 2);
-            c.Text(60, 360, "Grundriss", 14, PdfColor.Black);
+            c.Rectangle(50 + ox, 50 + oy, 500, 300, PdfColor.Black, null, 2);
+            c.Line(50 + ox, 250 + oy, 200 + ox, 250 + oy, PdfColor.Black, 1);
+            c.Line(120 + ox, 50 + oy, 120 + ox, 250 + oy, PdfColor.Black, 1);
+            c.Text(60 + ox, 360 + oy, "Grundriss", 14, PdfColor.Black);
             if (withExtraWall)
             {
-                c.Line(300, 50, 300, 200, PdfColor.Black, 3);
+                c.Line(300 + ox, 50 + oy, 300 + ox, 200 + oy, PdfColor.Black, 3);
             }
             c.Commit();
         }
@@ -75,5 +77,25 @@ public class CompareTests
         Assert.Equal(400, result.Width);
         var change = Assert.Single(result.Changes);
         Assert.True(change.Contains(new PdfPoint(300, 120)), change.ToString());
+    }
+
+    [Fact]
+    public void Verschobener_Plan_wird_ausgerichtet()
+    {
+        using var a = Plan(false);
+        using var b = Plan(true, ox: 17, oy: -9);
+        var plain = PageComparer.Compare(a, 0, b, 0, 1);
+        var aligned = PageComparer.Compare(a, 0, b, 0, 1, align: true);
+        // Ohne Ausrichtung erscheint der ganze Plan als geändert.
+        Assert.True(plain.ChangedPixels > 5 * aligned.ChangedPixels, $"{plain.ChangedPixels} / {aligned.ChangedPixels}");
+        // Neuer Inhalt liegt 17 pt weiter rechts und 9 pt weiter unten (Pixel nach unten positiv).
+        Assert.Equal(17, aligned.OffsetX);
+        Assert.Equal(9, aligned.OffsetY);
+        var change = Assert.Single(aligned.Changes);
+        // Die Wolke gehört in den neuen Stand: Wand bei x = 317, y = 41 bis 191.
+        Assert.True(change.Contains(new PdfPoint(317, 110)), change.ToString());
+
+        using var same = Plan(false);
+        Assert.Equal((0, 0), (PageComparer.Compare(a, 0, same, 0, 1, align: true).OffsetX, PageComparer.Compare(a, 0, same, 0, 1, align: true).OffsetY));
     }
 }
