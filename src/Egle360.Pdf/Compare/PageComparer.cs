@@ -11,8 +11,11 @@ namespace Egle360.Pdf.Compare;
 /// <param name="OffsetX">Ausgeglichene Verschiebung des neuen Stands gegenüber dem alten in Pixeln (nach rechts positiv).</param>
 /// <param name="OffsetY">Ausgeglichene Verschiebung in Pixeln (nach unten positiv).</param>
 public sealed record PageComparison(int Width, int Height, double Scale, byte[] Overlay, IReadOnlyList<PdfRect> Changes, long ChangedPixels,
-    int OffsetX = 0, int OffsetY = 0)
+    int OffsetX = 0, int OffsetY = 0, PageAlignment? Alignment = null)
 {
+    /// <summary>Von Hand gesetzte Ausrichtung, falls verwendet; sonst null.</summary>
+    public PageAlignment? Manual { get; init; }
+
     /// <summary>Verschiebung auf dem Papier in Millimetern (x nach rechts, y nach unten).</summary>
     public (double X, double Y) OffsetMillimeters => (OffsetX / Scale * 25.4 / 72, OffsetY / Scale * 25.4 / 72);
 
@@ -22,7 +25,8 @@ public sealed record PageComparison(int Width, int Height, double Scale, byte[] 
 /// <summary>
 /// Vergleicht zwei Planstände pixelweise. Beide Seiten werden ohne Anmerkungen gerendert und übereinandergelegt. Auf
 /// Wunsch wird eine Verschiebung des Planinhalts zwischen den Ständen gesucht und ausgeglichen (nur Verschiebung, keine
-/// Drehung und kein anderer Maßstab).
+/// Drehung und kein anderer Maßstab). Eine von Hand über Passpunkte gesetzte Ausrichtung kann zusätzlich drehen und
+/// skalieren.
 /// In der Überlagerung erscheint nur im alten Stand Vorhandenes rot, nur im neuen Stand Vorhandenes blau und
 /// Unverändertes grau.
 /// </summary>
@@ -50,7 +54,9 @@ public static class PageComparer
         return Math.Clamp(Math.Sqrt(maxPixels / area), 0.25, 2);
     }
 
-    public static PageComparison Compare(PdfDocument oldDoc, int oldPage, PdfDocument newDoc, int newPage, double scale, bool align = false)
+    /// <param name="manual">Von Hand gesetzte Ausrichtung; hat Vorrang vor <paramref name="align"/>.</param>
+    public static PageComparison Compare(PdfDocument oldDoc, int oldPage, PdfDocument newDoc, int newPage, double scale, bool align = false,
+        PageAlignment? manual = null)
     {
         var (wo, ho) = oldDoc.PagePixelSize(oldPage, scale);
         var (wn, hn) = newDoc.PagePixelSize(newPage, scale);
@@ -64,7 +70,21 @@ public static class PageComparer
         // nicht als Änderung.
         var nearA = Dilate(a, wo, ho);
         var nearB = Dilate(b, wn, hn);
-        var (dx, dy) = align ? FindOffset(imageA, a, nearA, wo, ho, imageB, b, nearB, wn, hn) : (0, 0);
+        int dx = 0, dy = 0;
+        PageAlignment applied;
+        if (manual is { IsTranslation: false })
+        {
+            // Drehung oder Maßstab: den neuen Stand ins Pixelraster des alten umrechnen, danach ohne Versatz vergleichen.
+            (b, nearB) = Warp(b, nearB, wn, hn, w, h, manual, scale);
+            (wn, hn) = (w, h);
+            applied = manual;
+        }
+        else
+        {
+            (dx, dy) = manual is not null ? ((int)Math.Round(manual.E * scale), (int)Math.Round(manual.F * scale))
+                : align ? FindOffset(imageA, a, nearA, wo, ho, imageB, b, nearB, wn, hn) : (0, 0);
+            applied = PageAlignment.Translation(dx / scale, dy / scale);
+        }
 
         var overlay = new byte[w * h * 4];
         var cols = (w + Cell - 1) / Cell;
@@ -105,10 +125,10 @@ public static class PageComparer
         var boxes = Regions(cellCounts, cols, rows);
         var transform = newDoc.GetPageTransform(newPage);
         var changes = boxes
-            .Select(r => ToUser(transform, r, scale, w, h, dx, dy))
+            .Select(r => ToUser(transform, r, scale, w, h, applied))
             .Take(MaxChanges)
             .ToList();
-        return new PageComparison(w, h, scale, overlay, changes, changed, dx, dy);
+        return new PageComparison(w, h, scale, overlay, changes, changed, dx, dy, applied) { Manual = manual };
     }
 
     /// <summary>
@@ -416,18 +436,46 @@ public static class PageComparer
         return [.. boxes.OrderByDescending(b => (b.X1 - b.X0 + 1) * (b.Y1 - b.Y0 + 1))];
     }
 
-    private static PdfRect ToUser(PageTransform t, (int X0, int Y0, int X1, int Y1) cells, double scale, int w, int h, int dx, int dy)
+    /// <summary>
+    /// Neuer Stand im Pixelraster des alten (w × h): je Zielpixel der nächstgelegene Pixel des neuen Stands an der
+    /// abgebildeten Stelle.
+    /// </summary>
+    private static (bool[] Ink, bool[] Near) Warp(bool[] ink, bool[] near, int wb, int hb, int w, int h, PageAlignment m, double scale)
+    {
+        var resultInk = new bool[w * h];
+        var resultNear = new bool[w * h];
+        Parallel.For(0, h, y =>
+        {
+            var v = (y + 0.5) / scale;
+            for (var x = 0; x < w; x++)
+            {
+                var (u2, v2) = m.Map((x + 0.5) / scale, v);
+                var bx = (int)Math.Floor(u2 * scale);
+                var by = (int)Math.Floor(v2 * scale);
+                if (bx >= 0 && by >= 0 && bx < wb && by < hb)
+                {
+                    resultInk[y * w + x] = ink[by * wb + bx];
+                    resultNear[y * w + x] = near[by * wb + bx];
+                }
+            }
+        });
+        return (resultInk, resultNear);
+    }
+
+    private static PdfRect ToUser(PageTransform t, (int X0, int Y0, int X1, int Y1) cells, double scale, int w, int h, PageAlignment m)
     {
         // Etwas Rand, damit die Wolke die Änderung umschließt statt sie zu berühren. Die Zellen liegen im Raster des
-        // alten Stands; die Wolke gehört in den neuen, also um die Verschiebung versetzt.
+        // alten Stands; die Wolke gehört in den neuen, also über die Ausrichtung abgebildet.
         const int pad = 6;
-        var u0 = (Math.Max(0, cells.X0 * Cell - pad) + dx) / scale;
-        var v0 = (Math.Max(0, cells.Y0 * Cell - pad) + dy) / scale;
-        var u1 = (Math.Min(w, (cells.X1 + 1) * Cell + pad) + dx) / scale;
-        var v1 = (Math.Min(h, (cells.Y1 + 1) * Cell + pad) + dy) / scale;
-        var p = t.ToUser(u0, v0);
-        var q = t.ToUser(u1, v1);
-        return PdfRect.FromPoints(p, q);
+        var u0 = Math.Max(0, cells.X0 * Cell - pad) / scale;
+        var v0 = Math.Max(0, cells.Y0 * Cell - pad) / scale;
+        var u1 = Math.Min(w, (cells.X1 + 1) * Cell + pad) / scale;
+        var v1 = Math.Min(h, (cells.Y1 + 1) * Cell + pad) / scale;
+        var corners = new[] { (u0, v0), (u1, v0), (u1, v1), (u0, v1) }
+            .Select(c => m.Map(c.Item1, c.Item2))
+            .Select(c => t.ToUser(c.U, c.V))
+            .ToList();
+        return new PdfRect(corners.Min(p => p.X), corners.Min(p => p.Y), corners.Max(p => p.X), corners.Max(p => p.Y));
     }
 
     /// <summary>Wolken um die geänderten Bereiche, zum Eintragen in den neuen Stand.</summary>

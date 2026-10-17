@@ -6,19 +6,19 @@ namespace Egle360.Pdf.Tests;
 /// <summary>Vergleich zweier Planstände.</summary>
 public class CompareTests
 {
-    private static PdfDocument Plan(bool withExtraWall, int rotation = 0, double ox = 0, double oy = 0)
+    private static PdfDocument Plan(bool withExtraWall, int rotation = 0, double ox = 0, double oy = 0, double k = 1)
     {
         var doc = PdfDocument.CreateNew();
         doc.InsertBlankPage(0, 600, 400);
         using (var c = doc.EditContent(0))
         {
-            c.Rectangle(50 + ox, 50 + oy, 500, 300, PdfColor.Black, null, 2);
-            c.Line(50 + ox, 250 + oy, 200 + ox, 250 + oy, PdfColor.Black, 1);
-            c.Line(120 + ox, 50 + oy, 120 + ox, 250 + oy, PdfColor.Black, 1);
-            c.Text(60 + ox, 360 + oy, "Grundriss", 14, PdfColor.Black);
+            c.Rectangle(k * 50 + ox, k * 50 + oy, k * 500, k * 300, PdfColor.Black, null, 2);
+            c.Line(k * 50 + ox, k * 250 + oy, k * 200 + ox, k * 250 + oy, PdfColor.Black, 1);
+            c.Line(k * 120 + ox, k * 50 + oy, k * 120 + ox, k * 250 + oy, PdfColor.Black, 1);
+            c.Text(k * 60 + ox, k * 360 + oy, "Grundriss", 14 * k, PdfColor.Black);
             if (withExtraWall)
             {
-                c.Line(300 + ox, 50 + oy, 300 + ox, 200 + oy, PdfColor.Black, 3);
+                c.Line(k * 300 + ox, k * 50 + oy, k * 300 + ox, k * 200 + oy, PdfColor.Black, 3);
             }
             c.Commit();
         }
@@ -97,6 +97,47 @@ public class CompareTests
 
         using var same = Plan(false);
         Assert.Equal((0, 0), (PageComparer.Compare(a, 0, same, 0, 1, align: true).OffsetX, PageComparer.Compare(a, 0, same, 0, 1, align: true).OffsetY));
+    }
+
+    [Fact]
+    public void Passpunkte_gleichen_anderen_Massstab_aus()
+    {
+        using var a = Plan(false);
+        using var b = Plan(true, k: 0.9);
+        // Ecken des Außenrechtecks in Anzeigekoordinaten (y nach unten, Seitenhöhe 400).
+        var alignment = PageAlignment.FromPoints(new PdfPoint(50, 350), new PdfPoint(45, 355), new PdfPoint(550, 50), new PdfPoint(495, 85));
+        Assert.NotNull(alignment);
+        Assert.Equal(0.9, alignment.Factor, 6);
+        Assert.Equal(0, alignment.RotationDegrees, 6);
+
+        var plain = PageComparer.Compare(a, 0, b, 0, 1, align: true);
+        var aligned = PageComparer.Compare(a, 0, b, 0, 1, manual: alignment);
+        Assert.Same(alignment, aligned.Manual);
+        Assert.True(plain.ChangedPixels > 5 * aligned.ChangedPixels, $"{plain.ChangedPixels} / {aligned.ChangedPixels}");
+        // Die Wolke gehört in den neuen Stand: Wand bei x = 270, y = 45 bis 180.
+        var change = Assert.Single(aligned.Changes);
+        Assert.True(change.Contains(new PdfPoint(270, 110)), change.ToString());
+        Assert.InRange(change.Width, 3, 40);
+    }
+
+    [Fact]
+    public void Passpunkte_ergeben_Verschiebung_und_Drehung()
+    {
+        var shift = PageAlignment.FromPoints(new PdfPoint(10, 20), new PdfPoint(15, 18));
+        Assert.True(shift.IsTranslation);
+        Assert.Equal((105.0, 98.0), shift.Map(100, 100));
+
+        // Um 90 Grad gedreht und verdoppelt: (0,0) bleibt, (100,0) wird zu (0,200).
+        var turned = PageAlignment.FromPoints(new PdfPoint(0, 0), new PdfPoint(0, 0), new PdfPoint(100, 0), new PdfPoint(0, 200))!;
+        Assert.Equal(90, turned.RotationDegrees, 6);
+        Assert.Equal(2, turned.Factor, 6);
+        var (u, v) = turned.Map(0, 50);
+        Assert.Equal(-100, u, 6);
+        Assert.Equal(0, v, 6);
+
+        // Zu nah beieinander oder unplausibler Maßstab.
+        Assert.Null(PageAlignment.FromPoints(new PdfPoint(0, 0), new PdfPoint(0, 0), new PdfPoint(5, 0), new PdfPoint(5, 0)));
+        Assert.Null(PageAlignment.FromPoints(new PdfPoint(0, 0), new PdfPoint(0, 0), new PdfPoint(100, 0), new PdfPoint(1000, 0)));
     }
 
     [Fact]

@@ -190,6 +190,12 @@ internal static class ScreenshotRunner
                         compare.Height = 800;
                         WaitForRender(compare);
                         Save(compare, Path.Combine(outputDir, name + "-vergleich.png"));
+                        // Passpunkte setzen: erster Punkt im alten Stand gewählt, der neue wartet auf den Klick.
+                        (compare as Views.CompareWindow)?.StartAlignForScreenshot();
+                        WaitForRender(compare);
+                        Save(compare, Path.Combine(outputDir, name + "-ausrichten.png"));
+                        (compare as Views.CompareWindow)?.FinishAlignForScreenshot();
+                        WaitForRender(compare);
                         compare.Close();
                     }
                     if (window.Plans.OpenPlanSetCompare() is { } set)

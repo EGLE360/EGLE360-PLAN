@@ -545,6 +545,7 @@ STATUS = {
     "CMP-008": "Teilweise (Phase 6): Änderungsbericht als Excel-Mappe (je Plan und je Bereich), Wolken in die neuen Stände; PDF-Bericht und Aufgaben offen",
     "PLAN-006": "Teilweise (Phase 6): Änderungsbericht je Plan und Index aus dem Plansatzvergleich (Excel)",
     "CMP-004": "Teilweise (Phase 6): Verschiebung wird beim Vergleich automatisch erkannt und ausgeglichen; Drehung und Maßstab noch nicht",
+    "CMP-003": "Umgesetzt (Phase 6): Passpunkte im alten und neuen Stand, ein Paar für Verschiebung, zwei Paare zusätzlich für Drehung und Maßstab",
     "TOOL-001": "Umgesetzt (Phase 5, Teil 3): Werkzeugsätze in der Seitenleiste, Werkzeug aus Markierung speichern, bleibt beim Zeichnen aktiv",
     "TOOL-003": "Teilweise (Phase 5, Teil 3): Import und Export im eigenen Format e360-tools (JSON); BTX-Import offen",
     "TOOL-004": "Umgesetzt (Phase 5, Teil 3): Suche nach Name, Satz und Art; Favoriten zuerst",
