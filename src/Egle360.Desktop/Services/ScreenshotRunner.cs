@@ -73,6 +73,13 @@ internal static class ScreenshotRunner
                     }
                     WaitForDocuments(window);
                     Save(window, Path.Combine(outputDir, name + "-zoom.png"));
+                    window.Documents.ShowRibbonTab("Start");
+                    WaitForRender(window);
+                    Save(window, Path.Combine(outputDir, name + "-start.png"));
+                    window.Documents.ShowRibbonTab("Seiten");
+                    WaitForRender(window);
+                    Save(window, Path.Combine(outputDir, name + "-seiten.png"));
+                    window.Documents.ShowRibbonTab("Markieren");
 
                     // Markierungen bei 100 %, eine davon ausgewählt (Griffe sichtbar).
                     if (window.Documents.ActiveDocument?.GetMarkups(0) is { Count: > 0 } markups)
@@ -90,6 +97,7 @@ internal static class ScreenshotRunner
                     // Mengenermittlung: Fläche der Küche ausgewählt, Wert in der Statuszeile.
                     if (window.Documents.ActiveDocument?.GetMarkups(0).FirstOrDefault(m => m.Kind == Egle360.Pdf.Markups.MarkupKind.Area) is { } area)
                     {
+                        window.Documents.ShowRibbonTab("Messen");
                         window.Documents.SetMarkupListVisible(true);
                         viewer.SetZoom(0.35);
                         WaitForRender(window);
@@ -98,6 +106,7 @@ internal static class ScreenshotRunner
                         viewer.Select(0, area.Id);
                         WaitForDocuments(window);
                         Save(window, Path.Combine(outputDir, name + "-messen.png"));
+                        window.Documents.ShowRibbonTab("Markieren");
                         viewer.ClearSelection();
                         window.Documents.SetMarkupListVisible(false);
                     }

@@ -53,6 +53,7 @@ public partial class PlansView : UserControl
     public PlansView()
     {
         InitializeComponent();
+        Controls.Ribbon.ApplyAll(RibbonPanel);
         if (App.Theme.Settings.PlanProjectPath is { } path && PlanProject.Exists(path))
         {
             TryOpen(path, quiet: true);

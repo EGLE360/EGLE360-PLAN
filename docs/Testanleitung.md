@@ -24,13 +24,19 @@ Im Startbildschirm „Beispielplan öffnen“ wählen. Das ist ein frei erfunden
 - Navigation links: Dokumente, Designsystem, Einstellungen.
 - Einstellungen: hell, dunkel oder wie Windows. Die Wahl bleibt beim nächsten Start erhalten.
 
+### Menüband (neu)
+- Oben liegen die Befehle jetzt in Registerkarten: Start (Öffnen, Speichern, Drucken, Eigenschaften, Markierungsliste, Stapelverarbeitung), Ansicht (Seitenleiste, Markierungen ausblenden, Breite, Ganze Seite, Zurück und Vor), Seiten (Drehen, Einfügen, Herauslösen, Löschen), Markieren und Messen.
+- Jede Schaltfläche hat eine Beschriftung, die Befehle sind in benannte Gruppen sortiert. Links stehen immer Auswählen, Verschieben, Rückgängig, Wiederholen und Löschen, rechts bei Markieren und Messen Farbe, Linienbreite, Deckkraft und Füllung.
+- Seitenwechsel und Zoom sitzen unten rechts in der Statuszeile.
+- Die Planverwaltung hat ein Menüband mit den Gruppen Projekt, Pläne, Vergleichen und Ausgabe. Such- und Filterfelder zeigen einen grauen Hinweis, solange sie leer sind.
+
 ### PDF öffnen, ansehen und verwalten
 - „PDF öffnen“ (Strg+O), Dateien ins Fenster ziehen, „Zuletzt geöffnet“. Mehrere PDFs erscheinen als Registerkarten, Strg+Tab wechselt, Strg+W schließt.
 - Zoomen mit Strg+Mausrad, Strg+Plus und Strg+Minus, Prozentfeld, „An Breite anpassen“ (Strg+2), „Ganze Seite“ (Strg+0).
 - Verschieben mit gedrückter mittlerer Maustaste, mit dem Hand-Werkzeug (H) oder durch Ziehen auf einer leeren Stelle. Umschalt+Mausrad verschiebt waagrecht.
 - Seitenleiste mit Miniaturen, Lesezeichen und Suche.
 - Vorherige und nächste Ansicht: Nach einem Sprung (Seitenwechsel, Fundstelle, Eintrag in der Liste) führt die Pfeiltaste links neben der Seitenzahl, Alt+Pfeil links oder die Zurück-Taste der Maus zur vorigen Stelle zurück.
-- Seiten drehen, verschieben, löschen, leere Seite einfügen, Seiten aus einem anderen PDF einfügen, Seiten als neues PDF speichern (Werkzeugleiste oben oder Rechtsklick auf eine Miniatur).
+- Seiten drehen, verschieben, löschen, leere Seite einfügen, Seiten aus einem anderen PDF einfügen, Seiten als neues PDF speichern (Registerkarte „Seiten“ oder Rechtsklick auf eine Miniatur).
 - Dokumenteigenschaften ansehen.
 - Speichern (Strg+S), Speichern unter (Strg+Umschalt+S).
 - Drucken (Strg+P) über den Windows-Druckdialog, mit Seitenauswahl. Jede Seite wird auf das Papier eingepasst, quer liegende Pläne werden auf Hochformat gedreht. Zum Ausprobieren ohne Drucker eignet sich „Microsoft Print to PDF“.
@@ -41,7 +47,7 @@ Im Startbildschirm „Beispielplan öffnen“ wählen. Das ist ein frei erfunden
 - Gescannte Pläne ohne Textebene enthalten keinen durchsuchbaren Text; die Suche meldet das.
 
 ### Markierungen
-Über dem Plan liegt die Markierungsleiste. Nach dem Zeichnen springt das Werkzeug zurück auf „Auswählen“ und die neue Markierung ist ausgewählt.
+Die Markierungswerkzeuge liegen in der Registerkarte „Markieren“. Nach dem Zeichnen springt das Werkzeug zurück auf „Auswählen“ und die neue Markierung ist ausgewählt.
 
 | Werkzeug | Taste | Bedienung |
 |---|---|---|
@@ -67,18 +73,18 @@ Im Startbildschirm „Beispielplan öffnen“ wählen. Das ist ein frei erfunden
 | Bemaßung | D | Maßlinie aufziehen; braucht wie die Messungen einen Maßstab. Die Zahl steht über der Linie |
 
 - Mit gedrückter Umschalttaste rasten Linien waagrecht, senkrecht oder unter 45 Grad ein, Rechtecke werden quadratisch.
-- Objektfang (Schaltfläche mit dem Fadenkreuz neben dem Maßstab, standardmäßig an): Beim Zeichnen und beim Ziehen von Eckpunkten rastet der Punkt an Linienenden und Linienmitten des Plans und an Eckpunkten anderer Markierungen ein. Ein grünes Quadrat zeigt den Fangpunkt. Das funktioniert nur bei Vektorplänen (aus CAD exportiert), nicht bei gescannten. Die Umschalttaste schaltet den Fang vorübergehend ab.
+- Objektfang (Registerkarte „Messen“ neben dem Maßstab, standardmäßig an): Beim Zeichnen und beim Ziehen von Eckpunkten rastet der Punkt an Linienenden und Linienmitten des Plans und an Eckpunkten anderer Markierungen ein. Ein grünes Quadrat zeigt den Fangpunkt. Das funktioniert nur bei Vektorplänen (aus CAD exportiert), nicht bei gescannten. Die Umschalttaste schaltet den Fang vorübergehend ab.
 - Farbe, Linienbreite, Deckkraft und Füllung gelten für neue Markierungen und für die Auswahl.
 - Rechtsklick, „Drehen“: um 90 Grad nach rechts oder links oder um 180 Grad, bei mehreren ausgewählten Markierungen gemeinsam. Linien, Polylinien, Flächen und andere Punktformen lassen sich mit „Um Winkel drehen …“ auch beliebig drehen. Rechtecke, Textfelder und Stempel bleiben achsenparallel.
 - Doppelklick bearbeitet Text oder Kommentar. Rechtsklick öffnet ein Menü (Text, Kopieren, Duplizieren, Vordergrund, Hintergrund, Löschen).
 - Strg+C, Strg+V, Strg+D (Duplizieren), Strg+A (alle auf der Seite), Entf, Esc, Strg+Z, Strg+Y.
 - Mehrere ausgewählte Markierungen lassen sich per Rechtsklick ausrichten (links, rechts, oben, unten, zentriert) und ab drei gleichmäßig verteilen.
 - Darstellung übertragen: Strg+Umschalt+C kopiert Farbe, Linie und Füllung der ausgewählten Markierung, Strg+Umschalt+V überträgt sie auf die Auswahl.
-- Die Schaltfläche mit dem durchgestrichenen Auge ganz rechts in der Markierungsleiste blendet alle Markierungen aus, um den Plan ohne sie zu sehen.
+- „Markierungen aus“ in der Registerkarte „Ansicht“ blendet alle Markierungen aus, um den Plan ohne sie zu sehen.
 - Nach dem Speichern sind Markierungen normale PDF-Anmerkungen. Zum Gegenprüfen die Datei in einem anderen Programm öffnen, zum Beispiel Bluebeam, Adobe Acrobat oder einem Browser. Sie sollten dort an derselben Stelle gleich aussehen.
 
 ### Mengenermittlung
-Rechts in der Markierungsleiste sitzen die Messwerkzeuge und die Schaltfläche für den Maßstab.
+Die Messwerkzeuge, die Bemaßung, der Maßstab und der Objektfang liegen in der Registerkarte „Messen“.
 
 1. Maßstab festlegen: auf „Kein Maßstab“ klicken und einen Maßstab wie 1:50 wählen. Alternativ „Kalibrieren …“: eine bekannte Strecke im Plan aufziehen (zum Beispiel eine Bemaßung) und das wirkliche Maß eingeben, etwa „10“ oder „4,25“. Einheit m, cm oder mm. Der Maßstab gilt je Seite und lässt sich auf alle Seiten übertragen.
 2. Messen:
@@ -98,7 +104,7 @@ Rechts in der Markierungsleiste sitzen die Messwerkzeuge und die Schaltfläche f
 Zum Ausprobieren im Beispielplan: Die Küche ist 10 m × 10 m, die Fläche muss also 100,00 m² ergeben. Der Abschnitt zwischen den Achsen A und C ist 10,00 m lang. Die Innenwand an Achse E ist 11,00 m lang und 2,80 m hoch, ihre Wandfläche also 30,80 m². Die Bemaßung unter dem Grundriss zeigt die Gebäudelänge von 30,00 m.
 
 ### Markierungs- und Mengenliste (neu)
-- Schaltfläche mit dem Listensymbol rechts oben in der Werkzeugleiste. Die Liste erscheint unter dem Plan und lässt sich in der Höhe ziehen.
+- „Markierungsliste“ in der Registerkarte „Start“. Die Liste erscheint unter dem Plan und lässt sich in der Höhe ziehen.
 - Sie zeigt alle Markierungen des Dokuments mit Seite, Art, Messwert, Text, Maßstab, Autor und Datum. Spalten lassen sich durch Klick auf die Überschrift sortieren.
 - Filterfeld und „Nur Messungen“ grenzen die Liste ein. Oben stehen die Summen je Messart, zum Beispiel alle Flächen zusammen, dazu Volumen und Wandflächen.
 - Klick auf eine Zeile springt zur Markierung und wählt sie aus.
@@ -122,13 +128,13 @@ Zum Ausprobieren im Beispielplan: Die Küche ist 10 m × 10 m, die Fläche muss 
 - Plannummer, Index und Bezeichnung werden aus dem Plankopf („Plannummer …“, „Plan-Nr. …“, „Index …“) oder aus dem Dateinamen erkannt, z. B. `AR-101_Grundriss EG_Index B.pdf`. Die Erkennung arbeitet mit Mustern und kann danebenliegen. Rechts lassen sich alle Angaben korrigieren, dazu Gewerk, Geschoss, Gebäude, Bauabschnitt, Status, Verfasser und Freigabe.
 - Hat eine neue Datei dieselbe Plannummer wie ein vorhandener Plan, aber einen anderen Index, wird sie als neuer Stand eingetragen. Mit dem Häkchen „Markierungen in neuen Index übernehmen“ wandern Markierungen und Maßstäbe des bisherigen Stands auf dieselben Seiten der neuen Datei. Bitte vorher Änderungen am alten Stand speichern, übernommen wird, was in der Datei steht.
 - „Neuer Index“ trägt für den ausgewählten Plan gezielt eine Datei ein, mit Änderungsvermerk. Unter „Verlauf“ stehen alle Stände, ein Doppelklick öffnet auch ältere.
-- „Mit Vorstand vergleichen“ legt den aktuellen und den vorherigen Index übereinander: Rot ist nur im alten Stand, Blau nur im neuen, Grau unverändert. Ein Klick auf einen Eintrag der Legende blendet die jeweilige Farbe aus und wieder ein. Über den Verlauf (Rechtsklick auf einen älteren Index) lässt sich auch mit anderen Ständen vergleichen. „Änderungen als Wolken eintragen“ setzt rote Wolken um jeden geänderten Bereich in den neuen Stand. Ist der Planinhalt zwischen den Ständen verschoben (bis etwa 6 % der Seitengröße), wird das automatisch ausgeglichen und in der Statuszeile in Millimetern angezeigt. Bei verdrehten oder anders skalierten Ständen hilft „Ausrichten …“ (neu): Erst einen gut erkennbaren Punkt im alten Stand anklicken, dann denselben im neuen. Ein Punktpaar gleicht nur die Verschiebung aus („Nur verschieben“), ein zweites Paar möglichst weit vom ersten zusätzlich Drehung und Maßstab. Esc bricht ab, „Automatisch ausrichten“ kehrt zur automatischen Lage zurück. Die Ausrichtung gilt für alle Seiten des Vergleichs.
-- „Plansatz vergleichen …“ (neu) vergleicht alle angezeigten Pläne mit mehreren Ständen auf einmal, jeweils den aktuellen mit dem vorherigen Index. Die Liste zeigt je Plan die Zahl der geänderten Bereiche; Doppelklick öffnet den Einzelvergleich. Von dort lassen sich Änderungswolken in alle neuen Stände eintragen und ein Änderungsbericht als Excel-Mappe speichern.
-- „Planliste exportieren (Excel)“ schreibt die (gefilterte) Liste und den Verlauf aller Stände in eine Arbeitsmappe.
+- „Mit Vorstand“ (Gruppe Vergleichen) legt den aktuellen und den vorherigen Index übereinander: Rot ist nur im alten Stand, Blau nur im neuen, Grau unverändert. Ein Klick auf einen Eintrag der Legende blendet die jeweilige Farbe aus und wieder ein. Über den Verlauf (Rechtsklick auf einen älteren Index) lässt sich auch mit anderen Ständen vergleichen. „Änderungen als Wolken eintragen“ setzt rote Wolken um jeden geänderten Bereich in den neuen Stand. Ist der Planinhalt zwischen den Ständen verschoben (bis etwa 6 % der Seitengröße), wird das automatisch ausgeglichen und in der Statuszeile in Millimetern angezeigt. Bei verdrehten oder anders skalierten Ständen hilft „Ausrichten …“ (neu): Erst einen gut erkennbaren Punkt im alten Stand anklicken, dann denselben im neuen. Ein Punktpaar gleicht nur die Verschiebung aus („Nur verschieben“), ein zweites Paar möglichst weit vom ersten zusätzlich Drehung und Maßstab. Esc bricht ab, „Automatisch ausrichten“ kehrt zur automatischen Lage zurück. Die Ausrichtung gilt für alle Seiten des Vergleichs.
+- „Plansatz“ (Gruppe Vergleichen) vergleicht alle angezeigten Pläne mit mehreren Ständen auf einmal, jeweils den aktuellen mit dem vorherigen Index. Die Liste zeigt je Plan die Zahl der geänderten Bereiche; Doppelklick öffnet den Einzelvergleich. Von dort lassen sich Änderungswolken in alle neuen Stände eintragen und ein Änderungsbericht als Excel-Mappe speichern.
+- „Planliste“ (Gruppe Ausgabe) schreibt die (gefilterte) Liste und den Verlauf aller Stände in eine Arbeitsmappe.
 
 ### Stapelverarbeitung (neu)
 
-- In der Dokumentansicht über die Schaltfläche „Stapelverarbeitung“ (mit den geöffneten Dateien als Vorauswahl) oder unter „Pläne“ über „Stapelverarbeitung …“ (mit den aktuellen Ständen der angezeigten Pläne).
+- In der Dokumentansicht über „Stapelverarbeitung“ in der Registerkarte „Start“ (mit den geöffneten Dateien als Vorauswahl) oder unter „Pläne“ über „Stapel“ (mit den aktuellen Ständen der angezeigten Pläne).
 - Dateien lassen sich hinzufügen, als ganzer Ordner übernehmen oder ins Fenster ziehen.
 - Arbeitsschritte: Stempel in eine Ecke der ersten oder aller Seiten setzen (die Ecke gilt so, wie die Seite angezeigt wird) oder einen Maßstab für die erste oder alle Seiten festlegen. Neu sind Kopf- oder Fußzeile mit den Platzhaltern {Datei}, {Seite}, {Seiten} und {Datum} in sechs Lagen, Seiten drehen und Markierungen einbrennen. Eingebrannte Markierungen werden Teil des Plans und sind danach nicht mehr bearbeitbar, der Maßstab bleibt erhalten.
 - Standardmäßig entstehen bearbeitete Kopien im gewählten Zielordner, die Originale bleiben unverändert. „Originale überschreiben“ fragt vorher nach.

@@ -82,6 +82,45 @@ public partial class DocumentsView
     private bool _syncingTools;
     private StampPreset _stamp = StampPreset.Defaults[0];
 
+    /// <summary>Kurze Beschriftungen der Werkzeuge im Menüband.</summary>
+    private static readonly Dictionary<string, string> ToolLabels = new()
+    {
+        ["select"] = "Auswählen",
+        ["pan"] = "Verschieben",
+        [nameof(MarkupKind.Polyline)] = "Polylinie",
+        [nameof(MarkupKind.Typewriter)] = "Schreibmaschine",
+        [nameof(MarkupKind.Callout)] = "Sprechblase",
+        [nameof(MarkupKind.Highlight)] = "Hervorheben",
+        [nameof(MarkupKind.Underline)] = "Unterstreichen",
+        [nameof(MarkupKind.StrikeOut)] = "Durchstreichen",
+        [nameof(MarkupKind.Image)] = "Bild",
+        [nameof(MarkupKind.Dimension)] = "Bemaßung",
+        [nameof(MarkupKind.Length)] = "Länge",
+        [nameof(MarkupKind.Polylength)] = "Polylänge",
+        [nameof(MarkupKind.Perimeter)] = "Umfang",
+        [nameof(MarkupKind.Area)] = "Fläche",
+        [nameof(MarkupKind.Angle)] = "Winkel",
+        [nameof(MarkupKind.Radius)] = "Radius",
+        [nameof(MarkupKind.Diameter)] = "Durchmesser",
+        [nameof(MarkupKind.Count)] = "Anzahl",
+    };
+
+    /// <summary>Gruppen im Menüband: Registerkarte (Markieren oder Messen), Beschriftung, Werkzeuge.</summary>
+    private static readonly (bool Measure, string Caption, string[] Keys)[] ToolGroups =
+    [
+        (false, "Formen", [nameof(MarkupKind.Rectangle), nameof(MarkupKind.Ellipse), nameof(MarkupKind.Line), nameof(MarkupKind.Arrow),
+            nameof(MarkupKind.Polyline), nameof(MarkupKind.Polygon), nameof(MarkupKind.Cloud), nameof(MarkupKind.Freehand)]),
+        (false, "Text", [nameof(MarkupKind.TextBox), nameof(MarkupKind.Typewriter), nameof(MarkupKind.Callout), nameof(MarkupKind.Note)]),
+        (false, "Text auszeichnen", [nameof(MarkupKind.Highlight), nameof(MarkupKind.Underline), nameof(MarkupKind.StrikeOut)]),
+        (false, "Einfügen", [nameof(MarkupKind.Stamp), nameof(MarkupKind.Image)]),
+        (true, "Messen", [nameof(MarkupKind.Length), nameof(MarkupKind.Polylength), nameof(MarkupKind.Perimeter), nameof(MarkupKind.Area),
+            nameof(MarkupKind.Angle), nameof(MarkupKind.Radius), nameof(MarkupKind.Diameter), nameof(MarkupKind.Count)]),
+        (true, "Bemaßen", [nameof(MarkupKind.Dimension)]),
+    ];
+
+    private static string ToolLabel(string key, string name) =>
+        ToolLabels.TryGetValue(key, out var label) ? label : name.Split(" (")[0];
+
     private void BuildMarkupBar()
     {
         foreach (var (key, name, icon, shortcut) in Tools)
@@ -94,7 +133,7 @@ public partial class DocumentsView
                 ToolTip = shortcut is { } k ? $"{name} ({k})" : name,
                 Tag = key,
             };
-            AutomationPropertiesHelper.SetName(button, name);
+            AutomationPropertiesHelper.SetName(button, ToolLabel(key, name));
             button.Checked += OnToolChecked;
             if (key == nameof(MarkupKind.Stamp))
             {
@@ -105,18 +144,22 @@ public partial class DocumentsView
                 button.Click += (_, _) => ShowImageMenu(button);
             }
             _toolButtons[key] = button;
-            if (key == nameof(MarkupKind.Length))
-            {
-                MarkupBar.Children.Add(Separator());
-            }
-            MarkupBar.Children.Add(button);
-            if (key == "pan")
-            {
-                MarkupBar.Children.Add(Separator());
-            }
+            ToRibbon(button, ToolLabel(key, name));
         }
+        QuickPanel.Children.Add(_toolButtons["select"]);
+        QuickPanel.Children.Add(_toolButtons["pan"]);
+        foreach (var (measure, caption, keys) in ToolGroups)
+        {
+            var panel = new StackPanel { Orientation = Orientation.Horizontal };
+            foreach (var key in keys)
+            {
+                panel.Children.Add(_toolButtons[key]);
+            }
+            (measure ? MeasureBar : MarkupBar).Children.Add(RibbonGroup(caption, panel));
+        }
+
         _scaleButton = TextButton("Maßstab der Seite", OnScaleMenu);
-        MarkupBar.Children.Add(_scaleButton);
+        _scaleButton.VerticalAlignment = VerticalAlignment.Center;
         _snapButton = new ToggleButton
         {
             Style = (Style)FindResource("ToolToggle"),
@@ -125,6 +168,7 @@ public partial class DocumentsView
             IsChecked = _snap,
         };
         AutomationPropertiesHelper.SetName(_snapButton, "Objektfang");
+        ToRibbon(_snapButton, "Objektfang");
         _snapButton.Click += (_, _) =>
         {
             _snap = _snapButton.IsChecked == true;
@@ -133,10 +177,12 @@ public partial class DocumentsView
                 open.Viewer.SnapEnabled = _snap;
             }
         };
-        MarkupBar.Children.Add(_snapButton);
+        var scalePanel = new StackPanel { Orientation = Orientation.Horizontal };
+        scalePanel.Children.Add(_scaleButton);
+        scalePanel.Children.Add(_snapButton);
+        MeasureBar.Children.Add(RibbonGroup("Maßstab und Fang", scalePanel));
         _toolButtons["select"].IsChecked = true;
 
-        MarkupBar.Children.Add(Separator());
         foreach (var (name, color) in Palette)
         {
             var swatch = new RadioButton
@@ -147,35 +193,39 @@ public partial class DocumentsView
                 ToolTip = $"Farbe {name}",
                 Tag = color,
                 IsChecked = color == _color,
+                Height = 26,
             };
             AutomationPropertiesHelper.SetName(swatch, $"Farbe {name}");
             swatch.Checked += (_, _) => OnColorChosen(color);
             _swatches.Add(swatch);
-            MarkupBar.Children.Add(swatch);
+            StylePanel.Children.Add(swatch);
         }
 
-        MarkupBar.Children.Add(Separator());
         _widthButton = TextButton("Linienbreite", OnWidthMenu);
         _opacityButton = TextButton("Deckkraft", OnOpacityMenu);
+        _widthButton.Height = _opacityButton.Height = 26;
         _fillButton = new ToggleButton
         {
             Style = (Style)FindResource("ToolToggle"),
             Content = new Path { Style = (Style)FindResource("ToolIcon"), Data = Geometry.Parse("M2,3.5 H14 V12.5 H2 Z M2,7 L5.5,3.5 M2,11 L9.5,3.5 M4.5,12.5 L13.5,3.5 M8.5,12.5 L14,7"), },
             ToolTip = "Fläche füllen",
+            Height = 26,
         };
         AutomationPropertiesHelper.SetName(_fillButton, "Fläche füllen");
         _fillButton.Click += (_, _) => OnFillToggled(_fillButton.IsChecked == true);
-        MarkupBar.Children.Add(_widthButton);
-        MarkupBar.Children.Add(_opacityButton);
-        MarkupBar.Children.Add(_fillButton);
+        StylePanel.Children.Add(_widthButton);
+        StylePanel.Children.Add(_opacityButton);
+        StylePanel.Children.Add(_fillButton);
 
-        MarkupBar.Children.Add(Separator());
-        _undoButton = GlyphButton("", "Rückgängig (Strg+Z)", (_, _) => Undo());
-        _redoButton = GlyphButton("", "Wiederholen (Strg+Y)", (_, _) => Redo());
-        _deleteMarkupButton = GlyphButton("", "Markierung löschen (Entf)", (_, _) => _active?.Viewer.DeleteSelection());
-        MarkupBar.Children.Add(_undoButton);
-        MarkupBar.Children.Add(_redoButton);
-        MarkupBar.Children.Add(_deleteMarkupButton);
+        _undoButton = GlyphButton("\uE7A7", "Rückgängig (Strg+Z)", (_, _) => Undo());
+        _redoButton = GlyphButton("\uE7A6", "Wiederholen (Strg+Y)", (_, _) => Redo());
+        _deleteMarkupButton = GlyphButton("\uE74D", "Markierung löschen (Entf)", (_, _) => _active?.Viewer.DeleteSelection());
+        ToRibbon(_undoButton, "Rückgängig");
+        ToRibbon(_redoButton, "Wiederholen");
+        ToRibbon(_deleteMarkupButton, "Löschen");
+        QuickPanel.Children.Add(_undoButton);
+        QuickPanel.Children.Add(_redoButton);
+        QuickPanel.Children.Add(_deleteMarkupButton);
         _hideMarkupsButton = new ToggleButton
         {
             Style = (Style)FindResource("ToolToggle"),
@@ -183,6 +233,7 @@ public partial class DocumentsView
             ToolTip = "Markierungen ausblenden, um den Plan ohne sie zu sehen",
         };
         AutomationPropertiesHelper.SetName(_hideMarkupsButton, "Markierungen ausblenden");
+        ToRibbon(_hideMarkupsButton, "Markierungen aus");
         _hideMarkupsButton.Click += (_, _) =>
         {
             if (_active is { } open)
@@ -190,8 +241,47 @@ public partial class DocumentsView
                 open.Viewer.MarkupsVisible = _hideMarkupsButton.IsChecked != true;
             }
         };
-        MarkupBar.Children.Add(_hideMarkupsButton);
+        ViewTogglePanel.Children.Add(_hideMarkupsButton);
+
+        // Schaltflächen aus dem XAML bekommen dieselbe Form: Symbol mit Beschriftung darunter.
+        foreach (var panel in new Panel[] { StartPanel, ViewPanel, PagesPanel })
+        {
+            Ribbon.ApplyAll(panel);
+        }
         RefreshStyleButtons();
+    }
+
+    private static HeaderedContentControl RibbonGroup(string caption, UIElement content) => Ribbon.Group(caption, content);
+
+    private static void ToRibbon(ButtonBase button, string label) => Ribbon.Apply(button, label);
+
+    /// <summary>Wechselt die Registerkarte des Menübands.</summary>
+    private void OnRibbonTab(object sender, RoutedEventArgs e)
+    {
+        if (StartPanel is null)
+        {
+            return;
+        }
+        StartPanel.Visibility = StartRibbonTab.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        ViewPanel.Visibility = ViewRibbonTab.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        PagesPanel.Visibility = PagesRibbonTab.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        MarkupBar.Visibility = MarkupRibbonTab.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        MeasureBar.Visibility = MeasureRibbonTab.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        StyleGroup.Visibility = MarkupRibbonTab.IsChecked == true || MeasureRibbonTab.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    /// <summary>Für den Screenshot-Modus und Tastenkürzel: Registerkarte Messen zeigen.</summary>
+    internal void ShowRibbonTab(string name)
+    {
+        var tab = name switch
+        {
+            "Start" => StartRibbonTab,
+            "Ansicht" => ViewRibbonTab,
+            "Seiten" => PagesRibbonTab,
+            "Messen" => MeasureRibbonTab,
+            _ => MarkupRibbonTab,
+        };
+        tab.IsChecked = true;
     }
 
     private Border Separator() => new() { Style = (Style)FindResource("ToolSeparator") };
@@ -378,7 +468,6 @@ public partial class DocumentsView
     {
         var doc = _active?.Document;
         var canAnnotate = doc is { CanAnnotate: true };
-        MarkupBarBorder.Visibility = _active is null ? Visibility.Collapsed : Visibility.Visible;
         foreach (var (key, button) in _toolButtons)
         {
             button.IsEnabled = key is "select" or "pan" || canAnnotate;

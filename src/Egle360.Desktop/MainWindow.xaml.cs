@@ -121,4 +121,7 @@ internal static class AutomationPropertiesHelper
 {
     public static void SetName(DependencyObject element, string name) =>
         System.Windows.Automation.AutomationProperties.SetName(element, name);
+
+    public static string GetName(DependencyObject element) =>
+        System.Windows.Automation.AutomationProperties.GetName(element);
 }

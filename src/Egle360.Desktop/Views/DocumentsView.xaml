@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:pdf="clr-namespace:Egle360.Pdf;assembly=Egle360.Pdf"
              xmlns:local="clr-namespace:Egle360.Desktop.Views"
+             xmlns:controls="clr-namespace:Egle360.Desktop.Controls"
              AllowDrop="True" Drop="OnDrop" DragOver="OnDragOver">
     <UserControl.Resources>
         <local:FileNameConverter x:Key="FileNameConverter" />
@@ -17,50 +18,92 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Werkzeugleiste -->
-        <Border Grid.Row="0" Background="{DynamicResource Surface1Brush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
-            <WrapPanel VerticalAlignment="Center">
-                <Button Style="{StaticResource ToolButton}" Content="&#xE8E5;" Click="OnOpen" ToolTip="PDF öffnen (Strg+O)" AutomationProperties.Name="PDF öffnen" />
-                <Button Style="{StaticResource ToolButton}" Content="&#xE8A5;" Click="OnNew" ToolTip="Neues PDF (Strg+N)" AutomationProperties.Name="Neues PDF" />
-                <Button x:Name="SaveButton" Style="{StaticResource ToolButton}" Content="&#xE74E;" Click="OnSave" ToolTip="Speichern (Strg+S)" AutomationProperties.Name="Speichern" />
-                <Button x:Name="SaveAsButton" Style="{StaticResource ToolButton}" Content="&#xE792;" Click="OnSaveAs" ToolTip="Speichern unter (Strg+Umschalt+S)" AutomationProperties.Name="Speichern unter" />
-                <Button x:Name="PrintButton" Style="{StaticResource ToolButton}" Content="&#xE749;" Click="OnPrint" ToolTip="Drucken (Strg+P)" AutomationProperties.Name="Drucken" />
-                <Border Style="{StaticResource ToolSeparator}" />
-                <Button x:Name="SidebarButton" Style="{StaticResource ToolButton}" Content="&#xE89F;" Click="OnToggleSidebar" ToolTip="Seitenleiste ein- oder ausblenden" AutomationProperties.Name="Seitenleiste" />
-                <Border Style="{StaticResource ToolSeparator}" />
-                <Button x:Name="ZoomOutButton" Style="{StaticResource ToolButton}" Content="&#xE71F;" Click="OnZoomOut" ToolTip="Verkleinern (Strg+Minus)" AutomationProperties.Name="Verkleinern" />
-                <TextBox x:Name="ZoomBox" Style="{StaticResource InputBox}" Width="64" TextAlignment="Right" KeyDown="OnZoomBoxKey"
-                         ToolTip="Zoom in Prozent, mit Eingabetaste übernehmen" AutomationProperties.Name="Zoom in Prozent" />
-                <Button x:Name="ZoomInButton" Style="{StaticResource ToolButton}" Content="&#xE8A3;" Click="OnZoomIn" ToolTip="Vergrößern (Strg+Plus)" AutomationProperties.Name="Vergrößern" />
-                <Button x:Name="FitWidthButton" Style="{StaticResource ToolButton}" Content="&#xE9A6;" Click="OnFitWidth" ToolTip="An Breite anpassen (Strg+2)" AutomationProperties.Name="An Breite anpassen" />
-                <Button x:Name="FitPageButton" Style="{StaticResource ToolButton}" Content="&#xE9A8;" Click="OnFitPage" ToolTip="Ganze Seite (Strg+0)" AutomationProperties.Name="Ganze Seite" />
-                <Border Style="{StaticResource ToolSeparator}" />
-                <Button x:Name="BackButton" Style="{StaticResource ToolButton}" Content="&#xE72B;" Click="OnViewBack" ToolTip="Vorherige Ansicht (Alt+Pfeil links)" AutomationProperties.Name="Vorherige Ansicht" />
-                <Button x:Name="ForwardButton" Style="{StaticResource ToolButton}" Content="&#xE72A;" Click="OnViewForward" ToolTip="Nächste Ansicht (Alt+Pfeil rechts)" AutomationProperties.Name="Nächste Ansicht" />
-                <Button x:Name="PrevButton" Style="{StaticResource ToolButton}" Content="&#xE70E;" Click="OnPrevPage" ToolTip="Vorherige Seite (Bild auf)" AutomationProperties.Name="Vorherige Seite" />
-                <TextBox x:Name="PageBox" Style="{StaticResource InputBox}" Width="48" TextAlignment="Right" KeyDown="OnPageBoxKey"
-                         ToolTip="Seitenzahl, mit Eingabetaste springen" AutomationProperties.Name="Seitenzahl" />
-                <TextBlock x:Name="PageCountText" Style="{StaticResource TextSecondary}" VerticalAlignment="Center" Margin="6,0" />
-                <Button x:Name="NextButton" Style="{StaticResource ToolButton}" Content="&#xE70D;" Click="OnNextPage" ToolTip="Nächste Seite (Bild ab)" AutomationProperties.Name="Nächste Seite" />
-                <Border Style="{StaticResource ToolSeparator}" />
-                <Button x:Name="RotateLeftButton" Style="{StaticResource ToolButton}" Click="OnRotateLeft" ToolTip="Seite nach links drehen" AutomationProperties.Name="Seite nach links drehen">
-                    <TextBlock Text="&#xE7AD;" RenderTransformOrigin="0.5,0.5"><TextBlock.RenderTransform><ScaleTransform ScaleX="-1" /></TextBlock.RenderTransform></TextBlock>
-                </Button>
-                <Button x:Name="RotateRightButton" Style="{StaticResource ToolButton}" Content="&#xE7AD;" Click="OnRotateRight" ToolTip="Seite nach rechts drehen" AutomationProperties.Name="Seite nach rechts drehen" />
-                <Button x:Name="InsertBlankButton" Style="{StaticResource ToolButton}" Content="&#xE710;" Click="OnInsertBlank" ToolTip="Leere Seite nach der aktuellen einfügen" AutomationProperties.Name="Leere Seite einfügen" />
-                <Button x:Name="InsertFileButton" Style="{StaticResource ToolButton}" Content="&#xE8F4;" Click="OnInsertFromFile" ToolTip="Seiten aus anderem PDF einfügen (Zusammenführen)" AutomationProperties.Name="Seiten aus Datei einfügen" />
-                <Button x:Name="ExtractButton" Style="{StaticResource ToolButton}" Content="&#xE8B5;" Click="OnExtract" ToolTip="Seiten als neues PDF speichern (Aufteilen)" AutomationProperties.Name="Seiten herauslösen" />
-                <Button x:Name="DeletePageButton" Style="{StaticResource ToolButton}" Content="&#xE74D;" Click="OnDeletePage" ToolTip="Aktuelle Seite löschen" AutomationProperties.Name="Seite löschen" />
-                <Border Style="{StaticResource ToolSeparator}" />
-                <Button x:Name="PropertiesButton" Style="{StaticResource ToolButton}" Content="&#xE946;" Click="OnProperties" ToolTip="Dokumenteigenschaften" AutomationProperties.Name="Dokumenteigenschaften" />
-                <Button Style="{StaticResource ToolButton}" Content="&#xE8F1;" Click="OnBatch" ToolTip="Stapelverarbeitung: Stempel oder Maßstab für viele PDF-Dateien" AutomationProperties.Name="Stapelverarbeitung" />
-                <Button x:Name="MarkupListButton" Style="{StaticResource ToolButton}" Content="&#xE8FD;" Click="OnToggleMarkupList" ToolTip="Markierungs- und Mengenliste ein- oder ausblenden" AutomationProperties.Name="Markierungsliste" />
-            </WrapPanel>
+        <!-- Menüband: Registerkarten -->
+        <Border Grid.Row="0" Background="{DynamicResource Surface1Brush}" Padding="8,2,8,0">
+            <StackPanel x:Name="RibbonTabs" Orientation="Horizontal">
+                <RadioButton x:Name="StartRibbonTab" Style="{StaticResource SegmentButton}" GroupName="Ribbon" Content="Start" Checked="OnRibbonTab" />
+                <RadioButton x:Name="ViewRibbonTab" Style="{StaticResource SegmentButton}" GroupName="Ribbon" Content="Ansicht" Checked="OnRibbonTab" />
+                <RadioButton x:Name="PagesRibbonTab" Style="{StaticResource SegmentButton}" GroupName="Ribbon" Content="Seiten" Checked="OnRibbonTab" />
+                <RadioButton x:Name="MarkupRibbonTab" Style="{StaticResource SegmentButton}" GroupName="Ribbon" Content="Markieren" Checked="OnRibbonTab" IsChecked="True" />
+                <RadioButton x:Name="MeasureRibbonTab" Style="{StaticResource SegmentButton}" GroupName="Ribbon" Content="Messen" Checked="OnRibbonTab" />
+            </StackPanel>
         </Border>
 
-        <!-- Markierungen -->
-        <Border Grid.Row="1" x:Name="MarkupBarBorder" Background="{DynamicResource Surface1Brush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="8,2">
-            <WrapPanel x:Name="MarkupBar" VerticalAlignment="Center" />
+        <!-- Menüband: Befehle der gewählten Registerkarte -->
+        <Border Grid.Row="1" x:Name="MarkupBarBorder" Background="{DynamicResource Surface1Brush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,1" Padding="4,4">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Focusable="False">
+                <StackPanel Orientation="Horizontal">
+                    <HeaderedContentControl x:Name="QuickGroup" Style="{StaticResource RibbonGroup}" Header="Werkzeug">
+                        <StackPanel x:Name="QuickPanel" Orientation="Horizontal" />
+                    </HeaderedContentControl>
+                    <Grid>
+                        <!-- Start -->
+                        <StackPanel x:Name="StartPanel" Orientation="Horizontal" Visibility="Collapsed">
+                            <HeaderedContentControl Style="{StaticResource RibbonGroup}" Header="Datei">
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Style="{StaticResource ToolButton}" Content="&#xE8E5;" Click="OnOpen" ToolTip="PDF öffnen (Strg+O)" AutomationProperties.Name="Öffnen" />
+                                    <Button Style="{StaticResource ToolButton}" Content="&#xE8A5;" Click="OnNew" ToolTip="Neues PDF (Strg+N)" AutomationProperties.Name="Neu" />
+                                    <Button x:Name="SaveButton" Style="{StaticResource ToolButton}" Content="&#xE74E;" Click="OnSave" ToolTip="Speichern (Strg+S)" AutomationProperties.Name="Speichern" />
+                                    <Button x:Name="SaveAsButton" Style="{StaticResource ToolButton}" Content="&#xE792;" Click="OnSaveAs" ToolTip="Speichern unter (Strg+Umschalt+S)" AutomationProperties.Name="Speichern unter" />
+                                    <Button x:Name="PrintButton" Style="{StaticResource ToolButton}" Content="&#xE749;" Click="OnPrint" ToolTip="Drucken (Strg+P)" AutomationProperties.Name="Drucken" />
+                                </StackPanel>
+                            </HeaderedContentControl>
+                            <HeaderedContentControl Style="{StaticResource RibbonGroup}" Header="Dokument">
+                                <StackPanel Orientation="Horizontal">
+                                    <Button x:Name="PropertiesButton" Style="{StaticResource ToolButton}" Content="&#xE946;" Click="OnProperties" ToolTip="Dokumenteigenschaften" AutomationProperties.Name="Eigenschaften" />
+                                    <Button x:Name="MarkupListButton" Style="{StaticResource ToolButton}" Content="&#xE8FD;" Click="OnToggleMarkupList" ToolTip="Markierungs- und Mengenliste ein- oder ausblenden" AutomationProperties.Name="Markierungsliste" />
+                                    <Button Style="{StaticResource ToolButton}" Content="&#xE8F1;" Click="OnBatch" ToolTip="Stapelverarbeitung: einen Arbeitsschritt auf viele PDF-Dateien anwenden" AutomationProperties.Name="Stapelverarbeitung" />
+                                </StackPanel>
+                            </HeaderedContentControl>
+                        </StackPanel>
+                        <!-- Ansicht -->
+                        <StackPanel x:Name="ViewPanel" Orientation="Horizontal" Visibility="Collapsed">
+                            <HeaderedContentControl Style="{StaticResource RibbonGroup}" Header="Bereiche">
+                                <StackPanel x:Name="ViewTogglePanel" Orientation="Horizontal">
+                                    <Button x:Name="SidebarButton" Style="{StaticResource ToolButton}" Content="&#xE89F;" Click="OnToggleSidebar" ToolTip="Seitenleiste ein- oder ausblenden" AutomationProperties.Name="Seitenleiste" />
+                                </StackPanel>
+                            </HeaderedContentControl>
+                            <HeaderedContentControl Style="{StaticResource RibbonGroup}" Header="Zoom">
+                                <StackPanel Orientation="Horizontal">
+                                    <Button x:Name="FitWidthButton" Style="{StaticResource ToolButton}" Content="&#xE9A6;" Click="OnFitWidth" ToolTip="An Breite anpassen (Strg+2)" AutomationProperties.Name="Breite" />
+                                    <Button x:Name="FitPageButton" Style="{StaticResource ToolButton}" Content="&#xE9A8;" Click="OnFitPage" ToolTip="Ganze Seite (Strg+0)" AutomationProperties.Name="Ganze Seite" />
+                                </StackPanel>
+                            </HeaderedContentControl>
+                            <HeaderedContentControl Style="{StaticResource RibbonGroup}" Header="Navigation">
+                                <StackPanel Orientation="Horizontal">
+                                    <Button x:Name="BackButton" Style="{StaticResource ToolButton}" Content="&#xE72B;" Click="OnViewBack" ToolTip="Vorherige Ansicht (Alt+Pfeil links)" AutomationProperties.Name="Zurück" />
+                                    <Button x:Name="ForwardButton" Style="{StaticResource ToolButton}" Content="&#xE72A;" Click="OnViewForward" ToolTip="Nächste Ansicht (Alt+Pfeil rechts)" AutomationProperties.Name="Vor" />
+                                </StackPanel>
+                            </HeaderedContentControl>
+                        </StackPanel>
+                        <!-- Seiten -->
+                        <StackPanel x:Name="PagesPanel" Orientation="Horizontal" Visibility="Collapsed">
+                            <HeaderedContentControl Style="{StaticResource RibbonGroup}" Header="Drehen">
+                                <StackPanel Orientation="Horizontal">
+                                    <Button x:Name="RotateLeftButton" Style="{StaticResource ToolButton}" Click="OnRotateLeft" ToolTip="Seite nach links drehen" AutomationProperties.Name="Links drehen">
+                                        <TextBlock Text="&#xE7AD;" RenderTransformOrigin="0.5,0.5"><TextBlock.RenderTransform><ScaleTransform ScaleX="-1" /></TextBlock.RenderTransform></TextBlock>
+                                    </Button>
+                                    <Button x:Name="RotateRightButton" Style="{StaticResource ToolButton}" Content="&#xE7AD;" Click="OnRotateRight" ToolTip="Seite nach rechts drehen" AutomationProperties.Name="Rechts drehen" />
+                                </StackPanel>
+                            </HeaderedContentControl>
+                            <HeaderedContentControl Style="{StaticResource RibbonGroup}" Header="Seiten bearbeiten">
+                                <StackPanel Orientation="Horizontal">
+                                    <Button x:Name="InsertBlankButton" Style="{StaticResource ToolButton}" Content="&#xE710;" Click="OnInsertBlank" ToolTip="Leere Seite nach der aktuellen einfügen" AutomationProperties.Name="Leere Seite" />
+                                    <Button x:Name="InsertFileButton" Style="{StaticResource ToolButton}" Content="&#xE8F4;" Click="OnInsertFromFile" ToolTip="Seiten aus anderem PDF einfügen (Zusammenführen)" AutomationProperties.Name="Einfügen" />
+                                    <Button x:Name="ExtractButton" Style="{StaticResource ToolButton}" Content="&#xE8B5;" Click="OnExtract" ToolTip="Seiten als neues PDF speichern (Aufteilen)" AutomationProperties.Name="Herauslösen" />
+                                    <Button x:Name="DeletePageButton" Style="{StaticResource ToolButton}" Content="&#xE74D;" Click="OnDeletePage" ToolTip="Aktuelle Seite löschen" AutomationProperties.Name="Löschen" />
+                                </StackPanel>
+                            </HeaderedContentControl>
+                        </StackPanel>
+                        <!-- Markieren und Messen werden im Code gefüllt -->
+                        <StackPanel x:Name="MarkupBar" Orientation="Horizontal" />
+                        <StackPanel x:Name="MeasureBar" Orientation="Horizontal" Visibility="Collapsed" />
+                    </Grid>
+                    <HeaderedContentControl x:Name="StyleGroup" Style="{StaticResource RibbonGroup}" Header="Darstellung">
+                        <WrapPanel x:Name="StylePanel" MaxWidth="190" VerticalAlignment="Center" />
+                    </HeaderedContentControl>
+                </StackPanel>
+            </ScrollViewer>
         </Border>
 
         <!-- Registerkarten -->
@@ -138,7 +181,7 @@
                         </TreeView.ItemTemplate>
                     </TreeView>
                     <DockPanel x:Name="SearchPanel" Grid.Row="1" Visibility="Collapsed" Margin="8">
-                        <TextBox x:Name="SearchBox" DockPanel.Dock="Top" Style="{StaticResource InputBox}" KeyDown="OnSearchBoxKey"
+                        <TextBox x:Name="SearchBox" controls:Hint.Text="Im Dokument suchen …" DockPanel.Dock="Top" Style="{StaticResource InputBox}" KeyDown="OnSearchBoxKey"
                                  ToolTip="Suchbegriff, Eingabetaste startet die Suche. F3 springt zur nächsten Fundstelle."
                                  AutomationProperties.Name="Suchbegriff" />
                         <TextBlock x:Name="SearchStatus" DockPanel.Dock="Top" Style="{StaticResource TextCaption}" Margin="2,6,2,6" TextWrapping="Wrap"
@@ -156,7 +199,7 @@
                         </ListBox>
                     </DockPanel>
                     <DockPanel x:Name="ToolsPanel" Grid.Row="1" Visibility="Collapsed" Margin="8">
-                        <TextBox x:Name="ToolSearchBox" DockPanel.Dock="Top" Style="{StaticResource InputBox}" TextChanged="OnToolSearch"
+                        <TextBox x:Name="ToolSearchBox" controls:Hint.Text="Werkzeuge suchen …" DockPanel.Dock="Top" Style="{StaticResource InputBox}" TextChanged="OnToolSearch"
                                  ToolTip="Werkzeuge nach Name, Satz oder Art suchen" AutomationProperties.Name="Werkzeuge suchen" />
                         <TextBlock DockPanel.Dock="Top" Style="{StaticResource TextCaption}" Margin="2,6,2,6" TextWrapping="Wrap"
                                    Text="Ein Klick wählt das Werkzeug. Es bleibt aktiv, bis Esc gedrückt wird. Eigene Werkzeuge: Rechtsklick auf eine Markierung, „Als Werkzeug speichern“." />
@@ -224,7 +267,7 @@
                                 ToolTip="Liste als Excel-Arbeitsmappe (XLSX) mit Summenblatt speichern, wahlweise als CSV" />
                         <CheckBox x:Name="MeasurementsOnly" DockPanel.Dock="Right" Content="Nur Messungen" VerticalAlignment="Center" Margin="8,0"
                                   Foreground="{DynamicResource TextBrush}" Click="OnMarkupListFilter" />
-                        <TextBox x:Name="MarkupFilter" DockPanel.Dock="Left" Style="{StaticResource InputBox}" Width="180" VerticalAlignment="Center" TextChanged="OnMarkupListFilter"
+                        <TextBox x:Name="MarkupFilter" controls:Hint.Text="Markierungen filtern …" DockPanel.Dock="Left" Style="{StaticResource InputBox}" Width="180" VerticalAlignment="Center" TextChanged="OnMarkupListFilter"
                                  ToolTip="Filtern nach Art, Text, Status oder Autor" AutomationProperties.Name="Markierungen filtern" />
                     </DockPanel>
                     <TextBlock x:Name="MarkupTotals" DockPanel.Dock="Top" Style="{StaticResource TextSecondary}" Margin="12,0,12,6"
@@ -252,7 +295,7 @@
         </Grid>
 
         <!-- Leerer Zustand -->
-        <Grid x:Name="EmptyState" Grid.Row="1" Grid.RowSpan="3" Background="{DynamicResource CanvasBrush}">
+        <Grid x:Name="EmptyState" Grid.Row="2" Grid.RowSpan="2" Background="{DynamicResource CanvasBrush}">
             <Border Style="{StaticResource Card}" HorizontalAlignment="Center" VerticalAlignment="Center" Width="520">
                 <StackPanel>
                     <TextBlock Style="{StaticResource TextTitle}" Text="Kein Dokument geöffnet" />
@@ -293,13 +336,25 @@
             </Border>
         </Grid>
 
-        <!-- Statuszeile -->
-        <Border Grid.Row="4" Background="{DynamicResource Surface1Brush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="12,4">
+        <!-- Statuszeile mit Seitenwechsel und Zoom -->
+        <Border Grid.Row="4" Background="{DynamicResource Surface1Brush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="12,2">
             <DockPanel>
-                <TextBlock x:Name="StatusZoom" DockPanel.Dock="Right" Style="{StaticResource TextCaption}" Margin="16,0,0,0" />
-                <TextBlock x:Name="StatusMarkup" DockPanel.Dock="Right" Style="{StaticResource TextCaption}" Margin="16,0,0,0" />
-                <TextBlock x:Name="StatusFormat" DockPanel.Dock="Right" Style="{StaticResource TextCaption}" Margin="16,0,0,0" />
-                <TextBlock x:Name="StatusPath" Style="{StaticResource TextCaption}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="PrevButton" Style="{StaticResource StatusButton}" Content="&#xE70E;" Click="OnPrevPage" ToolTip="Vorherige Seite (Bild auf)" AutomationProperties.Name="Vorherige Seite" />
+                    <TextBox x:Name="PageBox" Style="{StaticResource InputBox}" Width="44" Padding="4,1" TextAlignment="Right" KeyDown="OnPageBoxKey"
+                             ToolTip="Seitenzahl, mit Eingabetaste springen" AutomationProperties.Name="Seitenzahl" />
+                    <TextBlock x:Name="PageCountText" Style="{StaticResource TextCaption}" VerticalAlignment="Center" Margin="6,0" />
+                    <Button x:Name="NextButton" Style="{StaticResource StatusButton}" Content="&#xE70D;" Click="OnNextPage" ToolTip="Nächste Seite (Bild ab)" AutomationProperties.Name="Nächste Seite" />
+                    <Border Style="{StaticResource ToolSeparator}" Height="16" />
+                    <Button x:Name="ZoomOutButton" Style="{StaticResource StatusButton}" Content="&#xE71F;" Click="OnZoomOut" ToolTip="Verkleinern (Strg+Minus)" AutomationProperties.Name="Verkleinern" />
+                    <TextBox x:Name="ZoomBox" Style="{StaticResource InputBox}" Width="58" Padding="4,1" TextAlignment="Right" KeyDown="OnZoomBoxKey"
+                             ToolTip="Zoom in Prozent, mit Eingabetaste übernehmen" AutomationProperties.Name="Zoom in Prozent" />
+                    <Button x:Name="ZoomInButton" Style="{StaticResource StatusButton}" Content="&#xE8A3;" Click="OnZoomIn" ToolTip="Vergrößern (Strg+Plus)" AutomationProperties.Name="Vergrößern" />
+                </StackPanel>
+                <TextBlock x:Name="StatusZoom" DockPanel.Dock="Right" Style="{StaticResource TextCaption}" Margin="16,0,0,0" Visibility="Collapsed" />
+                <TextBlock x:Name="StatusMarkup" DockPanel.Dock="Right" Style="{StaticResource TextCaption}" Margin="16,0,16,0" VerticalAlignment="Center" />
+                <TextBlock x:Name="StatusFormat" DockPanel.Dock="Right" Style="{StaticResource TextCaption}" Margin="16,0,0,0" VerticalAlignment="Center" />
+                <TextBlock x:Name="StatusPath" Style="{StaticResource TextCaption}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
             </DockPanel>
         </Border>
     </Grid>
