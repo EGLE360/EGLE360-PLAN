@@ -107,7 +107,7 @@ public sealed class BatchWindow : Window
         _textChoice = Choice("Kopf- oder Fußzeile setzen", "action", false);
         right.Children.Add(_textChoice);
         var textRow = Row();
-        _textBox = new TextBox { Style = (Style)FindResource("InputBox"), Width = 260, Text = "{Datei}, Seite {Seite} von {Seiten}" };
+        _textBox = new TextBox { Style = (Style)FindResource("InputBox"), Width = 200, Text = "{Datei}, Seite {Seite} von {Seiten}" };
         _textBox.GotFocus += (_, _) => _textChoice.IsChecked = true;
         _positionButton = SecondaryButton(HeaderFooterBatchAction.PositionText(_position), (_, _) => ShowPositionMenu());
         textRow.Children.Add(_textBox);
