@@ -146,6 +146,7 @@ public partial class DocumentsView : UserControl, IDisposable
         viewer.ToolChanged += (_, _) => { if (open == _active) { SyncToolButtons(viewer); SyncToolList(); } };
         viewer.EditTextRequested += (_, args) => OnEditText(open, args.Page, args.Markup);
         viewer.DepthRequested += (_, args) => OnEditDepth(open, args.Page, args.Markup);
+        viewer.SlopeRequested += (_, args) => OnEditSlope(open, args.Page, args.Markup);
         viewer.PriceRequested += (_, args) => OnEditPrice(open, args.Page, args.Markup);
         viewer.SaveAsToolRequested += (_, markup) => OnSaveAsTool(markup);
         viewer.RotateAngleRequested += (_, _) => OnRotateAngle(viewer);

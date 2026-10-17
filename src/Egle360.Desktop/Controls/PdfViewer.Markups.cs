@@ -208,6 +208,8 @@ public sealed partial class PdfViewer
     /// <summary>Höhe oder Tiefe einer Messung soll eingegeben werden (Kontextmenü).</summary>
     public event EventHandler<(int Page, Markup Markup)>? DepthRequested;
 
+    public event EventHandler<(int Page, Markup Markup)>? SlopeRequested;
+
     public int SelectedPage => _selected.Count > 0 ? _selectedPage : -1;
 
     public IReadOnlyList<Markup> SelectedMarkups =>
@@ -929,6 +931,11 @@ public sealed partial class PdfViewer
         {
             var depthHeader = markup.Kind == MarkupKind.Area ? "Tiefe für Volumen …" : "Höhe für Wandfläche …";
             Add(depthHeader, () => DepthRequested?.Invoke(this, (page, markup)), editable && markup.Scale is not null);
+            if (Measurement.SupportsSlope(markup.Kind))
+            {
+                Add(markup.Slope is { } slope ? $"Neigung ({Measurement.SlopeText(slope)}) …" : "Neigung oder Gefälle …",
+                    () => SlopeRequested?.Invoke(this, (page, markup)), editable && markup.Scale is not null);
+            }
             if (markup.Kind != MarkupKind.Area)
             {
                 menu.Items.Add(new Separator());

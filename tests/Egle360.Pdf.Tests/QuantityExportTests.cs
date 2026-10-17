@@ -76,8 +76,8 @@ public class QuantityExportTests
     public void Csv_mit_deutschem_Zahlenformat()
     {
         var lines = MarkupReport.ToCsv(SampleRows()).Split(Environment.NewLine);
-        Assert.StartsWith("Seite;Art;Wert;Einheit;Umfang;Höhe oder Tiefe (m);Volumen oder Wandfläche;Einheit;", lines[0]);
-        Assert.StartsWith("1;Fläche;40;m²;28;0,25;10;m³;", lines[1]);
+        Assert.StartsWith("Seite;Art;Wert;Einheit;Umfang;Neigung (%);Geneigt;Höhenunterschied;Höhe oder Tiefe (m);Volumen oder Wandfläche;Einheit;", lines[0]);
+        Assert.StartsWith("1;Fläche;40;m²;28;;;;0,25;10;m³;", lines[1]);
         Assert.Contains(";\"Wand; Achse \"\"B\"\"\";", lines[3]);
     }
 

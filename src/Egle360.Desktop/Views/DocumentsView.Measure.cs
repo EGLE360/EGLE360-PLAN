@@ -211,6 +211,43 @@ public partial class DocumentsView
         }
     }
 
+    /// <summary>Neigung oder Gefälle einer Länge oder Fläche in Prozent festlegen oder entfernen.</summary>
+    private void OnEditSlope(OpenDocument open, int page, Markup markup)
+    {
+        if (!open.Document.CanAnnotate || !Measurement.SupportsSlope(markup.Kind) || markup.Locked)
+        {
+            return;
+        }
+        var area = markup.Kind == MarkupKind.Area;
+        var value = Dialogs.AskPositiveNumber(Owner, "Neigung oder Gefälle",
+            area ? "Neigung der Fläche in Prozent, zum Beispiel 58 für ein Dach mit etwa 30°. Gemessen wird im Grundriss, dazu kommt die geneigte Fläche."
+                 : "Neigung in Prozent, zum Beispiel 2 für ein Gefälle von 2 cm je Meter. Gemessen wird im Grundriss, dazu kommen die geneigte Länge und der Höhenunterschied.",
+            markup.Slope, "%", "2,5");
+        if (value is null)
+        {
+            return;
+        }
+        if (value > Measurement.MaxSlope)
+        {
+            ShowError($"Die Neigung darf höchstens {Measurement.Number(Measurement.MaxSlope, 0)} % betragen.");
+            return;
+        }
+        double? slope = value > 0 ? value : null;
+        var current = open.Document.GetMarkups(page).FirstOrDefault(m => m.Id == markup.Id);
+        if (current is null || current.Slope == slope)
+        {
+            return;
+        }
+        try
+        {
+            open.History.Replace(page, current with { Slope = slope, Modified = DateTimeOffset.Now }, "Neigung ändern");
+        }
+        catch (PdfException ex)
+        {
+            ShowError(ex.Message);
+        }
+    }
+
     /// <summary>Einheitspreis einer Messung festlegen oder entfernen.</summary>
     private void OnEditPrice(OpenDocument open, int page, Markup markup)
     {

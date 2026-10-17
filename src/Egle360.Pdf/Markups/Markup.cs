@@ -118,6 +118,10 @@ public sealed record MarkupStyle(PdfColor Stroke, PdfColor? Fill, double Opacity
 /// <param name="Status">Prüf- oder Bearbeitungsstatus mit Person und Zeitpunkt.</param>
 /// <param name="Locked">Gesperrt: nicht verschiebbar, nicht änderbar, nicht löschbar, bis die Sperre aufgehoben wird.</param>
 /// <param name="UnitPrice">Einheitspreis in Euro je Mengeneinheit einer Messung.</param>
+/// <param name="Slope">
+/// Neigung oder Gefälle in Prozent (Höhenunterschied je 100 Einheiten Grundrissmaß) bei Längen, Polylängen und
+/// Flächen; daraus ergeben sich die geneigte Länge oder Fläche und der Höhenunterschied.
+/// </param>
 public sealed record Markup(
     string Id,
     MarkupKind Kind,
@@ -132,7 +136,8 @@ public sealed record Markup(
     double? Depth = null,
     MarkupStatus? Status = null,
     bool Locked = false,
-    double? UnitPrice = null)
+    double? UnitPrice = null,
+    double? Slope = null)
 {
     public IReadOnlyList<PdfPoint> Points => Paths.Count > 0 ? Paths[0] : [];
 

@@ -205,6 +205,7 @@ public static class MarkupSerializer
             Status = m.Status is { } st ? new StatusDto { Name = st.Name, By = st.By, At = st.At } : null,
             Locked = m.Locked ? true : null,
             Price = m.UnitPrice,
+            Slope = m.Slope,
         };
         return JsonSerializer.Serialize(dto, Json);
     }
@@ -233,8 +234,9 @@ public static class MarkupSerializer
             var depth = dto.Depth is > 0 and < 1e6 ? dto.Depth : null;
             var status = dto.Status is { Name: { Length: > 0 and <= 100 } name } sdto ? new MarkupStatus(name, sdto.By ?? "", sdto.At ?? created) : null;
             var price = dto.Price is >= 0 and < 1e9 ? dto.Price : null;
+            var slope = dto.Slope is > 0 and <= Measurement.MaxSlope && Measurement.SupportsSlope(dto.Kind) ? dto.Slope : null;
             return new Markup(id, dto.Kind, paths, style, text, author, created, modified ?? created, TextFrame.Normalize(dto.Rot), scale, depth,
-                status, dto.Locked == true, price);
+                status, dto.Locked == true, price, slope);
         }
         catch (JsonException)
         {
@@ -266,6 +268,7 @@ public static class MarkupSerializer
         [JsonPropertyName("status")] public StatusDto? Status { get; set; }
         [JsonPropertyName("locked")] public bool? Locked { get; set; }
         [JsonPropertyName("price")] public double? Price { get; set; }
+        [JsonPropertyName("slope")] public double? Slope { get; set; }
     }
 
     private sealed class StatusDto

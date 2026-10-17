@@ -130,6 +130,36 @@ public static class Measurement
         };
     }
 
+    /// <summary>Größte zulässige Neigung in Prozent (entspricht etwa 84°).</summary>
+    public const double MaxSlope = 1000;
+
+    /// <summary>Messarten, die eine Neigung haben können.</summary>
+    public static bool SupportsSlope(MarkupKind kind) => kind is MarkupKind.Area or MarkupKind.Length or MarkupKind.Polylength;
+
+    /// <summary>Neigungswinkel in Grad zu einer Neigung in Prozent.</summary>
+    public static double SlopeDegrees(double percent) => Math.Atan(percent / 100) * 180 / Math.PI;
+
+    /// <summary>
+    /// Werte aus der Neigung in der Anzeigeeinheit: geneigte Länge (Grundrisslänge mal √(1 + n²)) und Höhenunterschied
+    /// (Grundrisslänge mal n) bei Längen, geneigte Fläche (Grundrissfläche mal √(1 + n²)) bei Flächen, wobei n die
+    /// Neigung als Dezimalzahl ist. Für eine ebene geneigte Fläche gilt das unabhängig von der Gefällerichtung.
+    /// </summary>
+    public static (double Value, string Unit, string Name, double? Rise)? Sloped(Markup m)
+    {
+        if (m.Slope is not { } slope || slope <= 0 || !SupportsSlope(m.Kind) || Compute(m) is not { } v)
+        {
+            return null;
+        }
+        var n = slope / 100;
+        var factor = Math.Sqrt(1 + n * n);
+        return m.Kind == MarkupKind.Area
+            ? (v.Value * factor, v.Unit, "Fläche geneigt", null)
+            : (v.Value * factor, v.Unit, "Länge geneigt", v.Value * n);
+    }
+
+    /// <summary>Neigung für die Anzeige, z. B. „15 % (8,5°)“.</summary>
+    public static string SlopeText(double percent) => $"{Number(percent, percent % 1 == 0 ? 0 : 1)} % ({Number(SlopeDegrees(percent), 1)}°)";
+
     /// <summary>Messarten, die eine Höhe oder Tiefe haben können.</summary>
     public static bool SupportsDepth(MarkupKind kind) => kind is MarkupKind.Area or MarkupKind.Length or MarkupKind.Polylength or MarkupKind.Perimeter;
 
@@ -188,6 +218,10 @@ public static class Measurement
         }
         var d = Decimals(m.Scale!.Unit);
         var main = $"{Prefix(m.Kind)}{Number(v.Value, d)} {v.Unit}";
+        if (Sloped(m) is { } sl)
+        {
+            main += $", geneigt {Number(sl.Value, d)} {sl.Unit}";
+        }
         return Derived(m) is { } x ? $"{main}, {Number(x.Value, 2)} {x.Unit}" : main;
     }
 
@@ -225,6 +259,14 @@ public static class Measurement
         if (v is { Perimeter: { } p, PerimeterUnit: { } pu })
         {
             text += $", Umfang {Number(p, Decimals(s.Unit))} {pu}";
+        }
+        if (Sloped(m) is { } sl)
+        {
+            text += $", Neigung {SlopeText(m.Slope!.Value)}, {sl.Name} {Number(sl.Value, Decimals(s.Unit))} {sl.Unit}";
+            if (sl.Rise is { } rise)
+            {
+                text += $", Höhenunterschied {Number(rise, Decimals(s.Unit))} {sl.Unit}";
+            }
         }
         if (Derived(m) is { } x)
         {

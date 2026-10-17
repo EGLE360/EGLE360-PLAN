@@ -1,6 +1,6 @@
 # EGLE360 PLAN – Testanleitung
 
-Stand: Entwicklungsversion 0.7 (PDF-Grundsystem, Markierungen mit Stempeln und Bemaßung, Textsuche, Mengenermittlung mit Volumen, Wandflächen und Excel-Export, Werkzeugbibliothek, Planverwaltung mit Indexverlauf). Das ist eine frühe Testversion, keine fertige Software. Bitte mit Kopien von Plänen arbeiten, nicht mit den einzigen Originalen.
+Stand: Entwicklungsversion 0.7 (PDF-Grundsystem, Markierungen mit Stempeln und Bemaßung, Textsuche, Mengenermittlung mit Volumen, Wandflächen, Neigung und Excel-Export, Werkzeugbibliothek, Planverwaltung mit Indexverlauf). Das ist eine frühe Testversion, keine fertige Software. Bitte mit Kopien von Plänen arbeiten, nicht mit den einzigen Originalen.
 
 ## Starten
 
@@ -90,6 +90,7 @@ Rechts in der Markierungsleiste sitzen die Messwerkzeuge und die Schaltfläche f
    - Radius: erst den Mittelpunkt, dann einen Punkt auf dem Kreis anklicken oder aufziehen. Durchmesser: von einem Kreisrand zum gegenüberliegenden ziehen. Die Liste zeigt zusätzlich die Kreisfläche.
    - Volumen: Rechtsklick auf eine Fläche, „Tiefe für Volumen …“, zum Beispiel 0,25 für eine Bodenplatte. Die Beschriftung zeigt dann Fläche und Volumen.
    - Wandfläche: Rechtsklick auf eine Länge, Polylänge oder einen Umfang, „Höhe für Wandfläche …“, zum Beispiel 2,80. Ein leeres Feld entfernt die Angabe wieder.
+   - Neigung oder Gefälle (neu): Rechtsklick auf eine Länge, Polylänge oder Fläche, „Neigung oder Gefälle …“, Wert in Prozent. Gemessen wird weiter im Grundriss; dazu kommen die geneigte Länge und der Höhenunterschied, bei Flächen die geneigte Fläche (zum Beispiel ein Dach). Probe: 4 m Grundrisslänge bei 75 % ergibt 5,00 m geneigt und 3,00 m Höhenunterschied. Ein Einheitspreis bezieht sich dann auf den geneigten Wert, außer es ist eine Höhe oder Tiefe angegeben.
 3. Der Wert steht als Beschriftung im Plan und ändert sich live beim Ziehen an den Eckpunkten.
 4. Wird der Maßstab einer Seite geändert, übernehmen die vorhandenen Messungen auf dieser Seite ihn. Rückgängig nimmt das zurück.
 
