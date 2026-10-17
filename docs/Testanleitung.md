@@ -125,6 +125,14 @@ Zum Ausprobieren im Beispielplan: Die Küche ist 10 m × 10 m, die Fläche muss 
 - „Mit Vorstand vergleichen“ legt den aktuellen und den vorherigen Index übereinander: Rot ist nur im alten Stand, Blau nur im neuen, Grau unverändert. Über den Verlauf (Rechtsklick auf einen älteren Index) lässt sich auch mit anderen Ständen vergleichen. „Änderungen als Wolken eintragen“ setzt rote Wolken um jeden geänderten Bereich in den neuen Stand. Ist der Planinhalt zwischen den Ständen verschoben (bis etwa 6 % der Seitengröße), wird das automatisch ausgeglichen und in der Statuszeile in Millimetern angezeigt. Verdrehte oder anders skalierte Stände werden noch nicht ausgerichtet.
 - „Planliste exportieren (Excel)“ schreibt die (gefilterte) Liste und den Verlauf aller Stände in eine Arbeitsmappe.
 
+### Stapelverarbeitung (neu)
+
+- In der Dokumentansicht über die Schaltfläche „Stapelverarbeitung“ (mit den geöffneten Dateien als Vorauswahl) oder unter „Pläne“ über „Stapelverarbeitung …“ (mit den aktuellen Ständen der angezeigten Pläne).
+- Dateien lassen sich hinzufügen, als ganzer Ordner übernehmen oder ins Fenster ziehen.
+- Arbeitsschritte: Stempel in eine Ecke der ersten oder aller Seiten setzen (die Ecke gilt so, wie die Seite angezeigt wird) oder einen Maßstab für die erste oder alle Seiten festlegen.
+- Standardmäßig entstehen bearbeitete Kopien im gewählten Zielordner, die Originale bleiben unverändert. „Originale überschreiben“ fragt vorher nach.
+- Fortschritt, Abbruch und Protokoll: Ein Fehler in einer Datei hält den Lauf nicht an. Das Protokoll steht im Fenster und wird als Textdatei in den Zielordner geschrieben. Ein abgebrochener Lauf lässt sich fortsetzen, weil bereits erledigte Kopien übersprungen werden.
+
 ## Was noch fehlt
 
 Diese Punkte sind geplant, aber noch nicht enthalten:
@@ -134,6 +142,7 @@ Diese Punkte sind geplant, aber noch nicht enthalten:
 - Ob Bluebeam die gespeicherten Messungen als Messungen (mit Wert in der Markups-Liste) erkennt, ist noch nicht geprüft. Die Datei enthält dafür die genormten PDF-Messangaben; im Plan sind die Messungen in jedem Fall sichtbar.
 - BIM, 4D/5D, KI-Funktionen und die AVA-Anbindung folgen in späteren Phasen.
 - Programmsymbol, digitale Signatur und Installationsprogramm.
+- Weitere Stapelschritte (Drucken, Sicherheit, Schwärzen, Seiten einrichten, Verknüpfungen zwischen Plänen).
 
 ## Rückmeldung
 

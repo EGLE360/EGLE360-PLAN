@@ -147,6 +147,7 @@ public partial class DocumentsView
         var clear = new Button { Style = (Style)FindResource("ButtonSecondary"), Content = "Neu zeichnen", Margin = new Thickness(0, 0, 12, 0) };
         clear.Click += (_, _) => ink.Strokes.Clear();
         var keep = new CheckBox { Content = "In der Werkzeugbibliothek speichern", IsChecked = true, VerticalAlignment = VerticalAlignment.Center };
+        keep.SetResourceReference(ForegroundProperty, "TextBrush");
         var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 10, 0, 0) };
         row.Children.Add(clear);
         row.Children.Add(keep);

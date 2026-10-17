@@ -32,6 +32,8 @@
                           ToolTip="Beim Eintragen eines neuen Index werden Markierungen und Maßstäbe des bisherigen Stands auf dieselben Seiten der neuen Datei kopiert." />
                 <Border Style="{StaticResource ToolSeparator}" />
                 <Button x:Name="ExportButton" Style="{StaticResource ButtonSecondary}" Content="Planliste exportieren (Excel) …" Click="OnExport" Margin="4,0" />
+                <Button x:Name="BatchButton" Style="{StaticResource ButtonSecondary}" Content="Stapelverarbeitung …" Click="OnBatch" Margin="4,0"
+                        ToolTip="Stempel oder Maßstab für die aktuellen Stände aller angezeigten Pläne, als Kopien im Ordner „Ausgabe“ des Projekts" />
             </WrapPanel>
         </Border>
 

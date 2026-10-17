@@ -144,7 +144,7 @@ public partial class PlansView : UserControl
         var has = _project is not null;
         ProjectTitle.Text = has && _project!.Register.Name.Length > 0 ? _project.Register.Name : "Pläne";
         ProjectInfo.Text = has ? $"{_project!.Register.Plans.Count} Pläne in {_project.Root}" : "";
-        AddButton.IsEnabled = ExportButton.IsEnabled = has;
+        AddButton.IsEnabled = ExportButton.IsEnabled = BatchButton.IsEnabled = has;
 
         if (_disciplineFilter.Length > 0 && _project?.Register.Plans.Any(p => p.Discipline == _disciplineFilter) != true)
         {
@@ -511,6 +511,20 @@ public partial class PlansView : UserControl
         {
             Refresh();
         }
+    }
+
+    /// <summary>Stapelverarbeitung für die aktuellen Stände der angezeigten (gefilterten) Pläne.</summary>
+    private void OnBatch(object sender, RoutedEventArgs e)
+    {
+        if (_project is null || Window.GetWindow(this) is not { } owner)
+        {
+            return;
+        }
+        var files = PlanGrid.Items.OfType<PlanRow>()
+            .Select(r => r.Plan.Revisions.Count > 0 ? _project.FullPath(r.Plan.Current) : null)
+            .OfType<string>()
+            .ToList();
+        new BatchWindow(owner, files, System.IO.Path.Combine(_project.Root, "Ausgabe")).Show();
     }
 
     private void OnExport(object sender, RoutedEventArgs e)

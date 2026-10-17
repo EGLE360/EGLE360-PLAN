@@ -539,6 +539,8 @@ STATUS = {
     "CMP-002": "Teilweise (Phase 6, Teil 1): Überlagerung rot (alt), blau (neu), grau (gleich); Ebenen und Transparenz offen",
     "QTO-008": "Umgesetzt (Phase 5): Neigung in Prozent bei Länge, Polylänge und Fläche; geneigte Länge oder Fläche und Höhenunterschied in Liste und Export. Ob die Rechenweise der Referenz entspricht, ist ungeprüft",
     "MKP-TOOL-025": "Umgesetzt (Phase 5): Bild aus Datei oder Zwischenablage, gezeichnetes Unterschriftsbild (keine digitale Signatur), speicherbar in der Werkzeugbibliothek; Scanner offen",
+    "AUTO-001": "Teilweise (Phase 6): Stapellauf mit Fortschritt, Protokoll, Abbruch und Fortsetzen über bereits erledigte Kopien; bisher Schritte Stempel und Maßstab",
+    "MKP-TOOL-024": "Umgesetzt (Phase 6): Stempel auf erste oder alle Seiten vieler Dateien, Ecke wählbar, als Kopien oder in den Originalen",
     "CMP-003": "Teilweise (Phase 6, Teil 1): Verschiebung wird automatisch erkannt und ausgeglichen; Drehung, Maßstab und manuelle Ausrichtung offen",
     "TOOL-001": "Umgesetzt (Phase 5, Teil 3): Werkzeugsätze in der Seitenleiste, Werkzeug aus Markierung speichern, bleibt beim Zeichnen aktiv",
     "TOOL-003": "Teilweise (Phase 5, Teil 3): Import und Export im eigenen Format e360-tools (JSON); BTX-Import offen",

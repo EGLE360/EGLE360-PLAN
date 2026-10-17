@@ -805,6 +805,10 @@ public partial class DocumentsView : UserControl, IDisposable
         }
     }
 
+    /// <summary>Stapelverarbeitung mit den geöffneten, gespeicherten Dateien als Vorauswahl.</summary>
+    private void OnBatch(object sender, RoutedEventArgs e) =>
+        new BatchWindow(Owner, _documents.Select(d => d.Document.FilePath).OfType<string>()).Show();
+
     private void OnProperties(object sender, RoutedEventArgs e)
     {
         if (_active is not null)

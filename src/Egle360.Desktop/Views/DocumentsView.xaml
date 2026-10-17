@@ -53,6 +53,7 @@
                 <Button x:Name="DeletePageButton" Style="{StaticResource ToolButton}" Content="&#xE74D;" Click="OnDeletePage" ToolTip="Aktuelle Seite löschen" AutomationProperties.Name="Seite löschen" />
                 <Border Style="{StaticResource ToolSeparator}" />
                 <Button x:Name="PropertiesButton" Style="{StaticResource ToolButton}" Content="&#xE946;" Click="OnProperties" ToolTip="Dokumenteigenschaften" AutomationProperties.Name="Dokumenteigenschaften" />
+                <Button Style="{StaticResource ToolButton}" Content="&#xE8F1;" Click="OnBatch" ToolTip="Stapelverarbeitung: Stempel oder Maßstab für viele PDF-Dateien" AutomationProperties.Name="Stapelverarbeitung" />
                 <Button x:Name="MarkupListButton" Style="{StaticResource ToolButton}" Content="&#xE8FD;" Click="OnToggleMarkupList" ToolTip="Markierungs- und Mengenliste ein- oder ausblenden" AutomationProperties.Name="Markierungsliste" />
             </WrapPanel>
         </Border>

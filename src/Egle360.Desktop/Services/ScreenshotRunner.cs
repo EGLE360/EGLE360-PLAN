@@ -192,6 +192,12 @@ internal static class ScreenshotRunner
                         Save(compare, Path.Combine(outputDir, name + "-vergleich.png"));
                         compare.Close();
                     }
+                    var batchFiles = project.Register.Plans.Select(p => project.FullPath(p.Current)).ToList();
+                    var batch = new Egle360.Desktop.Views.BatchWindow(window, batchFiles, Path.Combine(planRoot, "Ausgabe")) { Width = 1100, Height = 760, ShowActivated = false };
+                    batch.Show();
+                    WaitForRender(batch);
+                    Save(batch, Path.Combine(outputDir, name + "-stapel.png"));
+                    batch.Close();
                     continue;
                 }
                 Save(window, Path.Combine(outputDir, name + ".png"));
