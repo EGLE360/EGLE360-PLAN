@@ -9,6 +9,8 @@ public partial class App : Application
 {
     public static ThemeManager Theme { get; private set; } = null!;
 
+    public static ToolLibraryStore Tools { get; private set; } = new(null);
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -20,6 +22,8 @@ public partial class App : Application
             : new UiSettingsStore(Path.Combine(Path.GetTempPath(), $"egle360-screenshots-{Environment.ProcessId}.json"));
         Theme = new ThemeManager(this, store);
         Theme.Initialize();
+        Tools = screenshotDir is null ? ToolLibraryStore.CreateDefault() : new ToolLibraryStore(null);
+        Tools.Load();
 
         var window = new MainWindow();
         if (screenshotDir is null)

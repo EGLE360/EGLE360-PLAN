@@ -124,6 +124,23 @@ public sealed partial class PdfViewer
 
     public MarkupKind DrawKind { get; private set; } = MarkupKind.Rectangle;
 
+    /// <summary>
+    /// Werkzeug aus der Bibliothek, mit dem gerade gezeichnet wird. Es bleibt nach jeder Markierung aktiv, bis Esc
+    /// gedrückt oder ein anderes Werkzeug gewählt wird, damit sich gleiche Mengen schnell hintereinander erfassen lassen.
+    /// </summary>
+    public ToolPreset? ActivePreset { get; private set; }
+
+    /// <summary>Werkzeug aus der Bibliothek zum Zeichnen wählen.</summary>
+    public void StartPreset(ToolPreset preset)
+    {
+        SetTool(ViewerTool.Draw, preset.Kind);
+        ActivePreset = preset;
+        ToolChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Aus einer Markierung soll ein Werkzeug der Bibliothek werden (Kontextmenü).</summary>
+    public event EventHandler<Markup>? SaveAsToolRequested;
+
     /// <summary>Maßstab einer Seite für neue Messungen.</summary>
     public Func<int, MeasureScale?> ScaleProvider { get; set; } = _ => null;
 
@@ -178,6 +195,7 @@ public sealed partial class PdfViewer
         CancelDrawing();
         ShowSnapMarker(-1, null);
         _cutout = null;
+        ActivePreset = null;
         if (tool is ViewerTool.Draw or ViewerTool.Calibrate && !_markupsVisible)
         {
             MarkupsVisible = true;
@@ -529,8 +547,10 @@ public sealed partial class PdfViewer
             }
             var rotation = Transform(h.Page).Rotation;
             var minSize = DragThreshold / (_layout.Zoom * PageLayoutDipPerPoint);
-            var style = _tool == ViewerTool.Calibrate ? CalibrationStyle : StyleProvider(kind);
-            _drawing = new MarkupDrawing(kind, style, Author, rotation, minSize, scale, _tool == ViewerTool.Draw ? TextProvider(kind) : "");
+            var preset = _tool == ViewerTool.Draw && ActivePreset?.Kind == kind ? ActivePreset : null;
+            var style = _tool == ViewerTool.Calibrate ? CalibrationStyle : preset?.Style ?? StyleProvider(kind);
+            var text = _tool != ViewerTool.Draw ? "" : preset is { Text.Length: > 0 } ? preset.Text : TextProvider(kind);
+            _drawing = new MarkupDrawing(kind, style, Author, rotation, minSize, scale, text);
             _drawingPage = h.Page;
         }
         _drawing.Press(Snap(h.Page, h.User));
@@ -807,8 +827,21 @@ public sealed partial class PdfViewer
                 return;
             }
         }
+        if (ActivePreset is { } preset)
+        {
+            markup = preset.ApplyTo(markup);
+        }
         if (!Run(() => _history.Add(page, markup)))
         {
+            return;
+        }
+        if (ActivePreset is not null)
+        {
+            // Werkzeuge aus der Bibliothek bleiben aktiv; Text fragen sie nur ab, wenn das Werkzeug keinen vorgibt.
+            if (MarkupKinds.HasText(markup.Kind) && string.IsNullOrEmpty(markup.Text))
+            {
+                EditTextRequested?.Invoke(this, (page, markup));
+            }
             return;
         }
         // Nach dem Zeichnen zurück zur Auswahl, die neue Markierung ist ausgewählt.
@@ -918,6 +951,7 @@ public sealed partial class PdfViewer
             menu.Items.Add(align);
             menu.Items.Add(new Separator());
         }
+        Add("Als Werkzeug speichern …", () => SaveAsToolRequested?.Invoke(this, markup));
         Add("Darstellung kopieren (Strg+Umschalt+C)", CopyStyle);
         Add("Darstellung einfügen (Strg+Umschalt+V)", PasteStyle, CanAnnotate && HasStyleClipboard);
         menu.Items.Add(new Separator());

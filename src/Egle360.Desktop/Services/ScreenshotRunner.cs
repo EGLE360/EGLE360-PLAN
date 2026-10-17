@@ -122,6 +122,12 @@ internal static class ScreenshotRunner
                     WaitForDocuments(window);
                     Save(window, Path.Combine(outputDir, name + "-suche.png"));
                     window.Documents.EndSearchForScreenshot();
+
+                    // Werkzeugbibliothek mit aktivem Werkzeug.
+                    window.Documents.ShowToolsForScreenshot("Bodenfläche");
+                    WaitForDocuments(window);
+                    Save(window, Path.Combine(outputDir, name + "-werkzeuge.png"));
+                    window.Documents.EndSearchForScreenshot();
                     viewer.FitWidth();
                     continue;
                 }

@@ -33,6 +33,7 @@ public partial class DocumentsView : UserControl, IDisposable
     {
         InitializeComponent();
         BuildMarkupBar();
+        InitToolLibrary();
         SidebarColumn.Width = new GridLength(Math.Clamp(App.Theme.Settings.DocumentSidebarWidth, 140, 480));
         PreviewKeyDown += OnPreviewKeyDown;
         RefreshRecent();
@@ -127,10 +128,11 @@ public partial class DocumentsView : UserControl, IDisposable
             }
         };
         viewer.SelectionChanged += (_, _) => { if (open == _active) { RefreshMarkupBar(); } };
-        viewer.ToolChanged += (_, _) => { if (open == _active) { SyncToolButtons(viewer); } };
+        viewer.ToolChanged += (_, _) => { if (open == _active) { SyncToolButtons(viewer); SyncToolList(); } };
         viewer.EditTextRequested += (_, args) => OnEditText(open, args.Page, args.Markup);
         viewer.DepthRequested += (_, args) => OnEditDepth(open, args.Page, args.Markup);
         viewer.PriceRequested += (_, args) => OnEditPrice(open, args.Page, args.Markup);
+        viewer.SaveAsToolRequested += (_, markup) => OnSaveAsTool(markup);
         viewer.ViewHistoryChanged += (_, _) => { if (open == _active) { RefreshViewHistory(); } };
         viewer.MarkupsVisibilityChanged += (_, _) => { if (open == _active) { RefreshMarkupBar(); } };
         AttachMeasure(open);
@@ -377,7 +379,7 @@ public partial class DocumentsView : UserControl, IDisposable
 
     private void UpdateSidebarTab()
     {
-        if (Thumbnails is null || Bookmarks is null || SearchPanel is null)
+        if (Thumbnails is null || Bookmarks is null || SearchPanel is null || ToolsPanel is null)
         {
             return;
         }
@@ -388,6 +390,7 @@ public partial class DocumentsView : UserControl, IDisposable
         Bookmarks.Visibility = bookmarks && hasBookmarks ? Visibility.Visible : Visibility.Collapsed;
         NoBookmarks.Visibility = bookmarks && !hasBookmarks ? Visibility.Visible : Visibility.Collapsed;
         SearchPanel.Visibility = SearchTab.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        ToolsPanel.Visibility = ToolsTab.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void OnToggleSidebar(object sender, RoutedEventArgs e)

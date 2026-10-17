@@ -242,9 +242,9 @@ public static class MarkupSerializer
         }
     }
 
-    private static string Hex(PdfColor c) => $"{c.R:X2}{c.G:X2}{c.B:X2}";
+    internal static string Hex(PdfColor c) => $"{c.R:X2}{c.G:X2}{c.B:X2}";
 
-    private static PdfColor? ParseHex(string? s) =>
+    internal static PdfColor? ParseHex(string? s) =>
         s is { Length: 6 } && int.TryParse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var v)
             ? new PdfColor((byte)(v >> 16), (byte)(v >> 8), (byte)v)
             : null;

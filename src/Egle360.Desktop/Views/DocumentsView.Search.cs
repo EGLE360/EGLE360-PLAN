@@ -134,6 +134,7 @@ public partial class DocumentsView
         ResetSearch();
         SearchBox.Text = "";
         PagesTab.IsChecked = true;
+        _active?.Viewer.SetTool(Controls.ViewerTool.Select);
     }
 
     /// <summary>Springt zur nächsten oder vorherigen Fundstelle (F3, Umschalt+F3).</summary>

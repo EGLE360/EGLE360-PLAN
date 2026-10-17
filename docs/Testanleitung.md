@@ -106,6 +106,13 @@ Zum Ausprobieren im Beispielplan: Die Küche ist 10 m × 10 m, die Fläche muss 
 - „Sperren“ schützt eine Markierung: Sie lässt sich noch auswählen und kopieren, aber nicht mehr verschieben, ändern oder löschen, bis sie wieder entsperrt wird. Im Beispielplan ist die Küchenfläche gesperrt.
 - „Einheitspreis …“ bei Längen, Flächen, Umfängen und Anzahlen: Preis in Euro je Einheit. Ist eine Höhe oder Tiefe angegeben, gilt der Preis je m² Wandfläche oder je m³ Volumen. Die Liste zeigt den Gesamtpreis und oben die Summe aller Kosten. Im Beispielplan: Küche 100 m² zu 38,50 € und drei Türen zu 650 €, zusammen 5.800,00 €.
 
+### Werkzeugbibliothek (neu)
+- In der Seitenleiste unter „Werkzeuge“ stehen gespeicherte Werkzeuge, nach Sätzen geordnet. Mitgeliefert sind „Planprüfung“ (Mangel, Hinweis, Rückfrage, Erledigt, Geprüft) und „Mengen Hochbau“ (Boden- und Deckenfläche, Wand, Sockelleiste, Türen, Fenster). Preise und Höhen sind dort bewusst leer, weil sie vom Projekt abhängen.
+- Ein Klick wählt ein Werkzeug. Es bleibt aktiv, sodass sich mehrere Flächen oder Zählungen hintereinander erfassen lassen. Esc beendet es.
+- Eigene Werkzeuge: Markierung so einstellen, wie sie sein soll (Farbe, Linie, Höhe oder Tiefe, Einheitspreis, Text), dann Rechtsklick, „Als Werkzeug speichern …“. Neue Markierungen mit diesem Werkzeug bekommen alles davon mit.
+- Rechtsklick in der Liste: Favorit (steht bei der Suche oben), Umbenennen, Löschen, Satz umbenennen oder löschen, Import und Export als Datei für andere Arbeitsplätze. Das Suchfeld findet Werkzeuge nach Name, Satz und Art.
+- Die Bibliothek liegt in `%APPDATA%\EGLE360\PLAN\Werkzeuge.json`.
+
 ## Was noch fehlt
 
 Diese Punkte sind geplant, aber noch nicht enthalten:
