@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Runtime.CompilerServices;
 using System.Windows.Media;
 
 namespace Egle360.Desktop.Controls;
@@ -54,22 +55,35 @@ public static class Ribbon
     /// </summary>
     public static void FitOnResize(ScrollViewer scroll)
     {
-        scroll.SizeChanged += (_, _) => Fit(scroll);
+        // Nur auf Breitenänderungen reagieren: Der Wechsel der Darstellung ändert die Höhe und darf keine neue Prüfung auslösen.
+        scroll.SizeChanged += (_, e) =>
+        {
+            if (e.WidthChanged)
+            {
+                Fit(scroll, remeasure: false);
+            }
+        };
         scroll.Loaded += (_, _) => Fit(scroll);
     }
 
-    public static void Fit(ScrollViewer scroll)
+    /// <summary>Breite, die das Menüband mit Beschriftungen braucht, je Bildlaufbereich.</summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ScrollViewer, StrongBox<double>> NeededWidth = new();
+
+    /// <param name="remeasure">True, wenn sich der Inhalt geändert hat (etwa eine andere Registerkarte).</param>
+    public static void Fit(ScrollViewer scroll, bool remeasure = true)
     {
         if (scroll.Content is not FrameworkElement content || scroll.ActualWidth <= 0)
         {
             return;
         }
-        SetCompact(content, false);
-        content.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        if (content.DesiredSize.Width > scroll.ActualWidth)
+        var needed = NeededWidth.GetOrCreateValue(scroll);
+        if (remeasure || needed.Value <= 0)
         {
-            SetCompact(content, true);
+            SetCompact(content, false);
+            content.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            needed.Value = content.DesiredSize.Width;
         }
+        SetCompact(content, needed.Value > scroll.ActualWidth);
     }
 
     private static void SetCompact(DependencyObject root, bool compact)
@@ -80,7 +94,12 @@ public static class Ribbon
             {
                 continue;
             }
-            label.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+            var visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+            if (label.Visibility == visibility)
+            {
+                continue;
+            }
+            label.Visibility = visibility;
             if (compact)
             {
                 button.Height = 34;

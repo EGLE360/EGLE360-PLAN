@@ -43,7 +43,9 @@ jobs:
         shell: pwsh
         run: |
           $exe = "src/Egle360.Desktop/bin/Release/net10.0-windows/EGLE360.PLAN.exe"
-          $p = Start-Process -FilePath $exe -ArgumentList "--screenshots", "screenshots" -Wait -PassThru
+          $p = Start-Process -FilePath $exe -ArgumentList "--screenshots", "screenshots" -PassThru
+          # Hängt die Anwendung, nach 10 Minuten abbrechen, damit die bis dahin erstellten Bilder trotzdem abgelegt werden.
+          if (-not $p.WaitForExit(600000)) { $p.Kill(); throw "Anwendung reagiert nach 10 Minuten nicht mehr (letztes Bild: $((Get-ChildItem screenshots -Filter *.png | Sort-Object LastWriteTime | Select-Object -Last 1).Name))" }
           if (Test-Path screenshots/error.txt) { Get-Content screenshots/error.txt }
           if ($p.ExitCode -ne 0) { throw "Anwendung endete mit Code $($p.ExitCode)" }
           $count = (Get-ChildItem screenshots -Filter *.png).Count
@@ -55,7 +57,8 @@ jobs:
         run: |
           dotnet publish src/Egle360.Desktop/Egle360.Desktop.csproj -c Release -r win-x64 --self-contained true -p:DebugType=None -o publish/EGLE360-PLAN
           Copy-Item docs/Testanleitung.md publish/EGLE360-PLAN/Testanleitung.md
-          $p = Start-Process -FilePath publish/EGLE360-PLAN/EGLE360.PLAN.exe -ArgumentList "--screenshots", "publish-check" -Wait -PassThru
+          $p = Start-Process -FilePath publish/EGLE360-PLAN/EGLE360.PLAN.exe -ArgumentList "--screenshots", "publish-check" -PassThru
+          if (-not $p.WaitForExit(600000)) { $p.Kill(); throw "Paket reagiert nach 10 Minuten nicht mehr" }
           if ($p.ExitCode -ne 0) { throw "Veröffentlichtes Paket endete mit Code $($p.ExitCode)" }
           Compress-Archive -Path publish/EGLE360-PLAN -DestinationPath EGLE360-PLAN-win-x64.zip
 
