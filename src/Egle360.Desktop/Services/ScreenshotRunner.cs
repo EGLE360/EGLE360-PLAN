@@ -106,6 +106,7 @@ internal static class ScreenshotRunner
                         viewer.Select(0, area.Id);
                         WaitForDocuments(window);
                         Save(window, Path.Combine(outputDir, name + "-messen.png"));
+                        File.WriteAllText(Path.Combine(outputDir, name + "-messen-layout.txt"), window.Documents.DescribeLayoutForScreenshot());
                         window.Documents.ShowRibbonTab("Markieren");
                         viewer.ClearSelection();
                         window.Documents.SetMarkupListVisible(false);

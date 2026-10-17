@@ -227,6 +227,21 @@ public partial class DocumentsView : UserControl, IDisposable
     }
 
     /// <summary>Für den Screenshot-Modus: geänderte (temporäre) Dateien speichern, damit beim Beenden keine Rückfrage kommt.</summary>
+    /// <summary>Für den Screenshot-Modus: Lage und Größe der Hauptbereiche als Text, um Layoutfehler zu finden.</summary>
+    internal string DescribeLayoutForScreenshot()
+    {
+        string Line(string name, FrameworkElement e)
+        {
+            var p = e.IsVisible ? e.TranslatePoint(new Point(0, 0), this) : new Point(double.NaN, double.NaN);
+            return $"{name}: sichtbar={e.IsVisible} oben={p.Y:0} links={p.X:0} breite={e.ActualWidth:0} höhe={e.ActualHeight:0}";
+        }
+        return string.Join(Environment.NewLine,
+            Line("DocumentsView", this), Line("Menüband", MarkupBarBorder), Line("Registerkarten", TabStripBorder), Line("Arbeitsbereich", WorkArea),
+            Line("Ansicht", ViewerHost), Line("Liste", MarkupListPanel), Line("Seitenleiste", Sidebar), Line("Leer", EmptyState),
+            $"Zeilen: {string.Join(", ", ((Grid)Content).RowDefinitions.Select(r => r.ActualHeight.ToString("0")))}",
+            $"Listenzeile: {MarkupListRow.ActualHeight:0}");
+    }
+
     internal void SaveAllForScreenshot()
     {
         foreach (var document in _documents.Where(d => d.Document.IsModified && d.Document.FilePath is not null))

@@ -63,7 +63,7 @@ public static class Ribbon
                 Fit(scroll, remeasure: false);
             }
         };
-        scroll.Loaded += (_, _) => Fit(scroll);
+        scroll.Loaded += (_, _) => scroll.Dispatcher.BeginInvoke(() => Fit(scroll), System.Windows.Threading.DispatcherPriority.Loaded);
     }
 
     /// <summary>Breite, die das Menüband mit Beschriftungen braucht, je Bildlaufbereich.</summary>
