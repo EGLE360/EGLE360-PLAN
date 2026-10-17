@@ -31,7 +31,7 @@
 
         <!-- Menüband: Befehle der gewählten Registerkarte -->
         <Border Grid.Row="1" x:Name="MarkupBarBorder" Background="{DynamicResource Surface1Brush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,1" Padding="4,4">
-            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Focusable="False">
+            <ScrollViewer x:Name="RibbonScroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Focusable="False">
                 <StackPanel Orientation="Horizontal">
                     <HeaderedContentControl x:Name="QuickGroup" Style="{StaticResource RibbonGroup}" Header="Werkzeug">
                         <StackPanel x:Name="QuickPanel" Orientation="Horizontal" />

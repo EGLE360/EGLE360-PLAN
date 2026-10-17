@@ -74,10 +74,10 @@ internal static class ScreenshotRunner
                     WaitForDocuments(window);
                     Save(window, Path.Combine(outputDir, name + "-zoom.png"));
                     window.Documents.ShowRibbonTab("Start");
-                    WaitForRender(window);
+                    WaitForDocuments(window);
                     Save(window, Path.Combine(outputDir, name + "-start.png"));
                     window.Documents.ShowRibbonTab("Seiten");
-                    WaitForRender(window);
+                    WaitForDocuments(window);
                     Save(window, Path.Combine(outputDir, name + "-seiten.png"));
                     window.Documents.ShowRibbonTab("Markieren");
 

@@ -54,6 +54,7 @@ public partial class PlansView : UserControl
     {
         InitializeComponent();
         Controls.Ribbon.ApplyAll(RibbonPanel);
+        Controls.Ribbon.FitOnResize(RibbonScroll);
         if (App.Theme.Settings.PlanProjectPath is { } path && PlanProject.Exists(path))
         {
             TryOpen(path, quiet: true);

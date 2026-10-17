@@ -248,6 +248,7 @@ public partial class DocumentsView
         {
             Ribbon.ApplyAll(panel);
         }
+        Ribbon.FitOnResize(RibbonScroll);
         RefreshStyleButtons();
     }
 
@@ -268,6 +269,7 @@ public partial class DocumentsView
         MarkupBar.Visibility = MarkupRibbonTab.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         MeasureBar.Visibility = MeasureRibbonTab.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         StyleGroup.Visibility = MarkupRibbonTab.IsChecked == true || MeasureRibbonTab.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        Ribbon.Fit(RibbonScroll);
     }
 
     /// <summary>Für den Screenshot-Modus und Tastenkürzel: Registerkarte Messen zeigen.</summary>
