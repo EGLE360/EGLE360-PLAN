@@ -352,9 +352,12 @@
                     <Button x:Name="ZoomInButton" Style="{StaticResource StatusButton}" Content="&#xE8A3;" Click="OnZoomIn" ToolTip="Vergrößern (Strg+Plus)" AutomationProperties.Name="Vergrößern" />
                 </StackPanel>
                 <TextBlock x:Name="StatusZoom" DockPanel.Dock="Right" Style="{StaticResource TextCaption}" Margin="16,0,0,0" Visibility="Collapsed" />
-                <TextBlock x:Name="StatusMarkup" DockPanel.Dock="Right" Style="{StaticResource TextCaption}" Margin="16,0,16,0" VerticalAlignment="Center" />
-                <TextBlock x:Name="StatusFormat" DockPanel.Dock="Right" Style="{StaticResource TextCaption}" Margin="16,0,0,0" VerticalAlignment="Center" />
-                <TextBlock x:Name="StatusPath" Style="{StaticResource TextCaption}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                <!-- Alle Texte einzeilig: Ein umbrechender Text würde die Statuszeile hoch machen und den Plan verdrängen. -->
+                <TextBlock x:Name="StatusPath" DockPanel.Dock="Left" Style="{StaticResource TextCaption}" MaxWidth="320" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                <TextBlock x:Name="StatusFormat" DockPanel.Dock="Left" Style="{StaticResource TextCaption}" Margin="16,0,0,0" TextWrapping="NoWrap" VerticalAlignment="Center" />
+                <TextBlock x:Name="StatusMarkup" Style="{StaticResource TextCaption}" Margin="16,0,16,0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                           ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
             </DockPanel>
         </Border>
     </Grid>

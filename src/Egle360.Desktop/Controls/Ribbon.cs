@@ -51,39 +51,46 @@ public static class Ribbon
 
     /// <summary>
     /// Passt das Menüband an die Breite an: Reicht der Platz nicht für Symbol und Beschriftung, werden nur Symbole
-    /// gezeigt (die Beschriftung steht dann im Hinweistext). Bei jeder Größenänderung neu prüfen.
+    /// gezeigt (die Beschriftung steht dann im Hinweistext). Grundlage ist die tatsächliche Breite nach dem Layout.
     /// </summary>
     public static void FitOnResize(ScrollViewer scroll)
     {
-        // Nur auf Breitenänderungen reagieren: Der Wechsel der Darstellung ändert die Höhe und darf keine neue Prüfung auslösen.
-        scroll.SizeChanged += (_, e) =>
+        scroll.ScrollChanged += (_, e) =>
         {
-            if (e.WidthChanged)
+            if (e.ExtentWidthChange != 0 || e.ViewportWidthChange != 0)
             {
-                Fit(scroll, remeasure: false);
+                Decide(scroll);
             }
         };
-        scroll.Loaded += (_, _) => scroll.Dispatcher.BeginInvoke(() => Fit(scroll), System.Windows.Threading.DispatcherPriority.Loaded);
     }
 
-    /// <summary>Breite, die das Menüband mit Beschriftungen braucht, je Bildlaufbereich.</summary>
-    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ScrollViewer, StrongBox<double>> NeededWidth = new();
+    /// <summary>Breite, die das Menüband mit Beschriftungen braucht, je Bildlaufbereich (0 = noch nicht bekannt).</summary>
+    private static readonly ConditionalWeakTable<ScrollViewer, StrongBox<double>> NeededWidth = new();
 
-    /// <param name="remeasure">True, wenn sich der Inhalt geändert hat (etwa eine andere Registerkarte).</param>
-    public static void Fit(ScrollViewer scroll, bool remeasure = true)
+    /// <summary>Nach einer Änderung des Inhalts (etwa einer anderen Registerkarte) neu prüfen.</summary>
+    public static void Fit(ScrollViewer scroll)
     {
-        if (scroll.Content is not FrameworkElement content || scroll.ActualWidth <= 0)
+        if (scroll.Content is not FrameworkElement content)
+        {
+            return;
+        }
+        NeededWidth.GetOrCreateValue(scroll).Value = 0;
+        SetCompact(content, false);
+    }
+
+    private static void Decide(ScrollViewer scroll)
+    {
+        if (scroll.Content is not FrameworkElement content || scroll.ViewportWidth <= 0)
         {
             return;
         }
         var needed = NeededWidth.GetOrCreateValue(scroll);
-        if (remeasure || needed.Value <= 0)
+        if (needed.Value <= 0)
         {
-            SetCompact(content, false);
-            content.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            needed.Value = content.DesiredSize.Width;
+            // Ausgeklappt gemessen: Das ist die Breite mit Beschriftungen.
+            needed.Value = scroll.ExtentWidth;
         }
-        SetCompact(content, needed.Value > scroll.ActualWidth);
+        SetCompact(content, needed.Value > scroll.ViewportWidth + 1);
     }
 
     private static void SetCompact(DependencyObject root, bool compact)
